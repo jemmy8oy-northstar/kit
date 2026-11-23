@@ -2349,6 +2349,7 @@ behaviour BEH-AGENTPAGE-1 "An agents page shows an agent's recent work and its q
   contract my assumption: the queue reads approved and pending cards with no needs-context line as unblocked, in board order (priority, then corpus order), and pending cards with a needs-context line as waiting on him
   contract my assumption: the navbar link is shown where Runs is, since the runs it reads are the operator's (BEH-USERS-9)
   contract my assumption: a paused card counts as unblocked here, as the card reads; the board keeps it under Backlog
+  contract my assumption: delete this card, because the owner says the agents page adds nothing (note kit.notes.md#2026-11-23 22:58Z). The page, its KitAgents route, its navbar link and its tests go with it, and FEAT-AGENTS is removed once empty
 
 # His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
 # time, and a health view of how much of each spec has tests.
