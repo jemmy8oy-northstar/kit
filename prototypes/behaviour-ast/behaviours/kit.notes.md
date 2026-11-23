@@ -1012,3 +1012,9 @@ I think the epic -> feature -> spec hierarchy is still valuable but not in the b
 I kind of feel that we should have an epic board and a ticket board only. I feel that usually a ticket may touch lots of features or specs but is only ever really progressing towards one or a couple epics. I think that kit should remain big picture. Tickets show granularly what kit is up to without having to go into the detail of features and specs. Epic show on a high level, what are the goals that we are progressing towards and what status are they in.
 
 Please work on moving all of the projects towards the ticket model and decomissioning the feature and spec boards
+
+## 2026-11-23 22:55Z
+
+<!-- from: note-button -->
+
+Kit tickets board, we should be able to see the columns of statuses just like the spec board
