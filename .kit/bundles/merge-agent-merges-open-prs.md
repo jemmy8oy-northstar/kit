@@ -1,6 +1,7 @@
 # The merge agent merges built pull requests, so none wait open
 Work-item: merge-agent-merges-open-prs
 Flag: the merge cards (BEH-ORCH-10, BEH-ORCH-11, BEH-ORCH-12) live in kit-ui.beh, which triage may not edit, so no spec change is made here; the cause of the hang is not known from the notes (level: low)
+Review: agreed — the cards and files match the spec and helm (KIT_PIPELINE_JOB_MERGE is on, so the cause is a runtime wait the builder must find from the job log); no spec edit is needed from this work item
 Cards:
 - BEH-ORCH-11
 - BEH-ORCH-10
