@@ -1018,3 +1018,11 @@ Please work on moving all of the projects towards the ticket model and decomissi
 <!-- from: note-button -->
 
 Kit tickets board, we should be able to see the columns of statuses just like the spec board
+
+## 2026-11-23 22:57Z
+
+<!-- from: note-button -->
+
+In Kit everything should be organised by project (repo). Just like in git.
+
+We should be able to view the boars, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github
