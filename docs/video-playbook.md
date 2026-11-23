@@ -18,7 +18,7 @@ The Owner's feedback log at the bottom is part of the loop. Read it at the start
   - Code and UI: **JetBrains Mono** or **Geist Mono**, 36–44 px, never below 32 px.
   - Load fonts explicitly (`@remotion/google-fonts` / `loadFont`). A fallback system font fails the video automatically.
 - **Safe zone (Shorts):** keep text inside roughly x 60–960 and y 220–1500. Nothing important goes in the bottom ~420 px or the right ~120 px, where the app UI sits.
-- **Palette:** dark neutral background, one accent colour, high contrast (≥ 7:1 for text). No gradients-as-decoration.
+- **Palette:** **Kit's own theme colours** (his 2026-11-22 claude-code-bot#147). That means the design system's `professional` theme in light mode, which is what Kit renders. Background `#F7F8FA`, white cards with a visible border and shadow-md, text `#1A2230`, and one accent: the primary `#4F6BED`, which is also the Clicky pen. Success green and danger red carry pass and fail only. Body text stays ≥ 7:1 (the text colour). Muted grey is for support text ≥ 48 px only. No gradients-as-decoration. Read the hexes from the design system's `src/tokens/themes/professional.css`, not from memory. Before this, the default was a dark neutral background with a lime accent.
 - **Look:** two styles, and the second is the one to try next (his 2026-11-22 claude-code-bot#147 and snip-it#73).
   - **Clicky-style draw-on (try in every new draft):** hand-drawn marks such as circles, arrows, underlines and a pointer are drawn live over the *real* artefact, the way heyclicky.com sketches on a screen while it talks. Draw rough.js paths on with Remotion `evolvePath`. It is a layer over the story, not a replacement for it.
   - **Dark kinetic type (Short #2, kept as a candidate):** he liked it, but it "does look quite vibe coded and similar to other solutions". Use it as the fallback, or as the base under the draw-on layer, and never as the whole look.
@@ -68,6 +68,7 @@ Run it as a blind-ish pass. A fresh Opus agent gets only the MP4 frames, this ch
 - [ ] **Truth:** every claim (live URL, test counts, timings) matches a real artefact, and you can point to it.
 - [ ] **Benchmark:** put 3 frames next to an exemplar (Research notes §1). Would it sit in that company's feed without embarrassment? If not, name the gap and fix it before handing over.
 - [ ] **Generic-look test** (a standing weakness: "really poorly made" on 11-06, "quite vibe coded" on 11-22): could these frames come from any AI-made explainer? Name one thing in them that only this channel does. If it's only dark kinetic type, it fails; add or strengthen the draw-on layer.
+- [ ] **Brand test** (third taste entry, 2026-11-22 "kit theme colours"): does every frame use only §0's Kit palette? Look for any leftover hex from another theme. Does a frame read as Kit next to a real Kit screen?
 - [ ] **Picked idea:** is this the idea he chose in IDEAS? If not, stop and offer it as an idea instead.
 - [ ] Hand over privately: MP4 plus a contact sheet image embedded on the Kit card or issue. **Nothing is posted publicly.** Publishing is the owner's decision.
 
@@ -112,6 +113,14 @@ Rules derived:
 - **message:** a true story told in order, from his note to live, works. Keep that arc (CREATE).
 - **process:** ideas come before builds, and he picks (§0a IDEAS, plus a REVIEW item). This is the second process entry in a row (after "Shorts"), so REVIEW checks it.
 - The old default the draw-on layer supersedes: dark kinetic type as the whole look (§0 Palette and Type system still apply).
+
+### 2026-11-22, claude-code-bot#147, Shorts ★1–★3 draft 2 (Tinder 40 s, Engineers check 35 s, Watch my eyes 32 s; dark palette, Clicky draw-on layer)
+> "They look pretty good! Could we regenerate with kit theme colours and then generate the rest of the 10 as well"
+
+Rules derived:
+- **taste:** the palette is Kit's own theme, not a generic dark one (§0 Palette). This is the third taste entry in a row (fonts on 11-06, "vibe coded" earlier on 11-22, palette now), so REVIEW checks the brand directly. The old default was a dark neutral background with a lime accent.
+- **message:** the Clicky draw-on look plus true stories in order passed ("pretty good"), so they stay the defaults.
+- **process:** "the rest of the 10" is read as ideas 4–10 from `videos/content-ideas.md`, which makes 10 Shorts in total. Ideas 11 and 12 aren't built unless he asks.
 
 ---
 
