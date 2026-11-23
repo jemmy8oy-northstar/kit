@@ -1026,3 +1026,9 @@ Kit tickets board, we should be able to see the columns of statuses just like th
 In Kit everything should be organised by project (repo). Just like in git.
 
 We should be able to view the boars, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github
+
+## 2026-11-23 22:58Z
+
+<!-- from: note-button -->
+
+I feel like the agents page adds nothing, lets scrap it
