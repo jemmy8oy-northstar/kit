@@ -1000,3 +1000,15 @@ Kit bundle is malformed kit needs a way to resolve this
 <!-- from: note-button -->
 
 Ticket tests are failing or merge conflicts kit needs a strategy to resolve this
+
+## 2026-11-23 22:55Z
+
+<!-- from: note-button -->
+
+With kit pipeline we have started to move towards a ticket board model instead of a spec board model.
+
+I think the epic -> feature -> spec hierarchy is still valuable but not in the boards view
+
+I kind of feel that we should have an epic board and a ticket board only. I feel that usually a ticket may touch lots of features or specs but is only ever really progressing towards one or a couple epics. I think that kit should remain big picture. Tickets show granularly what kit is up to without having to go into the detail of features and specs. Epic show on a high level, what are the goals that we are progressing towards and what status are they in.
+
+Please work on moving all of the projects towards the ticket model and decomissioning the feature and spec boards
