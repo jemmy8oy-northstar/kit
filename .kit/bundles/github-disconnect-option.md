@@ -1,8 +1,6 @@
 # Let a user disconnect their GitHub account
 Work-item: github-disconnect-option
 Flag: precondition failed, nothing built: Kit stores no GitHub token to delete. GitHubConnect revokes the user token (backend/Balenthiran.Kit.Database/GitHubConnect.cs), and kit_users keeps only github_installation and github_account (PostgresUserStore.cs:20, GitHubLink.cs); owner to say whether disconnect should clear that installation link instead, and what a connected user's password sign-in does then (BEH-USERS-10 blocks it once connected) (level: high)
-Flag: new card has no matching feature in kit.beh (it describes the command line), so it may belong in the hosted app's corpus; the change removes a stored GitHub token (level: high)
-Review: escalated — card is a hosted-app Settings screen placed in kit.beh, the command-line corpus (kit:layer technical; its header says not to add browser behaviours) which defines no FEAT-SETTINGS; owner to decide where BEH-ACCOUNT-1 lives (kit-ui.beh or the hosted corpus) and confirm that deleting the stored GitHub token is wanted
 Cards:
 - BEH-ACCOUNT-1
 Notes:
@@ -11,6 +9,8 @@ Notes:
 Files:
 - prototypes/behaviour-ast/behaviours/kit.beh
 Context:
+Moved here from the bundle header so that it has one Flag line: new card has no matching feature in kit.beh (it describes the command line), so it may belong in the hosted app's corpus; the change removes a stored GitHub token (level: high)
+Review: escalated — card is a hosted-app Settings screen placed in kit.beh, the command-line corpus (kit:layer technical; its header says not to add browser behaviours) which defines no FEAT-SETTINGS; owner to decide where BEH-ACCOUNT-1 lives (kit-ui.beh or the hosted corpus) and confirm that deleting the stored GitHub token is wanted
 Note: "There should be an option to disconnect your GitHub". Add a Settings option that removes Kit's stored GitHub token for the signed-in user, after a confirm step, and leaves GitHub-side repositories and pull requests untouched. Reconnecting must stay possible.
 Owner's answer (2026-11-19 16:53Z): where it lives does not matter, so triage decides; and yes, deleting the stored GitHub token is what he wants. Both are now recorded on BEH-ACCOUNT-1 as contract lines. The escalated review above predates that answer and is kept as the record; no question on this card is open. The card keeps FEAT-SETTINGS, which kit.beh's switch lines name but do not define; a builder should check that before wiring the screen.
 Test plan:
