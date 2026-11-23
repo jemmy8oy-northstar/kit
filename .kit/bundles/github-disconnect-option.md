@@ -1,6 +1,7 @@
 # Let a user disconnect their GitHub account
 Work-item: github-disconnect-option
 Flag: precondition failed, nothing built: Kit stores no GitHub token to delete. GitHubConnect revokes the user token (backend/Balenthiran.Kit.Database/GitHubConnect.cs), and kit_users keeps only github_installation and github_account (PostgresUserStore.cs:20, GitHubLink.cs); owner to say whether disconnect should clear that installation link instead, and what a connected user's password sign-in does then (BEH-USERS-10 blocks it once connected) (level: high)
+Review: escalated — the flag stands: BEH-ACCOUNT-1 and his 2026-11-19 answer both assume a stored GitHub token, and the flag cites code showing Kit keeps none, only the installation link (github_installation, github_account on kit_users); he must say what disconnect removes instead and how a disconnected user signs in, since BEH-USERS-10 blocks password sign-in once connected. Silence: rewrite the card's token contract so disconnect clears only the signed-in user's github_installation and github_account after the confirm step, with no GitHub call, and leave sign-in rules as they are (the user signs in again by reconnecting GitHub), recorded as unreviewed assumptions on BEH-ACCOUNT-1
 Cards:
 - BEH-ACCOUNT-1
 Notes:
