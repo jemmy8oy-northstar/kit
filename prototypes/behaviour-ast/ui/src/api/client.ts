@@ -1,6 +1,6 @@
 import type {
   ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, PipelineItemList, ProjectDetail, TicketList, ProjectListBody, WakeSetting,
-  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
+  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, RunVisibility, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -127,6 +127,11 @@ export function fetchRuns(): Promise<AgentRunList> {
 }
 
 /** The pipeline's work items since Kit last started (BEH-ORCH-9); the operator's, as runs are. */
+/** BEH-UI-7, BEH-UI-8, BEH-UI-9, with BEH-VIS-1 and BEH-VIS-2: the runs page's cards and run details. */
+export function fetchRunVisibility(): Promise<RunVisibility> {
+  return get<RunVisibility>('/api/runs/visibility')
+}
+
 export function fetchPipeline(): Promise<PipelineItemList> {
   return get<PipelineItemList>('/api/pipeline')
 }

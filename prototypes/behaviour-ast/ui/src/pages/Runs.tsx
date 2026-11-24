@@ -1,20 +1,10 @@
-import { fetchPipeline, fetchRuns } from '../api/client'
-import type { AgentRun, RunClaim } from '../api/types'
-import { useResource } from '../hooks/useResource'
+import { Link } from 'react-router-dom'
+import { Badge, type BadgeTone } from '@jemmy8oy-northstar/design-system'
+import { fetchPipeline, fetchRunVisibility, fetchRuns } from '../api/client'
+import type { AgentRun, RecentRun, RunClaim, RunVisibility } from '../api/types'
+import { useResource, type Resource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
-
-/** The run's own instant, in the reader's locale; an unparseable stamp is shown as it came. */
-function when(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-/** How long it ran, or "running" while it has no end. */
-function took(r: AgentRun): string {
-  if (!r.ended) return 'running'
-  const s = Math.max(0, Math.round((Date.parse(r.ended) - Date.parse(r.started)) / 1000))
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`
-}
+import { costText, took, when } from '../runs'
 
 /** A span of minutes as "45 min" or "2h 05m". */
 function minutes(ms: number): string {
@@ -171,12 +161,54 @@ function Pipeline({ runs }: { runs: AgentRun[] }) {
   )
 }
 
+/** The state tag's colour: a run that finished is green, one that failed red, one going now blue (BEH-UI-8). */
+const TONE: Record<string, BadgeTone> = { queued: 'neutral', running: 'primary', finished: 'success', failed: 'danger' }
+
 /**
- * Every agent run Kit has started, newest first (BEH-USERS-9). The server sends them in that order and
- * this keeps it. A failed run says which step of the runner failed.
+ * One run as a card (BEH-UI-8): its state as a tag, how long it ran, its tokens and its recorded cost, unknown
+ * until BEH-COST-1 records one. The whole card opens the run's details page (BEH-UI-9).
+ */
+function RunCard({ run }: { run: RecentRun }) {
+  return (
+    <li className="run-card">
+      <Link to={`/runs/${encodeURIComponent(run.id)}`}>
+        <div className="muted">
+          <time dateTime={run.started}>{when(run.started)}</time> · {run.project} · {run.model}
+        </div>
+        <Badge tone={TONE[run.status] ?? 'neutral'} pill className="run-state">{run.status}</Badge> · {took(run)} · {run.tokens} tokens · {costText(run.costUsd)}
+        {run.status === 'failed' && run.failure ? <div>Failed: {failureInWords(run.failure)}</div> : null}
+      </Link>
+    </li>
+  )
+}
+
+/**
+ * The recent runs as cards, newest first (BEH-UI-7), read from GET /api/runs/visibility. The server sends them in
+ * that order and this keeps it.
+ */
+function RunCards({ resource }: { resource: Resource<RunVisibility> }) {
+  return (
+    <ResourceView resource={resource}>
+      {({ recent }) =>
+        recent.length === 0 ? null : (
+          <ol aria-label="Agent runs" className="cards">
+            {recent.map((r) => (
+              <RunCard key={r.id} run={r} />
+            ))}
+          </ol>
+        )
+      }
+    </ResourceView>
+  )
+}
+
+/**
+ * Every agent run Kit has started, newest first (BEH-USERS-9, BEH-UI-7). Each one is a card (BEH-UI-8) that opens
+ * its details page (BEH-UI-9). A failed run says which step of the runner failed.
  */
 export default function Runs() {
   const resource = useResource(fetchRuns, [])
+  const cards = useResource(fetchRunVisibility, [])
 
   return (
     <>
@@ -191,33 +223,21 @@ export default function Runs() {
             {runs.length === 0 ? (
               <p>No runs yet.</p>
             ) : (
-              <>
-                {byWorkItem(runs).length > 0 ? (
-                  <>
-                    <h2>By work item</h2>
-                    <ul aria-label="Cost by work item" className="activity">
-                      {byWorkItem(runs).map((i) => (
-                        <li key={`${i.project}/${i.slug}`}>
-                          <div className="muted">{i.project} · {i.slug}</div>
-                          {i.runs} {i.runs === 1 ? 'run' : 'runs'} · {i.tokens} tokens · ${i.costUsd.toFixed(2)}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : null}
-                <ol aria-label="Agent runs" className="activity">
-                  {runs.map((r) => (
-                    <li key={r.id}>
-                      <div className="muted">
-                        <time dateTime={r.started}>{when(r.started)}</time> · {r.project} · {r.model}
-                      </div>
-                      {r.status} · {took(r)} · {tokensOf(r)} tokens · ${r.costUsd.toFixed(2)}
-                      {r.status === 'failed' && r.failure ? <div>Failed: {failureInWords(r.failure)}</div> : null}
-                    </li>
-                  ))}
-                </ol>
-              </>
+              byWorkItem(runs).length > 0 ? (
+                <>
+                  <h2>By work item</h2>
+                  <ul aria-label="Cost by work item" className="activity">
+                    {byWorkItem(runs).map((i) => (
+                      <li key={`${i.project}/${i.slug}`}>
+                        <div className="muted">{i.project} · {i.slug}</div>
+                        {i.runs} {i.runs === 1 ? 'run' : 'runs'} · {i.tokens} tokens · ${i.costUsd.toFixed(2)}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null
             )}
+            {runs.length === 0 ? null : <RunCards resource={cards} />}
           </>
         )}
       </ResourceView>

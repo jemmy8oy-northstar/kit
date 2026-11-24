@@ -168,4 +168,72 @@ public class RunVisibilityTests
         Assert.Equal(before, runs.Select(r => (r.Id, r.CostUsd, r.Status)).ToList()); // no run was changed
         Assert.Equal([0.02m, 0.10m], page.Finished.Single().Stages.Select(s => s.CostUsd!.Value));
     }
+
+    // ---- BEH-UI-7, BEH-UI-8: the runs page's cards -----------------------------------------------
+
+    [Fact]
+    public void BEH_UI_7_the_recent_runs_are_newest_start_first_whatever_order_they_were_given_in()
+    {
+        var runs = new List<IAgentRun>
+        {
+            Run("mid", AgentRunStatus.Finished, null, null, Sonnet, 5),
+            Run("old", AgentRunStatus.Finished, null, null, Sonnet, 0),
+            Run("new", AgentRunStatus.Running, null, null, Sonnet, 9),
+        };
+
+        var page = RunVisibilityBuilder.Build(runs, NoFlag, NoStageCostRecord.Instance);
+
+        Assert.Equal(["new", "mid", "old"], page.Recent.Select(r => r.Id).ToArray());
+    }
+
+    [Fact]
+    public void BEH_UI_8_each_recent_run_carries_the_state_the_run_record_holds()
+    {
+        var runs = new List<IAgentRun>
+        {
+            Run("q", AgentRunStatus.Queued, null, null, Sonnet, 0),
+            Run("r", AgentRunStatus.Running, null, null, Sonnet, 1),
+            Run("f", AgentRunStatus.Finished, null, null, Sonnet, 2),
+            Run("x", AgentRunStatus.Failed, null, null, Sonnet, 3),
+        };
+
+        var page = RunVisibilityBuilder.Build(runs, NoFlag, NoStageCostRecord.Instance);
+
+        Assert.Equal(
+            [AgentRunStatus.Failed, AgentRunStatus.Finished, AgentRunStatus.Running, AgentRunStatus.Queued],
+            page.Recent.Select(r => r.Status).ToArray());
+    }
+
+    [Fact]
+    public void BEH_UI_8_with_no_cost_record_every_recent_run_costs_unknown()
+    {
+        var runs = new List<IAgentRun>
+        {
+            Run("a", AgentRunStatus.Finished, null, null, Sonnet, 0),
+            Run("b", AgentRunStatus.Running, "slug-a", "spec", Sonnet, 1),
+        };
+
+        var page = RunVisibilityBuilder.Build(runs, NoFlag, NoStageCostRecord.Instance);
+
+        Assert.All(page.Recent, r => Assert.Null(r.CostUsd));
+    }
+
+    [Fact]
+    public void BEH_UI_8_a_run_with_no_recorded_cost_is_unknown_and_a_run_recorded_at_zero_is_zero()
+    {
+        var runs = new List<IAgentRun>
+        {
+            Run("none", AgentRunStatus.Finished, null, null, Sonnet, 0),
+            Run("zero", AgentRunStatus.Finished, null, null, Sonnet, 1),
+        };
+        var costs = new RecordedCosts(new Dictionary<string, decimal> { ["zero"] = 0m });
+
+        var page = RunVisibilityBuilder.Build(runs, NoFlag, costs);
+
+        var none = page.Recent.Single(r => r.Id == "none");
+        var zero = page.Recent.Single(r => r.Id == "zero");
+        Assert.Null(none.CostUsd);
+        Assert.Equal(0m, zero.CostUsd);
+        Assert.NotEqual(none.CostUsd, zero.CostUsd);
+    }
 }
