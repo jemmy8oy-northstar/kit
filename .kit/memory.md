@@ -66,3 +66,9 @@
 - **kit.beh BEH-PARSE-3 header lost its space** in fd373305 (`behaviour BEH-PARSE-3"A priority…`). A `behaviour` line needs whitespace before the quote, or `Every_committed_corpus_parses` fails the whole suite. Restored to main's text.
 - Behaviours inside folder `.kit` files are parsed but not yet counted by `kit check`, so a folder spec with no test does not fail the gate. That is not in any card yet.
 - UI job here: `npm ci && npm run lint && npm run build && npm test` in `prototypes/behaviour-ast/ui`, 648 passed on 2026-11-24.
+## Ticket board and epic board (BEH-TICKET-6 to 8, bundle ticket-board-only-model)
+- The gate reads test titles as literal strings. A title built from `it.each` or a template string is not found, so `check kit-ui` fails with "has no test titled ...". Give each mapped test a literal title.
+- When a test title is renamed, check `kit-ui.tests.json` for every card that maps to it. BEH-STAGE-8 and BEH-EPIC-4 share one title, and the gate names only the first missing one.
+- A ticket has no epic field. It names the epics of the features its specs sit in (`epicsOfTicket` in `ui/src/epics.ts`, the BEH-TICKET-7 contract), so an epic's ticket counts are derived in the page, not stored.
+- The feature board (`/stages`) and the spec board (`/board` behaviour list) are out of the navbar and the view switch; the routes still work by URL. The `/board` page still lists behaviour cards under the tickets until the owner answers the spec-board question on BEH-TICKET-6.
+- `ui/src/tickets.ts` and `ui/src/components/Tickets.tsx` do exist, under `prototypes/behaviour-ast/ui/src/`.
