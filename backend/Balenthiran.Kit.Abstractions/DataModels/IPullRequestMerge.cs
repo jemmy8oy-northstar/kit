@@ -24,7 +24,10 @@ public interface IPullRequestMerge
     /// </summary>
     bool NeedsTest { get; }
 
-    /// <summary>The head commit <see cref="NeedsTest"/> asks to have tested; null otherwise.</summary>
+    /// <summary>
+    /// The head commit <see cref="NeedsTest"/> asks to have tested, or the head that has the <see cref="Conflict"/>, so the
+    /// merge job can tell a conflict an agent already tried from a new one after the base moved (claude-code-bot#151); null otherwise.
+    /// </summary>
     string? HeadSha { get; }
 
     /// <summary>Why the pull request will not be merged, in plain words. Never contains the token.</summary>

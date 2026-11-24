@@ -11,6 +11,41 @@ public interface IRunVisibility
 
     /// <summary>Every work item whose latest pipeline run has finished, newest first (BEH-VIS-2).</summary>
     IReadOnlyList<IFinishedRun> Finished { get; }
+
+    /// <summary>Every run, newest start first: the runs page's cards (BEH-UI-7, BEH-UI-8).</summary>
+    IReadOnlyList<IRecentRun> Recent { get; }
+}
+
+/// <summary>One run on the runs page's cards (BEH-UI-7, BEH-UI-8).</summary>
+public interface IRecentRun
+{
+    string Id { get; }
+
+    string Project { get; }
+
+    /// <summary>The work item the run is for; null for triage and for a run started by hand.</summary>
+    string? WorkItem { get; }
+
+    /// <summary>The pipeline stage; null for a run started by hand.</summary>
+    string? Stage { get; }
+
+    string Model { get; }
+
+    /// <summary>The state the run record holds: queued, running, finished or failed.</summary>
+    string Status { get; }
+
+    DateTimeOffset Started { get; }
+
+    DateTimeOffset? Ended { get; }
+
+    /// <summary>Input, output and cache tokens together.</summary>
+    long Tokens { get; }
+
+    /// <summary>Why a failed run failed, as its runner reported it; null otherwise.</summary>
+    string? Failure { get; }
+
+    /// <summary>The run's recorded session cost (BEH-COST-1); null when none is recorded: unknown, never zero.</summary>
+    decimal? CostUsd { get; }
 }
 
 /// <summary>One agent that is running (BEH-VIS-1): where it is, and any review its work item's bundle flagged.</summary>
