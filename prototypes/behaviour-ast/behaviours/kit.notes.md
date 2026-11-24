@@ -1087,3 +1087,13 @@ instead of tickets being under board -> behaviours, it should be under board -> 
 <!-- from: note-button -->
 
 notes should show a triage tag if they have been triaged
+
+## 2026-11-24 22:46Z
+
+<!-- from: note-button -->
+
+When the ui is separated my projects, the opening page should show the current projects page
+
+I want working towards: {epic}
+
+to be the first thing that shows
