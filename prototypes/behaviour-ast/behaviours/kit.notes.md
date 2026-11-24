@@ -1125,3 +1125,9 @@ This is about the file structure not the view structure
 <!-- from: note-button -->
 
 kit is able to perform a dev -> main release (this can be toggled in the projects settings and is default off) lets switch this on for kit though
+
+## 2026-11-24 23:20Z
+
+<!-- from: note-button -->
+
+I have a vision when kit is organised by project where it can show a visual on the project home page of what is running in the pipeline atm, just a simple cluster dots coloured by stage in the stages across some timeline stile diagram showing what work is actively being worked on and in what stage
