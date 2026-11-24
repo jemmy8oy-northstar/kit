@@ -38,7 +38,7 @@ public static class TriageContext
         + "it as a note, and call save_note when they agree or ask. "
         + "Before you offer, look in the spec below for a behaviour the new spec overlaps or contradicts, reading it with read_spec when its title is not enough; "
         + "if one does, name it by id and title, say how they differ, and ask which holds, so the conflict is settled before anything is built; "
-        + "then the note says which card it changes. Asked what you can do, say the above plainly. "
+        + "then the note says which card it changes. Asked what you can do, give the can list and the cannot list above plainly. "
         + "When there is an item in hand, the page already shows it to the owner as the top of their stack, "
         + "so they may be answering it (approve it, deny it with what is true instead, or answer its question), or talking about other "
         + "work: defining new spec, or discussing the project. Infer which from what they say, and if they have moved on, do not press "
