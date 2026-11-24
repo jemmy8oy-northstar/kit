@@ -25,5 +25,6 @@ Test plan:
 - BEH-PARSE-5: a folder holding only child folders (no readme, no .kit file) is a feature and its child features parse; the test asserts that
 - BEH-PARSE-6: a .kit file under a feature folder with no `in` line is refused as MissingParentTag, naming the file
 - BEH-PARSE-6: a readme.md under a feature folder with no `in` line is refused as MissingParentTag, naming the file
+- BEH-PARSE-6: a .kit file under a feature folder whose only `in` names a feature other than its parent folder is refused as MissingParentTag, naming the file (the parent tag must be present, not just any tag)
 - BEH-PARSE-6: a child that tags its parent and also tags another feature parses with no refusal, the extra tag is kept as a display tag and is not a dependency
 - BEH-PARSE-6: a missing parent tag makes the check fail the same build as a behaviour with no test (BEH-GATE-1), with a non-zero exit
