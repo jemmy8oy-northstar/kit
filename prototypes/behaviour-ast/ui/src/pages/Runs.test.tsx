@@ -1,13 +1,52 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Runs from './Runs'
+import RunDetails from './RunDetails'
+import type { AgentRun, RecentRun, RunVisibility } from '../api/types'
 
-function mockApi(body: unknown) {
+/** The visibility body the server builds from the same runs (BEH-UI-7, BEH-UI-8): every run, newest start first, cost unknown unless given. */
+function visibilityOf(runs: AgentRun[], costs: Record<string, number> = {}): RunVisibility {
+  const recent: RecentRun[] = runs.map((r) => ({
+    id: r.id,
+    project: r.project,
+    workItem: r.workItem ?? null,
+    stage: r.stage ?? null,
+    model: r.model,
+    status: r.status,
+    started: r.started,
+    ended: r.ended ?? null,
+    tokens: r.inputTokens + r.outputTokens + r.cacheWriteTokens + r.cacheReadTokens,
+    failure: r.failure ?? null,
+    costUsd: r.id in costs ? costs[r.id] : null,
+  }))
+  return { running: [], finished: [], recent }
+}
+
+interface Routes {
+  runs: unknown
+  pipeline?: unknown
+  visibility?: unknown
+}
+
+/** Answers each API route the page reads; the visibility route is built from the same runs unless one is given. */
+function mockRoutes(r: Routes) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
+    vi.fn(async (url: string) => {
+      const u = String(url)
+      const body = u.includes('/api/runs/visibility')
+        ? (r.visibility ?? visibilityOf((r.runs as { runs: AgentRun[] }).runs))
+        : u.includes('/api/pipeline')
+          ? (r.pipeline ?? { on: false, items: [] })
+          : r.runs
+      return { ok: true, status: 200, statusText: 'OK', json: async () => body }
+    }),
   )
+}
+
+function mockApi(body: unknown) {
+  mockRoutes({ runs: body })
 }
 
 const run = {
@@ -44,7 +83,7 @@ describe('Runs', () => {
     const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
     expect(items).toHaveLength(2)
     expect(items[0]).toHaveTextContent('kit')
-    expect(items[0]).toHaveTextContent('finished · 2m 5s · 1234 tokens · $0.46')
+    expect(items[0]).toHaveTextContent('finished · 2m 5s · 1234 tokens · cost unknown')
     expect(items[1]).toHaveTextContent('vocab')
     expect(items[1]).toHaveTextContent('running')
   })
@@ -116,16 +155,81 @@ describe('Runs', () => {
     expect(await screen.findByText('No runs yet.')).toBeInTheDocument()
   })
 
-  function mockBoth(runs: unknown, pipeline: unknown) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => ({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        json: async () => (String(url).includes('/api/pipeline') ? pipeline : runs),
-      })),
+  it('BEH-UI-7 shows each recent run as a card read from GET /api/runs/visibility, not as a text row', async () => {
+    const f = vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => (String(url).includes('/api/runs/visibility') ? visibilityOf([run]) : { capUsd: 5, runs: [run] }),
+    }))
+    vi.stubGlobal('fetch', f)
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(f.mock.calls.map((c) => String(c[0]))).toContain('/api/runs/visibility')
+    expect(items[0]).toHaveClass('run-card')
+    expect(within(items[0]).getByRole('link')).toHaveAttribute('href', '/runs/r1')
+  })
+
+  it('BEH-UI-8 shows each run state as a tag matching the state the run record holds', async () => {
+    mockApi({
+      capUsd: 5,
+      runs: [
+        { ...run, id: 'q', status: 'queued', ended: null },
+        { ...run, id: 'r', status: 'running', ended: null },
+        { ...run, id: 'f', status: 'finished' },
+        { ...run, id: 'x', status: 'failed' },
+      ],
+    })
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(items.map((li) => li.querySelector('.run-state')?.textContent)).toEqual(['queued', 'running', 'finished', 'failed'])
+  })
+
+  it('BEH-UI-8 shows a run with no recorded cost as unknown, never as zero', async () => {
+    mockRoutes({ runs: { capUsd: 5, runs: [run] }, visibility: visibilityOf([run]) })
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('cost unknown')
+    expect(items[0]).not.toHaveTextContent('$0.00')
+  })
+
+  it('BEH-UI-8 shows a run recorded at cost 0.00 differently from a run with no recorded cost', async () => {
+    const zero = { ...run, id: 'z' }
+    const none = { ...run, id: 'n' }
+    mockRoutes({ runs: { capUsd: 5, runs: [none, zero] }, visibility: visibilityOf([none, zero], { z: 0 }) })
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('cost unknown')
+    expect(items[1]).toHaveTextContent('cost $0.00')
+    expect(items[1]).not.toHaveTextContent('cost unknown')
+  })
+
+  it('BEH-UI-9 opens the details page for the run whose card was clicked, and no other run', async () => {
+    const other = { ...run, id: 'r2', project: 'vocab', model: 'claude-haiku-5-5' }
+    mockRoutes({ runs: { capUsd: 5, runs: [run, other] } })
+    render(
+      <MemoryRouter initialEntries={['/runs']}>
+        <Routes>
+          <Route path="/runs" element={<Runs />} />
+          <Route path="/runs/:id" element={<RunDetails />} />
+        </Routes>
+      </MemoryRouter>,
     )
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    act(() => fireEvent.click(within(items[1]).getByRole('link')))
+
+    expect(await screen.findByRole('heading', { name: 'Run r2', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(/vocab · claude-haiku-5-5/)).toBeInTheDocument()
+    expect(screen.queryByText(/claude-sonnet-5-5/)).toBeNull()
+  })
+
+  function mockBoth(runs: unknown, pipeline: unknown) {
+    mockRoutes({ runs, pipeline })
   }
 
   it("BEH-ORCH-9 shows each work item's stage, flag, review and runs per stage, and cost by stage", async () => {
@@ -270,11 +374,69 @@ describe('Runs', () => {
     expect(row).not.toContain('counted lost')
   })
 
+  it('BEH-ORCH-17 shows the give-up time the claim carries, not one counted from thirty minutes', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-19T19:30:00Z'))
+    mockBoth(
+      {
+        capUsd: 5,
+        runs: [{ ...run, id: 't', stage: 'test', workItem: 'list-sorting', status: 'running', started: '2026-11-19T19:20:00Z', ended: null }],
+        claims: [{ runId: 't', claimedAt: '2026-11-19T19:20:00Z', givesUpAt: '2026-11-19T20:20:00Z', lostAt: '2026-11-19T20:30:00Z' }],
+      },
+      { on: true, items: [] },
+    )
+    renderRuns()
+
+    const now = await screen.findByRole('list', { name: 'Runs going now' })
+    const row = within(now).getByRole('listitem').textContent
+    const giveUp = new Date('2026-11-19T20:20:00Z').toLocaleTimeString(undefined, { timeStyle: 'short' })
+    vi.useRealTimers()
+    expect(row).toContain(`gives up at ${giveUp}`)
+    expect(row).not.toContain(new Date('2026-11-19T19:50:00Z').toLocaleTimeString(undefined, { timeStyle: 'short' }))
+  })
+
   it('BEH-ORCH-17 shows no Now section when nothing is going', async () => {
     mockBoth({ capUsd: 5, runs: [run] }, { on: true, items: [] })
     renderRuns()
 
     await screen.findByRole('list', { name: 'Agent runs' })
     expect(screen.queryByRole('list', { name: 'Runs going now' })).toBeNull()
+  })
+})
+
+describe('BEH-SPACE-5: each project has its own runs', () => {
+  it("lists only that project's runs and pipeline items, and another project's are absent", async () => {
+    // The runs and the pipeline are read whole and kept to one project here, in the page that shows them.
+    // mockRoutes answers the visibility route (the cards) from the same runs, as the server does.
+    mockRoutes({
+      runs: {
+        capUsd: 5,
+        runs: [
+          { ...run, id: 'k', project: 'kit', workItem: 'kit-item', costUsd: 0.1 },
+          { ...run, id: 's', project: 'snip-it', workItem: 'snip-item', costUsd: 0.2 },
+        ],
+      },
+      pipeline: {
+        on: true,
+        items: [
+          { project: 'kit', slug: 'kit-item', stage: 'build', status: 'done' },
+          { project: 'snip-it', slug: 'snip-item', stage: 'build', status: 'done' },
+        ],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <Runs only="kit" />
+      </MemoryRouter>,
+    )
+
+    const runs = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(runs).toHaveLength(1)
+    // Direct children only: each item's own runs are a list inside it.
+    const items = Array.from((await screen.findByRole('list', { name: 'Pipeline work items' })).children)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent('kit · kit-item')
+    expect(screen.queryByText(/snip-it/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/snip-item/)).not.toBeInTheDocument()
   })
 })

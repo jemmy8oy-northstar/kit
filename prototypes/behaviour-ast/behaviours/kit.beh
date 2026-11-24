@@ -297,19 +297,6 @@ behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never z
   contract project.js's rule, carried through the transport — a UI that cannot tell
   contract "no mapping exists" from "nothing is covered" renders the second
 
-behaviour BEH-UI-7 "The pipeline runs page lists the most recent run first"
-  in FEAT-SERVER
-  priority 3
-  actor engineer
-  review unreviewed
-  given repo:Present
-  when runs command:KitUi
-  then reports order:NewestFirst
-  contract my assumption: the runs page is ordered by when each run started, newest
-  contract at the top; the older runs follow, and paging does not reverse that order
-  contract my assumption: this card is placed under the server area because the spec
-  contract for the runs page is not in this file; check with the owner
-
 behaviour BEH-UI-6 "A ticket keeps its state column and sits by priority, blocked tickets first"
   in FEAT-SERVER
   priority 3
@@ -321,7 +308,9 @@ behaviour BEH-UI-6 "A ticket keeps its state column and sits by priority, blocke
   contract my assumption: within one priority, a blocked ticket appears above the rest
   contract my assumption: "ticket" means the cards on the board, and their priority is the 1 to 5 of BEH-PARSE-3
   contract built on the pipeline's tickets (BEH-ORCH-16), not the cards: a card's columns are BEH-BOARD-18's, and a blocked tag beside unblocked tickets of one state exists only on a ticket. The third line above says cards; deny it to say which is true
-  contract my assumption: the columns are the ticket states that have open tickets, in the order new, ready, planned, built, stopped, and an unlisted state goes last; merged is off the board
+  contract my assumption: the columns are the ticket states that have open tickets, in the order new, ready, planned, built, stopped, and an unlisted state goes last; a merged and resolved ticket goes to a closed column shown after the open columns, and is not counted as open
+  contract my assumption: a ticket in state merged counts as merged and resolved, since a ticket has no separate resolved field
+  contract my assumption: the ticket board shows its state columns on screen the same way the spec board shows its status columns, one visible column per state that has open tickets
   contract built (ui/src/tickets.ts ticketColumns, ui/src/components/Tickets.tsx): each state is a column of the Tickets section, ordered by priority 1 first and within one priority blocked first
   review requested conflict with BEH-ORCH-16 (built, slice 4), which lists every blocked ticket first across the whole Tickets section; this card builds priority first, blocked within one priority, per state column. Approve to keep this reading; deny to say which is true and I rebuild to it
 

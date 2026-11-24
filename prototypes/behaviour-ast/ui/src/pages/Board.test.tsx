@@ -218,7 +218,13 @@ describe('Board', () => {
 
     const section = within(await screen.findByRole('region', { name: /Tickets/ }))
     expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
-    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Move the spec move-spec', 'Sort the list sorting'])
+    // BEH-UI-6: the merged ticket is in the closed column, which does not add to the open count.
+    expect(within(section.getByRole('region', { name: 'closed' })).getByRole('heading', { level: 4 })).toHaveTextContent('closed 1')
+    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Move the spec move-spec',
+      'Sort the list sorting',
+      'Already merged gone',
+    ])
     expect(section.getByTestId('blocked-because')).toHaveTextContent('which title should the card keep?')
     expect(section.getByText('Blocked: which title should the card keep?')).toBeVisible()
     expect(section.getByRole('link', { name: 'A-2' })).toHaveAttribute('href', '/projects/alpha/behaviours/A-2')
@@ -245,6 +251,81 @@ describe('Board', () => {
     expect(ready.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Blocked one blk1', 'One p1', 'Five p5'])
     const fresh = within(section.getByRole('region', { name: 'new' }))
     expect(fresh.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Newer n2'])
+    tickets = {}
+  })
+
+  it('shows each open state as a labelled column, then a closed column last for merged tickets, and no column for a state with none open (BEH-UI-6)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'r1', title: 'Ready one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'n1', title: 'New one', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'm1', title: 'Merged one', state: 'merged', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const root = await screen.findByRole('region', { name: /Tickets/ })
+    const section = within(root)
+    const columns = Array.from(root.querySelectorAll('section.ticket-column'))
+    expect(columns.map((c) => c.getAttribute('data-state'))).toEqual(['new', 'ready', 'closed'])
+    expect(section.getByRole('region', { name: 'new' })).toHaveAttribute('data-state', 'new')
+    expect(section.getByRole('region', { name: 'ready' })).toHaveAttribute('data-state', 'ready')
+    // BEH-UI-6: the merged ticket is in the closed region, which is last and holds it.
+    const closed = section.getByRole('region', { name: 'closed' })
+    expect(closed).toHaveAttribute('data-state', 'closed')
+    expect(within(closed).getByRole('heading', { level: 3 })).toHaveTextContent('Merged one m1')
+    expect(section.queryByRole('region', { name: 'planned' })).not.toBeInTheDocument()
+    expect(section.queryByRole('region', { name: 'built' })).not.toBeInTheDocument()
+    // The Tickets total still counts only the open tickets: the merged one is not among them.
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
+    tickets = {}
+  })
+
+  it("gives each column a visible heading with its open-ticket count, which adds up to the Tickets total (BEH-UI-6)", async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'r1', title: 'Ready one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'r2', title: 'Ready two', state: 'ready', priority: 2, cards: [], pullRequest: null, blockedBecause: 'which?', comments: [] },
+          { slug: 'n1', title: 'New one', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 3')
+    expect(within(section.getByRole('region', { name: 'ready' })).getByRole('heading', { level: 4 })).toHaveTextContent('ready 2')
+    expect(within(section.getByRole('region', { name: 'new' })).getByRole('heading', { level: 4 })).toHaveTextContent('new 1')
+    const counts = ['ready', 'new'].map((s) => Number(section.getByRole('region', { name: s }).querySelector('.board-count')?.textContent))
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(3)
+    tickets = {}
+  })
+
+  it('lays the state columns out as siblings in one .board container, so they sit side by side (BEH-UI-6)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'r1', title: 'Ready one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'n1', title: 'New one', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    const ready = section.getByRole('region', { name: 'ready' })
+    const fresh = section.getByRole('region', { name: 'new' })
+    expect(ready.parentElement).toBe(fresh.parentElement)
+    expect(ready.parentElement).toHaveClass('board')
     tickets = {}
   })
 
@@ -1153,6 +1234,23 @@ describe('BEH-SPACE-3: each project has its own board, a tap from the global one
     expect(screen.getByTestId('search').textContent).toBe('')
     expect(screen.getByRole('heading', { level: 1, name: 'Board' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'See every project' })).not.toBeInTheDocument()
+    expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
+  })
+})
+
+describe('BEH-SPACE-5: the global board still shows every project', () => {
+  beforeEach(() => {
+    histories = {}
+    bells = {}
+  })
+
+  it('with no project picked, lists the cards of every project, not one', async () => {
+    mockApi()
+    renderBoard('/board')
+    await loaded()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Board' })).toBeInTheDocument()
+    expect(column('Done').getByText('A-DONE')).toBeInTheDocument()
     expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
   })
 })

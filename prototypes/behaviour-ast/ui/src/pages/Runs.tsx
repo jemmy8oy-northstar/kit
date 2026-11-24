@@ -1,20 +1,10 @@
-import { fetchPipeline, fetchRuns } from '../api/client'
-import type { AgentRun, RunClaim } from '../api/types'
-import { useResource } from '../hooks/useResource'
+import { Link } from 'react-router-dom'
+import { Badge, type BadgeTone } from '@jemmy8oy-northstar/design-system'
+import { fetchPipeline, fetchRunVisibility, fetchRuns } from '../api/client'
+import type { AgentRun, RecentRun, RunClaim, RunVisibility } from '../api/types'
+import { useResource, type Resource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
-
-/** The run's own instant, in the reader's locale; an unparseable stamp is shown as it came. */
-function when(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-/** How long it ran, or "running" while it has no end. */
-function took(r: AgentRun): string {
-  if (!r.ended) return 'running'
-  const s = Math.max(0, Math.round((Date.parse(r.ended) - Date.parse(r.started)) / 1000))
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`
-}
+import { costText, took, when } from '../runs'
 
 /** A span of minutes as "45 min" or "2h 05m". */
 function minutes(ms: number): string {
@@ -123,11 +113,12 @@ function byStage(runs: AgentRun[]): { stage: string; runs: number; costUsd: numb
  * review, and its runs, one per stage, so which stage spent the money reads off the item. Items are kept in memory,
  * so they are the ones since Kit last started; the cost by stage below them is every run on record.
  */
-function Pipeline({ runs }: { runs: AgentRun[] }) {
+function Pipeline({ runs, only }: { runs: AgentRun[]; only?: string }) {
   const resource = useResource(fetchPipeline, [])
   if (resource.state === 'error') return <p className="muted">The pipeline could not be read: {resource.message}</p>
   if (resource.state !== 'ready' || !resource.value.on || !Array.isArray(resource.value.items)) return null
-  const items = resource.value.items
+  // BEH-SPACE-5: a project's page keeps that project's items; the global page keeps them all.
+  const items = only === undefined ? resource.value.items : resource.value.items.filter((i) => i.project === only)
   const stages = byStage(runs)
   return (
     <>
@@ -171,55 +162,91 @@ function Pipeline({ runs }: { runs: AgentRun[] }) {
   )
 }
 
+/** The state tag's colour: a run that finished is green, one that failed red, one going now blue (BEH-UI-8). */
+const TONE: Record<string, BadgeTone> = { queued: 'neutral', running: 'primary', finished: 'success', failed: 'danger' }
+
 /**
- * Every agent run Kit has started, newest first (BEH-USERS-9). The server sends them in that order and
- * this keeps it. A failed run says which step of the runner failed.
+ * One run as a card (BEH-UI-8): its state as a tag, how long it ran, its tokens and its recorded cost, unknown
+ * until BEH-COST-1 records one. The whole card opens the run's details page (BEH-UI-9).
  */
-export default function Runs() {
+function RunCard({ run }: { run: RecentRun }) {
+  return (
+    <li className="run-card">
+      <Link to={`/runs/${encodeURIComponent(run.id)}`}>
+        <div className="muted">
+          <time dateTime={run.started}>{when(run.started)}</time> · {run.project} · {run.model}
+        </div>
+        <Badge tone={TONE[run.status] ?? 'neutral'} pill className="run-state">{run.status}</Badge> · {took(run)} · {run.tokens} tokens · {costText(run.costUsd)}
+        {run.status === 'failed' && run.failure ? <div>Failed: {failureInWords(run.failure)}</div> : null}
+      </Link>
+    </li>
+  )
+}
+
+/**
+ * The recent runs as cards, newest first (BEH-UI-7), read from GET /api/runs/visibility. The server sends them in
+ * that order and this keeps it.
+ */
+function RunCards({ resource, only }: { resource: Resource<RunVisibility>; only?: string }) {
+  return (
+    <ResourceView resource={resource}>
+      {({ recent }) => {
+        // BEH-SPACE-5: a project's cards are that project's runs, as its list above is.
+        const shown = only === undefined ? recent : recent.filter((r) => r.project === only)
+        return shown.length === 0 ? null : (
+          <ol aria-label="Agent runs" className="cards">
+            {shown.map((r) => (
+              <RunCard key={r.id} run={r} />
+            ))}
+          </ol>
+        )
+      }}
+    </ResourceView>
+  )
+}
+
+/**
+ * Every agent run Kit has started, newest first (BEH-USERS-9, BEH-UI-7). Each one is a card (BEH-UI-8) that opens
+ * its details page (BEH-UI-9). A failed run says which step of the runner failed.
+ */
+export default function Runs({ only }: { only?: string } = {}) {
   const resource = useResource(fetchRuns, [])
+  const cards = useResource(fetchRunVisibility, [])
 
   return (
     <>
-      <h1>Runs</h1>
+      <h1>{only === undefined ? 'Runs' : `Runs · ${only}`}</h1>
 
       <ResourceView resource={resource}>
-        {({ capUsd, runs, claims }) => (
+        {({ capUsd, runs: every, claims }) => {
+          // BEH-SPACE-5: a project's runs are the runs of that project; the global page shows every run (BEH-USERS-9).
+          const runs = only === undefined ? every : every.filter((r) => r.project === only)
+          return (
           <>
             <p className="muted">Each run is capped at ${capUsd}.</p>
             <Now runs={runs} claims={claims ?? []} now={Date.now()} />
-            <Pipeline runs={runs} />
+            <Pipeline runs={runs} only={only} />
             {runs.length === 0 ? (
               <p>No runs yet.</p>
             ) : (
-              <>
-                {byWorkItem(runs).length > 0 ? (
-                  <>
-                    <h2>By work item</h2>
-                    <ul aria-label="Cost by work item" className="activity">
-                      {byWorkItem(runs).map((i) => (
-                        <li key={`${i.project}/${i.slug}`}>
-                          <div className="muted">{i.project} · {i.slug}</div>
-                          {i.runs} {i.runs === 1 ? 'run' : 'runs'} · {i.tokens} tokens · ${i.costUsd.toFixed(2)}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : null}
-                <ol aria-label="Agent runs" className="activity">
-                  {runs.map((r) => (
-                    <li key={r.id}>
-                      <div className="muted">
-                        <time dateTime={r.started}>{when(r.started)}</time> · {r.project} · {r.model}
-                      </div>
-                      {r.status} · {took(r)} · {tokensOf(r)} tokens · ${r.costUsd.toFixed(2)}
-                      {r.status === 'failed' && r.failure ? <div>Failed: {failureInWords(r.failure)}</div> : null}
-                    </li>
-                  ))}
-                </ol>
-              </>
+              byWorkItem(runs).length > 0 ? (
+                <>
+                  <h2>By work item</h2>
+                  <ul aria-label="Cost by work item" className="activity">
+                    {byWorkItem(runs).map((i) => (
+                      <li key={`${i.project}/${i.slug}`}>
+                        <div className="muted">{i.project} · {i.slug}</div>
+                        {i.runs} {i.runs === 1 ? 'run' : 'runs'} · {i.tokens} tokens · ${i.costUsd.toFixed(2)}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null
             )}
+            {runs.length === 0 ? null : <RunCards resource={cards} only={only} />}
           </>
-        )}
+          )
+        }}
       </ResourceView>
     </>
   )

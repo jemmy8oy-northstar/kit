@@ -74,23 +74,27 @@ export default function Tickets({ app }: { app: string }) {
               Tickets <span className="board-count">{open.length}</span>
             </h2>
             {open.length === 0 && <p className="muted">No open tickets.</p>}
-            {columns.map((column) => (
-              <section key={column.state} aria-label={column.state} data-state={column.state} className="ticket-column">
-                <h4 className="muted">{column.state}</h4>
-                <ul className="cards">
-              {column.tickets.map((t) => (
-                <li key={t.slug} data-ticket={t.slug}>
-                  <Card className="board-card">
-                    <h3>
-                      {t.title} <span className="muted id">{t.slug}</span>
-                    </h3>
-                    {t.blockedBecause && <p data-testid="blocked-because">👤 {t.blockedBecause}</p>}
-                    <div className="badges">
-                      {t.blockedBecause && <Badge tone="warning">🚧 blocked</Badge>}
-                      <Badge tone="neutral">{t.state}</Badge>
-                      <Badge tone={t.priority === 1 ? 'danger' : 'neutral'}>P{t.priority}</Badge>
-                    </div>
-                    {featuresOfTicket(t, behaviours).length > 0 && (
+            {/* BEH-UI-6: the state columns sit side by side in the spec board's .board row, each headed with its count. */}
+            <div className="board">
+              {columns.map((column) => (
+                <section key={column.state} aria-label={column.state} data-state={column.state} className="ticket-column">
+                  <h4>
+                    {column.state} <span className="board-count">{column.tickets.length}</span>
+                  </h4>
+                  <ul className="cards">
+                    {column.tickets.map((t) => (
+                      <li key={t.slug} data-ticket={t.slug}>
+                        <Card className="board-card">
+                          <h3>
+                            {t.title} <span className="muted id">{t.slug}</span>
+                          </h3>
+                          {t.blockedBecause && <p data-testid="blocked-because">👤 {t.blockedBecause}</p>}
+                          <div className="badges">
+                            {t.blockedBecause && <Badge tone="warning">🚧 blocked</Badge>}
+                            <Badge tone="neutral">{t.state}</Badge>
+                            <Badge tone={t.priority === 1 ? 'danger' : 'neutral'}>P{t.priority}</Badge>
+                          </div>
+                          {featuresOfTicket(t, behaviours).length > 0 && (
                       <p aria-label="Features touched">
                         {featuresOfTicket(t, behaviours).map((id, i) => (
                           <Fragment key={id}>
@@ -101,45 +105,46 @@ export default function Tickets({ app }: { app: string }) {
                       </p>
                     )}
                     {t.cards.length > 0 && (
-                      <p>
-                        {t.cards.map((id, i) => (
-                          <span key={id}>
-                            {i > 0 && ', '}
-                            <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                    {t.pullRequest?.startsWith('https://') && (
-                      <p>
-                        <a href={t.pullRequest}>Pull request</a>
-                      </p>
-                    )}
-                    {t.comments.length > 0 && (
-                      <details open={!!t.blockedBecause}>
-                        <summary>
-                          {t.comments.length} comment{t.comments.length === 1 ? '' : 's'}
-                        </summary>
-                        <ol className="ticket-thread">
-                          {t.comments.map((c, i) => (
-                            <li key={i}>
-                              <strong>{c.author}</strong>{' '}
-                              <time className="muted" dateTime={c.at}>
-                                {c.at.slice(0, 16).replace('T', ' ')} UTC
-                              </time>
-                              <p>{c.body}</p>
-                            </li>
-                          ))}
-                        </ol>
-                      </details>
-                    )}
-                    {t.blockedBecause && <ReplyForm app={app} slug={t.slug} onSent={reload} />}
-                  </Card>
-                </li>
+                            <p>
+                              {t.cards.map((id, i) => (
+                                <span key={id}>
+                                  {i > 0 && ', '}
+                                  <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
+                                </span>
+                              ))}
+                            </p>
+                          )}
+                          {t.pullRequest?.startsWith('https://') && (
+                            <p>
+                              <a href={t.pullRequest}>Pull request</a>
+                            </p>
+                          )}
+                          {t.comments.length > 0 && (
+                            <details open={!!t.blockedBecause}>
+                              <summary>
+                                {t.comments.length} comment{t.comments.length === 1 ? '' : 's'}
+                              </summary>
+                              <ol className="ticket-thread">
+                                {t.comments.map((c, i) => (
+                                  <li key={i}>
+                                    <strong>{c.author}</strong>{' '}
+                                    <time className="muted" dateTime={c.at}>
+                                      {c.at.slice(0, 16).replace('T', ' ')} UTC
+                                    </time>
+                                    <p>{c.body}</p>
+                                  </li>
+                                ))}
+                              </ol>
+                            </details>
+                          )}
+                          {t.blockedBecause && <ReplyForm app={app} slug={t.slug} onSent={reload} />}
+                        </Card>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-                </ul>
-              </section>
-            ))}
+            </div>
           </section>
         )
       }}

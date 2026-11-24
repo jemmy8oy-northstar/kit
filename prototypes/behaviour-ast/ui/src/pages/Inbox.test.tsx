@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import Inbox from './Inbox'
 import { localDate, lowered } from '../inbox'
 import type { Behaviour } from '../api/types'
@@ -344,5 +344,73 @@ describe('Inbox', () => {
 
     expect(await screen.findByText('the corpus refused that')).toBeInTheDocument()
     expect(current()).toBe('A-ASK')
+  })
+})
+
+describe('BEH-SPACE-5: each project has its own inbox', () => {
+  it("lists only that project's cards, and another project's waiting card is not in it", async () => {
+    mockApi()
+    render(
+      <MemoryRouter>
+        <Inbox only="alpha" />
+      </MemoryRouter>,
+    )
+    await screen.findByTestId('inbox-position')
+
+    expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 4')
+    // The project picker is the global inbox's; a project's own inbox has no picker to leave a filter on.
+    expect(screen.queryByRole('group', { name: 'Project' })).not.toBeInTheDocument()
+    const seen: (string | null)[] = []
+    for (let i = 0; i < 4; i++) {
+      seen.push(current())
+      fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+      await waitFor(() => expect(current() !== seen[i]).toBe(true))
+    }
+    expect(seen).toEqual(['A-ASK', 'A-NEEDS', 'A-PAUSED', 'A-PROP'])
+    expect(seen).not.toContain('B-PROP')
+  })
+
+  it("switching to another project shows that project's cards, with no filter from the last one left in the address", async () => {
+    mockApi()
+    function Scoped() {
+      const { app = '' } = useParams()
+      return <Inbox only={app} />
+    }
+    function Switch() {
+      const go = useNavigate()
+      const { search } = useLocation()
+      return (
+        <>
+          <button type="button" onClick={() => go('/projects/beta/inbox')}>Switch to beta</button>
+          <p data-testid="search">{search}</p>
+        </>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/projects/alpha/inbox']}>
+        <Switch />
+        <Routes>
+          <Route path="/projects/:app/inbox" element={<Scoped />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    await screen.findByTestId('inbox-position')
+    expect(current()).toBe('A-ASK')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to beta' }))
+
+    await waitFor(() => expect(current()).toBe('B-PROP'))
+    expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 1')
+    expect(screen.getByTestId('search').textContent).toBe('')
+    expect(writes).toEqual([])
+  })
+
+  it('the global inbox with no project picked still lists every project, and so does its picker', async () => {
+    mockApi()
+    await open()
+
+    expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 5')
+    expect(screen.getByRole('button', { name: 'Filter to alpha' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filter to beta' })).toBeInTheDocument()
   })
 })

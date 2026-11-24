@@ -8,6 +8,7 @@ import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
 import { useSession } from '../components/session'
+import { useFlags } from '../components/flags'
 import Tour from '../components/Tour'
 import { tourSeen } from '../components/tourStore'
 import { byProject } from '../features'
@@ -17,6 +18,7 @@ import { isIdea } from '../board'
 export default function Projects() {
   const projects = useResource(fetchProjects, [])
   const session = useSession()
+  const inboxOn = useFlags().isOn('FEAT-INBOX')
   // BEH-WELCOME-1: a user, not the operator, whose GitHub is not connected yet has nothing to list,
   // so the page is their first step: connecting it.
   const welcome = !!session?.accounts && !session.operator && !session.gitHub
@@ -37,6 +39,12 @@ export default function Projects() {
           Every behaviour corpus Kit can read. Counts come from the corpus itself;
           coverage needs the app's repository, which the read API is not given by
           default.
+        </p>
+      )}
+      {/* BEH-SPACE-5: the Inbox across every project is no longer in the main navigation; each project has its own. */}
+      {inboxOn && !welcome && (
+        <p>
+          <Link to="/inbox">Inbox across every project</Link>
         </p>
       )}
 

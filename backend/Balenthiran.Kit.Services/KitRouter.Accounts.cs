@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Balenthiran.Kit.Abstractions.Services;
@@ -40,7 +42,23 @@ public sealed partial class KitRouter
     }
 
     /// <summary>Fails closed: no store means nobody is signed in.</summary>
-    private string? UserOf(string? cookie) => sessions?.UserOf(ParseCookies(cookie).GetValueOrDefault(Cookie));
+    private string? UserOf(string? cookie)
+    {
+        var token = ParseCookies(cookie).GetValueOrDefault(Cookie);
+        return token == botSession ? ISessionStore.Operator : sessions?.UserOf(token);
+    }
+
+    /// <summary>BEH-ORCH-6: <c>Authorization: Bearer &lt;KIT_BOT_READ_TOKEN&gt;</c>; compared in fixed time, never logged or echoed.</summary>
+    private bool BotBearer(string? header)
+    {
+        const string scheme = "Bearer ";
+        if (botRead is null || header is null || !header.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(header[scheme.Length..].Trim()), botRead);
+    }
 
     /// <summary>Signed in as an early-access user rather than the operator.</summary>
     private bool IsOtherUser(string? cookie) => users is not null && UserOf(cookie) is { } who && who != ISessionStore.Operator;

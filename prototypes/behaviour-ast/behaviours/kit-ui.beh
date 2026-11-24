@@ -1296,6 +1296,8 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract his answer (kit.notes.md#2026-10-23-0638): "let's have a username and password sign in for early access. And then you integrate your GitHub. Then maybe later for general release it's just a GitHub sign in"
   contract early access is invite-only because James creates each account himself; there is no open sign-up, no GitHub allowlist and no code word (he weighed both in kit.notes.md#2026-10-23-0635 and dropped them)
   contract a user can change the password James gave them
+  contract my assumption: the username and password choice is James's decision and reversible; his 06:38Z note ends "Can always change later if need be", so no other card may assume sign-in stays username and password for good
+  contract early access accounts are made only by the operator, for invited people; the card for that is BEH-USERS-14
   contract once signed in, the user connects their GitHub by installing Kit's GitHub App, which is what reads and writes their repos
   contract later, for general release, signing in with GitHub replaces the username and password; that is a separate behaviour, not this one
   contract my assumption: he creates each account inside Kit, signed in as himself, rather than with a command run in the cluster
@@ -1332,6 +1334,8 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
   contract live since kit#503 (2026-10-27 21:39Z): signed out, Kit's sign-in page now offers "Sign in with GitHub"
   contract his question (kit.notes.md#2026-10-31-0055), "Am I able to act as a test user myself by logging in with a different organisation or my personal account?": your personal account, yes; another organisation, no. Kit only records an install on the personal account of whoever authorises (an organisation's install is reachable by any member), and Kit's own install is on the organisation, so your personal account counts as a separate user. Make a test user in Settings, sign in as them in a private window, and connect your personal GitHub. One catch: a GitHub account links to one Kit user, so if you already connected your personal account to yourself in Settings (BEH-SETTINGS-3), the test user needs a second GitHub account
+  contract my assumption, for him to confirm: he tests as a test user by signing in through this card with a second GitHub account; the answer above stands, so another organisation's install is still not claimed
+  contract my assumption, for him to decide: whether to uninstall and reinstall the installed App to test OAuth (kit.notes.md#2026-10-28-0003, "it won't let me install it because it's already installed"); no code change here, and this card is the way to test OAuth without it
 behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their GitHub stops working"
   in FEAT-USER-SIGNUP
   source inferred kit-ui.beh#BEH-USERS-10
@@ -1344,6 +1348,21 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   then sees region:KitMain
   contract my proposal: once a test user signs in only with GitHub (BEH-USERS-10), reinstalling the App, or losing that GitHub account, leaves them no way in
   contract my assumption: in Settings, beside "Add a user", he names a user and gives them a new password; their GitHub link is cleared, so they sign in with that password and connect again
+  contract my assumption: the reinstall case (kit.notes.md#2026-10-28-0003) is the one this card resets; it stays paused, and his answer to that question decides whether it is needed for testing
+
+behaviour BEH-USERS-14 "Early access accounts are made by the operator for invited people only, with no sign-up page"
+  in FEAT-USER-SIGNUP
+  source defined kit.notes.md#2026-10-23-0638
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract my assumption: early access is invite-only; James makes each account himself inside Kit (BEH-USERS-1), so there is no open sign-up, no sign-up page and no code word to try
+  contract my assumption: the GitHub-account whitelist he asked about (kit.notes.md#2026-10-23-0635) is not built in early access; a GitHub account signs in only when James has made the user it belongs to (BEH-USERS-10)
+  contract my assumption: a stranger who opens Kit's sign-in page finds no way to create an account, and a sign-up request is answered as not found
+  contract my assumption, as built: a sign-up request from a stranger is answered 401 not-signed-in, not 404, because the sign-in gate answers before routing (BEH-GATE-H1), so it reveals no route; a signed-in user is answered 403 not-yours (BEH-USERS-8); neither creates an account
+  contract my assumption: this is the default; he can open self sign-up later, which would be a new card
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
@@ -1563,6 +1582,7 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   contract my assumption: a work item's runs are summed on Runs, so what an item cost is read in one place
   contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
   contract built: each pipeline run records its work item (agent_runs.work_item, null for triage), and Runs sums an item's runs, tokens and cost in one row (kit#751)
+  contract built: with KIT_BOT_READ_TOKEN set, a GET carrying "Authorization: Bearer <that token>" is read as the operator, so the bot reads Runs, the pipeline and the projects with no session; it never writes, a wrong token is the same 401 as none, unset changes nothing, and a session cookie wins over it. The token comes from a `kit-bot-read` secret he creates
 
 behaviour BEH-ORCH-8 "A note is never lost when the pipeline cannot run, and a restart does not pay to triage it twice"
   in FEAT-AGENT-PIPELINE
@@ -1649,6 +1669,10 @@ behaviour BEH-ORCH-11 "A note goes on the backlog as a ticket, and a job per sta
   contract built: slice 7a, the merge job: with KIT_PIPELINE_JOB_MERGE=on (off by default; anything but on or off throws) the merge of a built item's pull request moves from the BEH-ORCH-10 look to a job, so MergeReadyAsync merges nothing whatever KIT_PIPELINE_MERGE says, and a PipelineJob for the Merge job (a new PipelineStage.Merge, only ever a job and never the stage of a work item) looks every KIT_PIPELINE_JOB_MINUTES. At each look, per project with a built item not yet merged, it reads the priorities again and takes only the one with the lowest priority number (oldest first among equals), so pull requests merge into the base branch one at a time in priority order and the others wait. It asks GitHubPullRequestOpener.MergeIfGreenAsync with updateFirst: when the open pull request's branch is behind its base (GitHub's compare, behind_by above 0) it calls update-branch with the head commit it read and waits ("brought up to date with dev") so the checks run on the updated head; GitHub's 422 on that update is a conflict and stops the item, a 409 waits, other 4xx stop it and 5xx or unreachable wait; a branch not behind goes on to the checks and the merge as in BEH-ORCH-10, whose path is unchanged without updateFirst. Merged marks the item merged and its ticket merged, waiting leaves it as the top item for the next look, refused stops it with the reason and the next look takes the next one. With the switch off the BEH-ORCH-10 look is as before. Nothing yet resolves a conflict (slice 7b)
   contract built: slice 7b, a conflict goes to an agent: a merge result now says Conflict, set only on the two refusals GitHub gives for a branch that conflicts with its base (not mergeable, and the 422 on update-branch), with the reason text unchanged. With KIT_PIPELINE_JOB_MERGE=on, a Conflict at a merge look no longer stops the item: it gets one resolve run on the runner pool, shown in Runs as stage resolve, while the item is a PipelineStage.Merge item (running, a built ticket meanwhile, same pull request). The run starts from the project's repo and base branch and is told to check out the pull request's own branch kit/work/<slug> from origin, merge origin/<base> into it, resolve each conflict keeping the intent of both sides, run the project's whole test suite, and commit and push the merge to that same branch, with no new pull request, no other branch and no force-push (ResolveStage.BuildTask). Its model and turns are KIT_STAGE_MODEL_RESOLVE and KIT_STAGE_TURNS_RESOLVE, and unset they are the build stage's. A run that ends well makes the item built again (same pull request), so the next merge look reads the pull request, waits for the checks on the new head and merges; a failed run stops the ticket with "the conflict-resolution run failed". A second Conflict on a ticket that already had its run stops it ("it still conflicts with its base after an agent tried to resolve it"), so a ticket gets at most one run. That a ticket had its run is kept in memory only (the ticket row has no column for it), so a restart forgets it and a ticket may get one more run. While the run is in flight the merge job takes no other ticket of that project, and a project with any other run in flight waits for the next look. With the switch off a conflict still stops the item (BEH-ORCH-10)
   contract my assumption: the resolve run's model and turns default to the build stage's, because resolving a conflict needs the same code judgement as building; whether a cheaper model will do is decided from what Runs shows it costs
+  contract my assumption (claude-code-bot#151, his "how on earth is haiku not able to merge"): measured 2026-11-24, every pipeline pull request left open (kit#865, #868, #878, #881, #889, #895) was a conflict or behind dev, and every conflict was in the files each build writes to: .kit/memory.md, kit.beh or kit-ui.beh, kit.tests.json, plus one code file each in two of them. Pull requests that did not conflict merged in 10 to 30 minutes. So the cause is the strategy, not the model: one run per ticket, while each merge into dev makes the rest conflict again
+  contract my assumption: a ticket gets a resolve run once per head commit, at most 3 (Pipeline.MaxResolveRuns). A Conflict at the same head its last run started from, or with no head to compare, means the run changed nothing, and stops the ticket as before; a Conflict at a new head means a run worked and dev moved on, so it gets another run; a fourth stops it with "its base kept moving and it conflicted again after 3 resolve runs". A merge result names the head commit a Conflict was found at
+  contract my assumption: .kit/memory.md is merged with git's union driver (.gitattributes), so a local merge keeps both sides' notes without an agent. Measured on kit#895: with it, only App.tsx still conflicts. GitHub's own mergeability check ignores the attribute, so the pull request still reads as conflicting and the resolve run still starts, but that file is settled by the time the run sees it
+  contract my assumption: the resolve task says how to settle each shared kind of file: a .beh keeps both sides' blocks and lines, renumbers the branch's behaviour when both took the same new id, and fails the run naming the behaviour when both changed the same line (no side picked silently, as BEH-TICKET-6 asks); a .tests.json keeps every key and still parses; code is settled by the suite; and no conflict marker may be left
   contract my assumption: the context stage's model and turn limit default to triage's (claude-haiku-5-5, 30 turns): it reads and gathers as triage does and writes nothing but the bundle, so the cheapest model should do. Whether it needs more is decided from what Runs shows a context run costs and whether the planner is helped
 
 behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so merging into dev spends no Actions minutes"
@@ -1675,6 +1699,10 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
   contract his comment (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
   contract my assumption: the hold covers every way a run starts, not only the jobs. Production runs the merge job alone, so a planned ticket's build starts the moment the run before it ends. The hold was read only by the jobs, so overnight seven pull requests were built and none was tested. A look that no longer holds the project starts what waited behind it at once
   contract my assumption: "private" was standing in for "has no Actions run", and kit went public (his 2026-11-14 note) with CI still only for main, so its pull requests into dev waited for a run that never starts. On the merge job's path, a pull request with no Actions run at its head is tested by Kit whatever the repo's visibility. One that has a run is unchanged: a failed run refuses, a running one waits, a passed one merges with no Kit test. This supersedes "it applies only to a project whose repo is private" above. The cost is his subscription, not free Actions minutes; CI on pull requests into dev while kit is public would be cheaper, but that is a workflow change and his
+  contract his comment (claude-code-bot#151, 2026-11-24 16:00Z): "It is still experiencing issues"
+  contract my assumption: one definition of "the whole suite" for every stage that runs it (build, resolve, fix and test): every test project and every step the CI workflows run, spec gates included. On 2026-11-24 five pull requests (kit#825, kit#832, kit#865, kit#868, kit#881) passed their build, because it ran only the test projects, then failed the spec gate in their merge-time test run, which ran every CI step, and stopped
+  contract my assumption: a failed test run no longer stops the ticket. It stays built and the next merge look starts a fix run on the pull request's own branch (stage merge, as a resolve run is), told to make the whole suite pass without deleting or weakening a test. This supersedes "a failed test stops the ticket rather than retrying" above: a fix run is not a retry that hides a flaky suite, because the head must change and be tested again. A fix that leaves the head where it was stops the ticket ("its tests still fail at <sha7> after a fix run changed nothing"), and a ticket gets at most 2 fix runs ("… after 2 fix runs"). Both, and "the fix run failed", are blocks a run made, so a restart gives the ticket one more go
+  contract my assumption: only a test run that reached its verdict and did not pass (the runner reports "verdict exit 1") starts a fix run. One that ran out of time or crashed says nothing about the code, so it stops the ticket with "the project's tests failed at <sha7>" as before
 
 behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
   in FEAT-AGENT-PIPELINE
@@ -1770,6 +1798,10 @@ behaviour BEH-ORCH-17 "Runs shows what each stage is working on now, how long it
   contract my assumption: built, slices 1 and 2. Which stages besides test should get a shorter limit is decided from what the Now section and Runs show they take
   contract his comment (claude-code-bot#145, 2026-11-19 20:29Z), on a screenshot of Now listing runs "waiting for a runner · 306h" and "running since before Kit last started": "Ok now I need some help digesting this"
   contract my assumption: slice 3, built. A restart no longer leaves runs going for ever. At the first claim after Kit starts, each run created before it started that is still queued is failed as "lost", because its token and task went with the restart and no runner can ever take it. Each one still running is given the lease from when Kit started (RunnerPool.Forgotten), because its runner may yet report, and is failed as "lost" when that runs out, like any lost run. Such a run still has no claim, so Now keeps saying "running since before Kit last started" until then
+  contract his note (prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-19 19:29Z): "Maybe we can reduce the time to determine that a test run hung, how long does a test run actually take atm"
+  contract my assumption: his question is answered by the measured 378 seconds above, warm. A cold run, with the package cache empty, is not measured; the builder times one on the runner and records the figure on this card before any limit changes
+  contract my assumption: slice 3. The test limit comes down from 30 minutes only to about three times the slower of the measured warm and cold times, rounded up to the minute, and the 10-minute lease margin stays, so a hung test run is counted lost that many minutes plus 10 after it starts. Until a cold run is timed it stays at 30 minutes
+  contract built: slice 3's mechanism. Orchestrator.TestWarmSeconds is 378 and Orchestrator.TestColdSeconds is null, so Orchestrator.TestSeconds is 1800. Once a cold figure is written there, the limit is three times the slower figure rounded up to the minute (warm alone would give 1140). A run is counted lost at its lost-at time, not after it (RunnerPool.Lost). No cold run has been timed on the runner yet, so the limit is still 30 minutes
 
 behaviour BEH-ORCH-18 "The merge job merges a private repo's built tickets as a train: one test run for several pull requests"
   in FEAT-AGENT-PIPELINE
@@ -1809,6 +1841,7 @@ behaviour BEH-ORCH-19 "A run that failed, was lost or changed nothing is tried a
   contract known cost: a pull request whose tests really fail is tested once more at each restart, and each release is a restart. A built ticket has no other way out of a block, as a reply wakes only new, ready and planned tickets
   contract my assumption: when Kit starts, a run that has been going since more than a lease before the start is counted lost at once, instead of getting a fresh lease from each restart. Each release restarts Kit, so runs days old stayed "running since before Kit last started" on Runs → Now
   contract built (Pipeline.TryAgain, Pipeline.Retryable, RunnerPool.Forgotten): retries are counted in memory per ticket and reset when a run moves it on
+  contract my assumption (claude-code-bot#151): a conflict block is a run's, not a decision, so it is retried at a restart like a failed test: "the conflict-resolution run failed", and a pull request not merged because it has a conflict, still conflicts after a resolve run, or conflicted again after 3. The ticket comes back built, and the merge job gives it a resolve run (BEH-ORCH-11). A red Actions check is still not retried. Kit#868, #878, #881, #889 and #895 were stopped for good before this, as a built ticket has no reply path
 
 behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
   in FEAT-AGENT-PIPELINE
@@ -2337,27 +2370,6 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
   contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
 
-# An agents page: the agents Kit knows, and for the one picked, its recent runs and its queue.
-# Moved here from kit.beh's FEAT-SERVER as BEH-UI-5 (kit.beh is the command-line layer). Its id
-# becomes BEH-AGENTPAGE-1, since BEH-UI-* is kit.beh's and BEH-AGENTS-1 is custom agents.
-feature FEAT-AGENTS "Agents"
-  stage development
-
-behaviour BEH-AGENTPAGE-1 "An agents page shows an agent's recent work and its queue, with unblocked items marked"
-  in FEAT-AGENTS
-  in FEAT-NAV
-  priority 3
-  actor engineer
-  review unreviewed
-  when opens page:KitAgents
-  then sees region:KitMain
-  contract my assumption: an agent is a project. Kit records no agent of its own: each project's runs and queue belong to the one agent that works it, so the list is the projects Kit reads (BEH-LIST-1)
-  contract my assumption: the page reads the same project data the project view reads, and recent runs from the operator's GET /api/runs. It writes nothing, and every request it makes is a GET
-  contract my assumption: the owner picks one agent from a list; until he does, no work or queue is shown. The picked agent's recent runs are newest first, each with its status, stage and cost, and only runs for that agent's project
-  contract my assumption: the queue reads approved and pending cards with no needs-context line as unblocked, in board order (priority, then corpus order), and pending cards with a needs-context line as waiting on him
-  contract my assumption: the navbar link is shown where Runs is, since the runs it reads are the operator's (BEH-USERS-9)
-  contract my assumption: a paused card counts as unblocked here, as the card reads; the board keeps it under Backlog
-
 # His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
 # time, and a health view of how much of each spec has tests.
 feature FEAT-INBOX "His items, one at a time"
@@ -2708,7 +2720,6 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   source defined kit-ui.notes.md#2026-11-06-1801
   review approved
   priority 5
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2716,6 +2727,13 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   contract it extends BEH-ARCH-1 and does not change it
   contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
   contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
+  contract built: stackDiagram.ts is plain code over the repo's files (RepoFile: path and text). Files are read in path order, so the same files give the same diagram whatever order they arrive in; no model or network is touched
+  contract built: the parts are declared in the repo: a `.kit/stack` file with `database <name> <engine>` and `external-api <name> <url>` lines, and any `Chart.yaml` is the Helm chart, named by its `name:` line (or its directory). Blank lines and # comments are skipped, and an unknown line declares nothing
+  contract my assumption: the `.kit/stack` file and its two keywords are my choice of where a repo declares its databases and external APIs; the owner has not named one, so it is to be confirmed or replaced
+  contract my assumption: a repo that declares none of the three draws no diagram and says so in words, rather than an empty picture
+  contract built: the Architecture tab draws the diagram under the decisions as a plain grouped list (Databases, External APIs, Helm chart), each with the file it came from. The layout is left open by the owner, so this is the simplest form that can be replaced
+  contract my assumption: the diagram is drawn only from what the repo declares; nothing from the spec (behaviours, features) is drawn
+  contract my assumption: the Architecture tab shows the diagram from the project's repoFiles, which the server does not serve yet; until it does, the tab shows the decisions alone, as before
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
@@ -3652,6 +3670,8 @@ behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, 
   contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
   contract built: a project's page has its own navigation, "This project": its chat (the Chat on that project), its board (the board filtered to it) and its notes, beside designing it with the spec agent; the main navigation keeps Projects, the Inbox and Settings
   contract my assumption: a project's configuration is, for now, the tabs its page already has (schedule, principles, architecture); its integrations and secrets join it with the integrations page (BEH-PROJCONF-1)
+  contract "Everything should be organised by project (repo). Just like in git. We should be able to view the boards, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: the 2026-11-23 note moves the Inbox and the runs into each project, so the "Inbox" in the built line above is the global Inbox only, and each project gets its own; the global level keeps Projects, the global Notifications and global Settings, and the project level holds its Chat, Inbox, board, runs and settings (BEH-SPACE-5)
 
 behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
   in FEAT-PROJECT-SPACES
@@ -3679,6 +3699,25 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
   contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
+
+behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and only the entry page, global notifications and global settings are kept above projects"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-23-2257
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "We should be able to view the boars, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: each project's page has its own Inbox (only items of that project), its runs (only that project's pipeline runs) and its settings (its configuration, BEH-SPACE-1), beside its Chat and board
+  contract my assumption: the global navigation keeps Projects, the global Notifications and the global Settings; global Settings holds what is not about one project, and project settings hold what is
+  contract my assumption: the global Inbox and the global board stay as an all-projects view for seeing everything (BEH-SPACE-3), and nothing is removed from them; this card adds the per-project views, it does not replace the global ones
+  contract my assumption: "isolated by repo, like GitHub" means a project's views never show another project's items, runs or config, and switching project is a navigation step, not a filter left on
+  contract my assumption: this card does not decide the pipeline or the data store; it changes what each page is scoped to
+  contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
+  contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
+  contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
 
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES
@@ -3731,3 +3770,40 @@ behaviour BEH-VIS-2 "A historic run shows what each stage cost, and which review
   then reports run:Costs
   review unreviewed
   contract my assumption: the costs come from the per-session record of BEH-COST-1 when it exists, and a stage with no recorded cost shows as unknown, never as zero
+
+# ── the runs page as cards, and a run's details page (moved from kit.beh, 2026-11-24: a screen, which kit.beh may not hold) ──
+
+behaviour BEH-UI-7 "The pipeline runs page lists the most recent run first"
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports order:NewestFirst
+  contract my assumption: the runs page is ordered by when each run started, newest
+  contract at the top; the older runs follow, and paging does not reverse that order
+  contract my assumption: this card is placed under the server area because the spec
+  contract for the runs page is not in this file; check with the owner
+  contract my assumption: each run on the runs page is a card, not a text row; BEH-UI-8 and BEH-UI-9 say what the card and its details page show
+
+behaviour BEH-UI-8 "Each recent run on the runs page is a card showing its state as a tag and its total cost"
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports layout:RunCards
+  contract my assumption: the runs page lists the recent runs as cards, not as a long block of text
+  contract my assumption: each card shows the run's state as a tag, for example running, passed, failed or blocked
+  contract my assumption: each card shows the run's total cost; a run whose cost is unknown shows unknown, not zero
+  contract my assumption: the card design is the builder's to choose, within the existing visual design system
+
+behaviour BEH-UI-9 "Clicking a run card opens that run's details page"
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports page:RunDetails
+  contract my assumption: the details page for a run is designed by the builder and shown for review; it is not a fixed layout in this spec
+  contract my assumption: the details page shows the run the card was clicked on, and a run that no longer exists shows a clear message, not an empty page

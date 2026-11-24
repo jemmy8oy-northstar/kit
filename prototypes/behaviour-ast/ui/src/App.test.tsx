@@ -213,3 +213,46 @@ describe('BEH-TICKET-1: the navbar and the board page show no feature board', ()
     expect(await screen.findByRole('heading', { name: /^Tickets/ })).toBeInTheDocument()
   })
 })
+
+describe('BEH-SPACE-5: the main navigation keeps only the global places above projects', () => {
+  // The same stub as BEH-NAV-1: the project list and the session answer, and the flags cannot be read,
+  // so every entry is shown. What is asserted is which entries are in the bar, not whether they are on.
+  function stubAll() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const notes = noNotes(url, init)
+        if (notes) return notes
+        const body = url.endsWith('/api/session')
+          ? { required: false, signedIn: true }
+          : url.endsWith('/api/projects')
+            ? projectsFixture
+            : null
+        return body
+          ? { ok: true, status: 200, statusText: 'OK', json: async () => body }
+          : { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-route' }) }
+      }),
+    )
+  }
+
+  it('BEH-SPACE-5 keeps Projects, Notifications and Settings in the main navigation, and not the Inbox or Runs', async () => {
+    window.history.pushState({}, '', '/')
+    stubAll()
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/')
+    expect(within(nav).getByRole('link', { name: 'Notifications' })).toHaveAttribute('href', '/notifications')
+    expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings')
+    expect(within(nav).queryByRole('link', { name: 'Inbox' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Runs' })).not.toBeInTheDocument()
+  })
+
+  it('BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation', async () => {
+    window.history.pushState({}, '', '/')
+    stubAll()
+    render(<App />)
+
+    expect(await screen.findByRole('link', { name: 'Inbox across every project' })).toHaveAttribute('href', '/inbox')
+  })
+})
