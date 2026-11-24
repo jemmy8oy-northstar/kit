@@ -560,6 +560,9 @@ behaviour BEH-TICKET-6 "Kit has two boards, the epic board and the ticket board,
   contract my assumption: the ticket board is the working view: every open ticket in its state column, ordered by priority, blocked tickets flagged
   contract my assumption: the feature board and the spec board leave the navbar and the boards; the feature and spec pages stay, so a ticket's spec can still be read from its feature branch
   contract my assumption: delete these kit-ui.beh cards, because the feature and spec boards are decommissioned and the ticket model replaces them: BEH-STAGE-1, BEH-STAGE-7, BEH-STAGE-8, BEH-STAGE-9, BEH-STAGE-12, BEH-BOARD-1; they live in kit-ui.beh, which this triage run does not edit, so a builder removes them only after the owner confirms this list
+  contract my assumption: delete these kit-ui.beh cards too, because they place features on the retired feature board: BEH-STAGE-10 and BEH-STAGE-11; they are not edited here, and a builder removes them only after the owner confirms this list
+  contract my assumption: BEH-BOARD-10 to BEH-BOARD-21 are left untouched, because they rank and badge the spec board's columns; their fate is decided after the owner confirms the list above
+  contract my assumption: BEH-EPIC-4 (kit-ui.beh) is the epic board's own page, not a third option on the BEH-STAGE-8 switch, because BEH-STAGE-8 is to be deleted
 
 behaviour BEH-TICKET-7 "A ticket names the epics it progresses toward, and may touch many features and specs"
   source defined kit.notes.md#2026-11-23-2255
