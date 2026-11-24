@@ -1,6 +1,7 @@
 # Kit runs on a ticket board and an epic board only
 Work-item: ticket-board-only-model
 Flag: decommissioning the feature and spec boards changes how Kit shows work, and triage may edit only kit.beh, so the kit-ui.beh cards that draw those boards are named for deletion on BEH-TICKET-6 and not edited here; the owner should confirm that list (level: high)
+Review: escalated — BEH-TICKET-6 now carries the earlier default, but the list still has gaps: BEH-BOARD-2 to 7 and 22 to 26 also hang off the columns BEH-BOARD-1 draws, yet they are neither listed nor parked with 10 to 21, and BEH-STAGE-3 to 6 and BEH-EPIC-1 to 4 all sit on page:KitStages, which goes with the feature board; he must say whether the spec board's rules (columns, priority order, pause, whose move, Denied) move onto the ticket board or are deleted, and which page the epic cards move to. ui/src/tickets.ts and ui/src/components/Tickets.tsx do not exist, so they are dropped from Files. Silence: leave every BEH-BOARD card untouched and read its rules as applying to the ticket board; mark only the eight cards BEH-TICKET-6 names as to be deleted, without removing them; keep BEH-STAGE-3 to 6 and BEH-EPIC-1 to 3 as they are; and keep BEH-TICKET-6's assumption that the epic board is its own page
 Cards:
 - BEH-TICKET-1
 - BEH-TICKET-6
@@ -11,8 +12,6 @@ Notes:
 Files:
 - prototypes/behaviour-ast/behaviours/kit.beh
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
-- ui/src/tickets.ts
-- ui/src/components/Tickets.tsx
 Context:
 Review: escalated — the deletion list is incomplete and clashes with a kept card: BEH-STAGE-10 and BEH-STAGE-11 also place features on the retired feature board, BEH-BOARD-10 to 19 and 21 rank and badge the spec board's columns and are orphaned if BEH-BOARD-1 goes, and kept BEH-EPIC-4 is "a third option on the BEH-STAGE-8 switch" on page:KitStages, so it cannot stand once BEH-STAGE-8 is deleted; he must say which of these cards are deleted, which are rewritten onto tickets, and where the epic board lives. Silence: take the feature and spec boards out of the navbar only; mark the six named cards plus BEH-STAGE-10 and BEH-STAGE-11 as to be deleted, with the reason beside each (BEH-TICKET-2), without removing them; leave BEH-BOARD-10 to 21 untouched; and give BEH-EPIC-4 an unreviewed assumption that the epic board is its own page, not a switch option
 Note (2026-11-23 22:55Z): kit pipeline has moved to a ticket board model instead of a spec board model. The epic to feature to spec hierarchy stays, but not on the boards. Kit should have an epic board and a ticket board only. A ticket may touch many features or specs but progresses toward one or a couple of epics. Kit stays big picture: tickets show granularly what Kit is up to, and epics show the goals and their status. Asked: move all projects to the ticket model and decommission the feature and spec boards.
