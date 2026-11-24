@@ -3488,6 +3488,12 @@ public class PipelineTests
     private static void EndRun(Rig rig, PoolClaim claim, bool succeeded) =>
         Assert.Equal(200, rig.Routes.Finished(claim.Token, Json(new { status = succeeded ? "finished" : "failed" })).Status);
 
+    // A failed run as the runner reports it, naming its step: "verdict exit 1" is a test run that did not pass.
+    private static void EndRunFailed(Rig rig, PoolClaim claim, string failure) =>
+        Assert.Equal(200, rig.Routes.Finished(claim.Token, Json(new { status = "failed", failure })).Status);
+
+    private const string Red = "verdict exit 1";
+
     [Fact]
     public async Task BEH_ORCH_11_with_the_merge_switch_off_a_conflict_still_stops_the_item_and_starts_no_run()
     {
@@ -3781,7 +3787,7 @@ public class PipelineTests
         using var rig = ResolveRig(null, BuiltSeed("a", 1));
         rig.Merges.Answer = NeedsTest(HeadA);
         await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
-        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
 
         var item = ItemOf(rig, "a");
         Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, null), (item.Stage, item.Status, item.StoppedBecause));
@@ -3814,7 +3820,7 @@ public class PipelineTests
         using var rig = ResolveRig(null, BuiltSeed("a", 1));
         rig.Merges.Answer = NeedsTest(HeadA);
         await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
-        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
         EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
 
@@ -3837,7 +3843,7 @@ public class PipelineTests
         {
             rig.Merges.Answer = NeedsTest(heads[run]);
             await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
-            EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false); // the test at this head fails
+            EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red); // the test at this head fails
             await rig.Pipeline.MergeTickAsync(CancellationToken.None);
             var fix = Assert.IsType<PoolClaim>(rig.Claim());
             Assert.Contains("You are the fix stage", fix.Task);
@@ -3846,7 +3852,7 @@ public class PipelineTests
 
         rig.Merges.Answer = NeedsTest(heads[2]);
         await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
-        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
 
         var item = ItemOf(rig, "a");
@@ -3857,13 +3863,42 @@ public class PipelineTests
         using var other = ResolveRig(null, BuiltSeed("b", 2));
         other.Merges.Answer = NeedsTest(HeadA);
         await other.Pipeline!.MergeTickAsync(CancellationToken.None);
-        EndRun(other, Assert.IsType<PoolClaim>(other.Claim()), false);
+        EndRunFailed(other, Assert.IsType<PoolClaim>(other.Claim()), Red);
         await other.Pipeline.MergeTickAsync(CancellationToken.None);
         EndRun(other, Assert.IsType<PoolClaim>(other.Claim()), false);
 
         var failed = ItemOf(other, "b");
         Assert.Equal((WorkItemStatus.Stopped, "the fix run failed"), (failed.Status, failed.StoppedBecause));
         Assert.True(Pipeline.Retryable(failed.StoppedBecause));
+    }
+
+    [Theory]
+    [InlineData("time exit 124")]
+    [InlineData("claude exit 1")]
+    [InlineData(null)]
+    public async Task BEH_ORCH_12_a_test_run_that_ran_out_of_time_or_crashed_stops_the_item_and_starts_no_fix(string? failure)
+    {
+        // A run that never reached its verdict says nothing about the code, so there is nothing for a fix run to fix.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        if (failure is null)
+        {
+            EndRun(rig, claim, false);
+        }
+        else
+        {
+            EndRunFailed(rig, claim, failure);
+        }
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "the project's tests failed at abc1234"), (item.Status, item.StoppedBecause));
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        Assert.Null(rig.Claim());
     }
 
     [Fact]

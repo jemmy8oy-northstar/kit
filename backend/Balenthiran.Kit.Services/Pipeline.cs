@@ -78,6 +78,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>claude-code-bot#151: the most fix runs one ticket gets for a red test run, however often its head moves.</summary>
     public const int MaxFixRuns = 2;
 
+    /// <summary>How a test run that reached its verdict and did not pass reports itself (runner/entrypoint.sh, step=verdict).</summary>
+    public const string RedVerdict = "verdict exit ";
+
     // BEH-ORCH-12: the head commit a Kit test run passed at, per ticket, which the merge look hands the merger; and the commit
     // a test run in flight was started for. In memory only, like resolved: a restart forgets them and a ticket may get one more test run.
     private readonly Dictionary<(string App, string Slug), string> tested = [];
@@ -622,10 +625,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                         tries.Remove(key);
                     }
                 }
-                else if (sha is not null && jobs?.Contains(PipelineStage.Merge) == true)
+                else if (sha is not null && jobs?.Contains(PipelineStage.Merge) == true && failure is { } step && step.StartsWith(RedVerdict, StringComparison.Ordinal))
                 {
                     // claude-code-bot#151: a red head is not a decision. The ticket stays built and the next merge look starts a
-                    // fix run at this head (MergeOneAsync), as a conflict starts a resolve run, rather than stopping here.
+                    // fix run at this head (MergeOneAsync), as a conflict starts a resolve run, rather than stopping here. Only a
+                    // run that reached its verdict and did not pass says the tests are red: one that ran out of time or crashed
+                    // says nothing about the code, and still stops as before.
                     failedAt[key] = sha;
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
                 }
