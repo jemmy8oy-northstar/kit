@@ -1013,10 +1013,15 @@
     }
   ],
   "BEH-UI-6": [
-    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "keeps each ticket in the column of its state, and leaves merged tickets off the board (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "keeps each ticket in the column of its state, and puts merged tickets in a closed column after the open ones (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "still drops merged tickets from openTickets, so the open list and its count are unchanged by the closed column (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "returns no closed column when no ticket is merged (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "orders the closed column by priority, and a blocked merged ticket sits above the unblocked ones (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "places the closed column after an unlisted-state column, which goes after the listed ones (BEH-UI-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "orders each column by priority, 1 first and 5 last (BEH-UI-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "within one priority lists a blocked ticket above the unblocked ones, and never above a higher priority (BEH-UI-6)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows the open tickets in one column per state, each column by priority with blocked first within a priority (BEH-UI-6)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows the open tickets in one column per state, each column by priority with blocked first within a priority (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows each open state as a labelled column, then a closed column last for merged tickets, and no column for a state with none open (BEH-UI-6)" }
   ],
   "BEH-WRITE-1": [
     {

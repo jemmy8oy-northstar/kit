@@ -28,3 +28,14 @@ Test plan:
 - BEH-UI-6 (ui/src/pages/Board.test.tsx, the "Already merged" test near line 203): the same tickets still produce no open-count change in the section heading.
 - BEH-UI-6 (ui/src/tickets.test.ts, "orders each column by priority..." and "within one priority lists a blocked ticket..."): unchanged; they must still pass for open columns.
 - Note for builder: the "merged and resolved" reading (a ticket in state merged) is not yet a contract line on the card. The card is not edited at this stage, so record that contract when the builder works the card.
+
+Built:
+- BEH-UI-6 (ui/src/tickets.test.ts, "keeps each ticket in the column of its state, and puts merged tickets in a closed column after the open ones"): replaces the "leaves merged tickets off the board" assertion; merged lands in a "closed" column last.
+- BEH-UI-6 (ui/src/tickets.test.ts, "still drops merged tickets from openTickets, so the open list and its count are unchanged by the closed column"): new.
+- BEH-UI-6 (ui/src/tickets.test.ts, "returns no closed column when no ticket is merged"): new.
+- BEH-UI-6 (ui/src/tickets.test.ts, "orders the closed column by priority, and a blocked merged ticket sits above the unblocked ones"): new.
+- BEH-UI-6 (ui/src/tickets.test.ts, "places the closed column after an unlisted-state column, which goes after the listed ones"): new.
+- BEH-UI-6 (ui/src/tickets.test.ts, "orders each column by priority..." and "within one priority lists a blocked ticket..."): unchanged, still pass.
+- BEH-UI-6 (ui/src/pages/Board.test.tsx, "shows each open state as a labelled column, then a closed column last for merged tickets..."): replaces the "no merged region" assertion; the closed region is last, holds "Merged one", and the Tickets total stays 2. Its column-list expectation now includes "closed".
+- BEH-UI-6 (ui/src/pages/Board.test.tsx, "leads a project's own board with its open tickets..." with the "Already merged" ticket): adds the closed column count "closed 1"; the Tickets total stays 2.
+Full suite: 2179 backend tests (dotnet test ./backend) and 632 UI tests (npm test, 5 todo) ran; all passed. Lint, build and both Stage-0 gates (kit, kit-ui) also pass.
