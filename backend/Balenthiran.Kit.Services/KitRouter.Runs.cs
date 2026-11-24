@@ -70,12 +70,31 @@ public sealed partial class KitRouter
                 StoppedBecause = i.StoppedBecause,
                 PullRequest = i.PullRequest,
                 Merged = i.Merged,
+                MergeNote = pipeline!.MergeNoteOf(i),
                 Flag = bundle?.Flag,
                 Review = bundle?.Review?.Outcome.ToString().ToLowerInvariant(),
                 ReviewNote = bundle?.Review?.Note,
             };
         }).ToList();
         return Json(200, new PipelineItemList { On = pipeline is not null, Items = items });
+    }
+
+    /// <summary>
+    /// <c>GET /api/runs/visibility</c> (BEH-VIS-1, BEH-VIS-2): the agents running now with their stage and any flagged review,
+    /// and the finished work items with each stage's cost and the reviews they requested. Operator only, as runs are. No
+    /// session cost record exists yet (BEH-COST-1), so every stage cost is null: unknown, never zero.
+    /// </summary>
+    private KitResponse RunVisibilityView(string? cookie)
+    {
+        if (RunsRefusal(cookie) is { } refused)
+        {
+            return refused;
+        }
+
+        return Json(200, RunVisibilityBuilder.Build(
+            agentRuns.List(),
+            (project, slug) => pipeline?.Bundle(project, slug)?.Flag,
+            NoStageCostRecord.Instance));
     }
 
     /// <summary>

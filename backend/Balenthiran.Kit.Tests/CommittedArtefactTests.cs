@@ -111,4 +111,152 @@ public class CommittedArtefactTests
             .ToList();
         Assert.True(offenders.Count == 0, $"these goldens carry a timestamp or an absolute path: {string.Join(", ", offenders)}");
     }
+
+    private static readonly string Beh = Path.Combine(RepoLayout.Behaviours, "kit-ui.beh");
+    private static readonly string Notes = Path.Combine(RepoLayout.Behaviours, "kit-ui.notes.md");
+    private static readonly string Sched = Path.Combine(RepoLayout.Behaviours, "kit-ui.schedule");
+
+    /// <summary>The lines of one behaviour: its header and the indented lines under it, up to the next top-level line.</summary>
+    private static string Block(string text, string id)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        var start = Array.FindIndex(lines, l => l.StartsWith($"behaviour {id} ", StringComparison.Ordinal));
+        Assert.True(start >= 0, $"no behaviour {id} in kit-ui.beh");
+
+        var end = start + 1;
+        while (end < lines.Length && (lines[end].Length == 0 || char.IsWhiteSpace(lines[end][0])))
+        {
+            end++;
+        }
+
+        return string.Join("\n", lines[start..end]);
+    }
+
+    /// <summary>The body of one dated section of kit-ui.notes.md, up to the next heading.</summary>
+    private static string NoteSection(string heading)
+    {
+        var lines = File.ReadAllText(Notes).Replace("\r\n", "\n").Split('\n');
+        var start = Array.FindIndex(lines, l => l == "## " + heading);
+        Assert.True(start >= 0, $"no note '## {heading}' in kit-ui.notes.md");
+
+        var end = start + 1;
+        while (end < lines.Length && !lines[end].StartsWith("## ", StringComparison.Ordinal))
+        {
+            end++;
+        }
+
+        return string.Join("\n", lines[(start + 1)..end]);
+    }
+
+    private static IReadOnlyList<Balenthiran.Kit.Abstractions.DataModels.IBehaviour> Corpus() =>
+        new CorpusParser().Parse(File.ReadAllText(Beh), "kit-ui.beh");
+
+    // ---- BEH-USERS-5: the vault answer, recorded ---------------------------------------------
+
+    [Fact]
+    public void BEH_USERS_5_records_the_OCI_Vault_answer_with_its_source_note()
+    {
+        var card = Block(File.ReadAllText(Beh), "BEH-USERS-5");
+
+        Assert.Contains("contract his answer (kit-ui.notes.md#2026-11-03-2337): OCI Vault for now", card);
+        Assert.Contains("OCI Vault for now", NoteSection("2026-11-03 23:37Z"));
+    }
+
+    [Fact]
+    public void BEH_USERS_5_says_Kit_writes_a_secret_but_can_never_read_it_back()
+    {
+        var card = Block(File.ReadAllText(Beh), "BEH-USERS-5");
+
+        Assert.Contains("Kit can write a value but never read it back", card);
+        Assert.Contains("cannot read one back", card);
+    }
+
+    [Fact]
+    public void BEH_USERS_5_keeps_the_storage_choice_behind_a_seam()
+    {
+        var card = Block(File.ReadAllText(Beh), "BEH-USERS-5");
+
+        Assert.Contains("The storage choice stays behind a seam", card);
+    }
+
+    // ---- BEH-USERS-5: its priority is below BEH-USERS-9's ---------------------------------------
+
+    [Fact]
+    public void BEH_USERS_5_is_pending_at_priority_3_below_BEH_USERS_9_as_the_owner_asked()
+    {
+        var corpus = Corpus();
+        var secrets = corpus.Single(b => b.Id == "BEH-USERS-5");
+        var agent = corpus.Single(b => b.Id == "BEH-USERS-9");
+
+        Assert.True(secrets.Pending);
+        Assert.Equal(3, secrets.Priority);
+        Assert.Equal(2, agent.Priority);
+        Assert.True(agent.Priority < secrets.Priority, "BEH-USERS-9 must be the sooner one");
+    }
+
+    // ---- BEH-USERS-9: pending at priority 2 and first on the schedule ---------------------------
+
+    [Fact]
+    public void BEH_USERS_9_is_pending_at_priority_2_and_stands_before_BEH_USERS_5_on_the_schedule()
+    {
+        var agent = Corpus().Single(b => b.Id == "BEH-USERS-9");
+        var ids = Schedule.Parse(File.ReadAllText(Sched));
+
+        Assert.True(agent.Pending);
+        Assert.Equal(2, agent.Priority);
+        Assert.Contains("BEH-USERS-9", ids);
+        Assert.Contains("BEH-USERS-5", ids);
+        Assert.True(ids.IndexOf("BEH-USERS-9") < ids.IndexOf("BEH-USERS-5"));
+    }
+
+    // ---- BEH-SCHED-2: a reorder changes only the order ------------------------------------------
+
+    /// <summary>A built id may stay listed and shows as done (the schedule's own rule), so only duplicates and unknown ids are wrong.</summary>
+    [Fact]
+    public void BEH_SCHED_2_the_schedule_lists_each_id_once_and_each_is_a_behaviour_in_the_corpus()
+    {
+        var known = Corpus().Select(b => b.Id).ToHashSet(StringComparer.Ordinal);
+        var ids = Schedule.Parse(File.ReadAllText(Sched));
+        var listed = File.ReadAllLines(Sched)
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0 && !l.StartsWith('#'))
+            .Select(l => l.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries)[0])
+            .ToList();
+
+        Assert.Equal(listed.Count, ids.Count);
+        Assert.Equal(ids.Count, ids.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(ids, id => Assert.Contains(id, known));
+    }
+
+    [Theory]
+    [InlineData("up")]
+    [InlineData("down")]
+    public void BEH_SCHED_2_a_reorder_of_the_real_schedule_keeps_the_same_ids(string action)
+    {
+        var before = Schedule.Parse(File.ReadAllText(Sched));
+
+        var (after, error, _) = Schedule.Change(before, action, "BEH-USERS-9");
+
+        Assert.Null(error);
+        Assert.NotNull(after);
+        Assert.Equal(before.OrderBy(x => x, StringComparer.Ordinal), after!.OrderBy(x => x, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// BEH-UI-7, BEH-UI-8, BEH-UI-9: the runs page's cards and details are declared in kit-ui.beh beside the run page
+    /// (BEH-VIS-1, BEH-VIS-2), and not in kit.beh, which is the command-line layer.
+    /// </summary>
+    [Fact]
+    public void BEH_UI_9_the_run_cards_and_details_are_declared_in_kit_ui_beh_beside_the_run_page()
+    {
+        var ui = File.ReadAllText(Path.Combine(RepoLayout.Behaviours, "kit-ui.beh"));
+        var kit = File.ReadAllText(Path.Combine(RepoLayout.Behaviours, "kit.beh"));
+
+        foreach (var id in new[] { "BEH-UI-7", "BEH-UI-8", "BEH-UI-9", "BEH-VIS-1", "BEH-VIS-2" })
+        {
+            Assert.Contains($"behaviour {id} \"", ui, StringComparison.Ordinal);
+            Assert.DoesNotContain($"behaviour {id} \"", kit, StringComparison.Ordinal);
+        }
+        Assert.True(ui.IndexOf("behaviour BEH-UI-8 \"", StringComparison.Ordinal) > ui.IndexOf("behaviour BEH-VIS-2 \"", StringComparison.Ordinal));
+    }
 }

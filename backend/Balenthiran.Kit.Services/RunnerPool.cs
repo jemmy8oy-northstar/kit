@@ -6,8 +6,8 @@ namespace Balenthiran.Kit.Services;
 /// <summary>
 /// BEH-USERS-9's runner pool: a fixed set of runner pods ask Kit for the next queued run, so Kit needs no
 /// cluster access and never starts anything. Queued runs wait here IN MEMORY ONLY: the run token and the task
-/// are never stored (the store keeps the token's SHA-256), so a restart forgets what was waiting and those runs
-/// stay queued until the operator starts them again. One live run per project: a run waits while another on its
+/// are never stored (the store keeps the token's SHA-256), so a restart forgets what was waiting, and those runs are
+/// failed at the first claim after it (<see cref="Forgotten"/>). One live run per project: a run waits while another on its
 /// project has been handed out and is not over; other projects are not held up.
 /// </summary>
 public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null) : IAgentRunLauncher
@@ -47,6 +47,10 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     private readonly Dictionary<string, DateTimeOffset> handedOutAt = new(StringComparer.Ordinal);
     // Run id -> its time limit in seconds, null for none (BEH-ORCH-17). Kept and cleared with handedOutAt.
     private readonly Dictionary<string, int?> limitOf = new(StringComparer.Ordinal);
+    // BEH-ORCH-17: when this pool began, and the runs still going then that a restart forgot (see Forgotten).
+    private readonly DateTimeOffset bornAt = (clock ?? TimeProvider.System).GetUtcNow();
+    private readonly HashSet<string> adopted = new(StringComparer.Ordinal);
+    private bool lookedForForgotten;
     private TaskCompletionSource signal = NewSignal();
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -144,37 +148,48 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
                 }
             }
 
-            for (var i = 0; i < queue.Count; i++)
-            {
-                var item = queue[i];
-                var run = Find(item.RunId);
-                if (run is null || run.Status != AgentRunStatus.Queued)
-                {
-                    queue.RemoveAt(i--);
-                    continue;
-                }
-
-                if (handedOut.ContainsKey(run.Project))
-                {
-                    continue;
-                }
-
-                queue.RemoveAt(i--);
-                if (!store.StartIfQueued(run.Id))
-                {
-                    continue;
-                }
-
-                handedOut[run.Project] = run.Id;
-                repoByRun[run.Id] = item.Repo;
-                handedOutAt[run.Id] = Now;
-                limitOf[run.Id] = item.MaxSeconds;
-                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage, item.MaxSeconds);
-            }
-
-            return null;
+            // BEH-ORCH-20: a test or merge run goes first, oldest first, then everything else. With one runner, a test queued
+            // behind another project's build waited up to two hours, and every built pull request waited with it.
+            return Take(true) ?? Take(false);
         }
     }
+
+    // The oldest queued run whose project is free, test and merge runs only when firstOnly. Called under gate.
+    private PoolClaim? Take(bool firstOnly)
+    {
+        for (var i = 0; i < queue.Count; i++)
+        {
+            var item = queue[i];
+            var run = Find(item.RunId);
+            if (run is null || run.Status != AgentRunStatus.Queued)
+            {
+                queue.RemoveAt(i--);
+                continue;
+            }
+
+            if (handedOut.ContainsKey(run.Project) || (firstOnly && !GoesFirst(run.Stage)))
+            {
+                continue;
+            }
+
+            queue.RemoveAt(i--);
+            if (!store.StartIfQueued(run.Id))
+            {
+                continue;
+            }
+
+            handedOut[run.Project] = run.Id;
+            repoByRun[run.Id] = item.Repo;
+            handedOutAt[run.Id] = Now;
+            limitOf[run.Id] = item.MaxSeconds;
+            return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage, item.MaxSeconds);
+        }
+
+        return null;
+    }
+
+    /// <summary>BEH-ORCH-20: the stages a runner takes before any other: a test run, and a merge run resolving a conflict.</summary>
+    public static bool GoesFirst(string? stage) => stage is "test" or "resolve";
 
     /// <summary>The repo of a run this pool handed out that is not over, else null (never handed out, over, or forgotten at a restart).</summary>
     public string? RepoOf(string runId)
@@ -208,7 +223,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
         lock (gate)
         {
             return handedOutAt
-                .Where(h => !OverOrGone(h.Key))
+                .Where(h => !adopted.Contains(h.Key) && !OverOrGone(h.Key))
                 .OrderBy(h => h.Value)
                 .Select(h =>
                 {
@@ -249,10 +264,40 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     {
         lock (gate)
         {
-            if (repoByRun.ContainsKey(runId))
+            if (repoByRun.ContainsKey(runId) || adopted.Contains(runId))
             {
                 handedOutAt[runId] = DateTimeOffset.MinValue;
             }
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-17: the runs a restart forgot, looked for once. A run queued before this pool began can never be handed
+    /// out (its token went with the restart), so it is returned for the caller to fail. A run already going then may
+    /// still have a runner that reports, so it is not failed now: it gets the lease from when this pool began (one made more than a lease earlier goes at once), and
+    /// <see cref="Lost"/> gives it out once that passes, as for any run. Without this, both stayed going for ever.
+    /// </summary>
+    public IReadOnlyList<string> Forgotten()
+    {
+        lock (gate)
+        {
+            if (lookedForForgotten)
+            {
+                return [];
+            }
+
+            var before = store.List().Where(r => r.Started < bornAt && !AgentRunStatus.IsOver(r.Status)).ToList();
+            lookedForForgotten = true;
+            foreach (var r in before.Where(r => r.Status == AgentRunStatus.Running && !handedOutAt.ContainsKey(r.Id)))
+            {
+                adopted.Add(r.Id);
+                // BEH-ORCH-19: a run made more than a lease before this pool began goes at once, else every restart (each release
+                // is one) gave a run days old a fresh lease. Started is when it was made, not taken, so a younger one keeps the restart's.
+                handedOutAt[r.Id] = bornAt - r.Started > Lease ? r.Started : bornAt;
+                limitOf[r.Id] = null;
+            }
+
+            return before.Where(r => r.Status == AgentRunStatus.Queued && queue.All(i => i.RunId != r.Id)).Select(r => r.Id).ToList();
         }
     }
 

@@ -225,6 +225,99 @@ describe('Board', () => {
     tickets = {}
   })
 
+  it('shows the open tickets in one column per state, each column by priority with blocked first within a priority (BEH-UI-6)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'p5', title: 'Five', state: 'ready', priority: 5, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'p1', title: 'One', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'blk1', title: 'Blocked one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: 'which?', comments: [] },
+          { slug: 'n2', title: 'Newer', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    const ready = within(section.getByRole('region', { name: 'ready' }))
+    expect(ready.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Blocked one blk1', 'One p1', 'Five p5'])
+    const fresh = within(section.getByRole('region', { name: 'new' }))
+    expect(fresh.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Newer n2'])
+    tickets = {}
+  })
+
+  it('shows each open state as a labelled column, and no column for a state with none open (BEH-UI-6)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'r1', title: 'Ready one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'n1', title: 'New one', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'm1', title: 'Merged one', state: 'merged', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const root = await screen.findByRole('region', { name: /Tickets/ })
+    const section = within(root)
+    const columns = Array.from(root.querySelectorAll('section.ticket-column'))
+    expect(columns.map((c) => c.getAttribute('data-state'))).toEqual(['new', 'ready'])
+    expect(section.getByRole('region', { name: 'new' })).toHaveAttribute('data-state', 'new')
+    expect(section.getByRole('region', { name: 'ready' })).toHaveAttribute('data-state', 'ready')
+    expect(section.queryByRole('region', { name: 'planned' })).not.toBeInTheDocument()
+    expect(section.queryByRole('region', { name: 'built' })).not.toBeInTheDocument()
+    expect(section.queryByRole('region', { name: 'merged' })).not.toBeInTheDocument()
+    tickets = {}
+  })
+
+  it("gives each column a visible heading with its open-ticket count, which adds up to the Tickets total (BEH-UI-6)", async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'r1', title: 'Ready one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'r2', title: 'Ready two', state: 'ready', priority: 2, cards: [], pullRequest: null, blockedBecause: 'which?', comments: [] },
+          { slug: 'n1', title: 'New one', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 3')
+    expect(within(section.getByRole('region', { name: 'ready' })).getByRole('heading', { level: 4 })).toHaveTextContent('ready 2')
+    expect(within(section.getByRole('region', { name: 'new' })).getByRole('heading', { level: 4 })).toHaveTextContent('new 1')
+    const counts = ['ready', 'new'].map((s) => Number(section.getByRole('region', { name: s }).querySelector('.board-count')?.textContent))
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(3)
+    tickets = {}
+  })
+
+  it('lays the state columns out as siblings in one .board container, so they sit side by side (BEH-UI-6)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'r1', title: 'Ready one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'n1', title: 'New one', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    const ready = section.getByRole('region', { name: 'ready' })
+    const fresh = section.getByRole('region', { name: 'new' })
+    expect(ready.parentElement).toBe(fresh.parentElement)
+    expect(ready.parentElement).toHaveClass('board')
+    tickets = {}
+  })
+
   it('takes his reply under a blocked ticket, posts it to that ticket, and says the first agent will read it (BEH-ORCH-16 slice 3)', async () => {
     const blocked = { slug: 'move-spec', title: 'Move the spec', state: 'new', priority: 3, cards: [], pullRequest: null, blockedBecause: 'which title?', comments: [] }
     const ready = { slug: 'sorting', title: 'Sort the list', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] }
@@ -419,6 +512,43 @@ describe('Board', () => {
     expect(titles).toEqual(['board-review', 'board-proposed', 'board-backlog', 'board-queue', 'board-blocked', 'board-in-progress', 'board-done', 'board-denied'])
   })
 
+  it('puts a card that waits on him in Blocked, not In progress, even with a needs-context line and nothing else (BEH-BOARD-18)', async () => {
+    details.alpha.push(beh('A-WAITS-ON-HIM', { pending: true, needsContext: 'which database' }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Blocked').findByText('A-WAITS-ON-HIM')
+
+      // Blocked sits before In progress, and what waits on him is not started, so In progress holds only the schedule's next.
+      expect(column('Blocked').getByText('A-WAITS-ON-HIM')).toBeInTheDocument()
+      expect(column('In progress').queryByText('A-WAITS-ON-HIM')).not.toBeInTheDocument()
+      expect(column('In progress').getAllByRole('listitem').map((li) => li.querySelector('.id')!.textContent)).toEqual(['A-NEXT'])
+      const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))
+      expect(regions.indexOf('board-blocked')).toBeLessThan(regions.indexOf('board-in-progress'))
+    } finally {
+      details.alpha.splice(-1)
+    }
+  })
+
+  it('an approved card that was paused lands in the Queue, not In progress or Backlog (BEH-BOARD-18, BEH-BOARD-25)', async () => {
+    // Approving a paused card removes its paused line (BEH-BOARD-25): it is now plain pending work.
+    details.alpha.push(beh('A-RESUMED', { pending: true, priority: 2 }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Queue').findByText('A-RESUMED')
+
+      expect(column('Queue').getByText('A-RESUMED')).toBeInTheDocument()
+      expect(column('In progress').queryByText('A-RESUMED')).not.toBeInTheDocument()
+      expect(column('Backlog').queryByText('A-RESUMED')).not.toBeInTheDocument()
+      expect(column('Queue').getByText('A-RESUMED').closest('li')!.textContent).not.toMatch(/paused/)
+    } finally {
+      details.alpha.splice(-1)
+    }
+  })
+
   it('a schedule that cannot be read says so, and its pending behaviours stay on the board in the queue', async () => {
     vi.stubGlobal(
       'fetch',
@@ -551,6 +681,34 @@ describe('Board', () => {
       const link = column('Proposed').getByRole('link', { name: 'title of A-PROPOSED' })
       await vi.waitFor(() => expect(document.activeElement).toBe(link))
       expect(scrolled).toEqual([link.closest('li')])
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
+  it('centres the card it comes back to on screen, and brings the column to its start when the card has moved (BEH-BOARD-15)', async () => {
+    const calls: { el: Element; opts: ScrollIntoViewOptions }[] = []
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element, opts?: ScrollIntoViewOptions) {
+      calls.push({ el: this, opts: opts ?? {} })
+    })
+    try {
+      mockApi()
+      const first = renderBoard('/board?project=alpha&col=proposed&card=alpha/A-PROPOSED')
+      await loaded()
+      await vi.waitFor(() => expect(calls).toHaveLength(1))
+      // Still in its column: the card is centred vertically, and the column starts at the left edge.
+      expect(calls[0].el).toBe(column('Proposed').getByRole('link', { name: 'title of A-PROPOSED' }).closest('li'))
+      expect(calls[0].opts).toMatchObject({ block: 'center', inline: 'start' })
+      first.unmount()
+
+      // Moved out of Proposed (A-BACKLOG is not there): the column is what comes into view, not the card.
+      calls.length = 0
+      renderBoard('/board?project=alpha&col=proposed&card=alpha/A-BACKLOG')
+      await loaded()
+      await vi.waitFor(() => expect(calls).toHaveLength(1))
+      expect(calls[0].el).toBe(document.querySelector('section[data-col="proposed"]'))
+      expect(calls[0].opts).toMatchObject({ inline: 'start' })
+      expect(calls[0].opts.block).not.toBe('center')
     } finally {
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
     }

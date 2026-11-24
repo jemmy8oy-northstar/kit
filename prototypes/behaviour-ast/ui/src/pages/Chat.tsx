@@ -601,7 +601,7 @@ function itemLine(card: InboxCard): Line {
 
 /** His 19:28Z note: what Kit is, and that the chat changes nothing itself. */
 const HELP =
-  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, save what you agree as a note, or ask the coding agent a technical question, which it answers when it next works. Notes are also a quick brain-dump."
+  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. Kit can: approve, deny (with what is true instead) or answer the top item, each with Undo; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent, which answers it when it next works; and read whole spec cards. Kit cannot reorder, pause, schedule or change the priority of items, or edit the spec. Asked for any of those, it leaves a note and the coding agent makes the change. Notes are also a quick brain-dump."
 const CUT_SHORT = 'That reply was cut short. Ask me to go on.'
 const helpLine = (): Line => ({ from: 'kit', text: HELP, tell: '' })
 const asksHelp = (text: string) => /^\/?help$/i.test(text.trim())

@@ -39,6 +39,26 @@ public static class TriageStage
 
     private const int MaxTicketCards = 4;
 
+    /// <summary>BEH-TICKET-3: the text that starts the default a blocked ticket's question carries, for triage to act on if he stays silent.</summary>
+    public const string SilencePrefix = "Silence: ";
+
+    /// <summary>BEH-TICKET-3: the default written on a blocked ticket's question (the words after <see cref="SilencePrefix"/>), or null when it has none.</summary>
+    public static string? DefaultOf(string? blockedBecause)
+    {
+        var at = blockedBecause?.IndexOf(SilencePrefix, StringComparison.Ordinal) ?? -1;
+        var text = at < 0 ? "" : blockedBecause![(at + SilencePrefix.Length)..].Trim();
+        return text.Length == 0 ? null : text;
+    }
+
+    /// <summary>
+    /// BEH-TICKET-5: what the reason for stopping an item on a bundle that fails its shape check begins with, before the parser's line-named reason.
+    /// </summary>
+    public const string MalformedPrefix = "its bundle is malformed: ";
+
+    /// <summary>BEH-TICKET-5: whether a ticket stopped because its bundle failed its shape check, so triage must rewrite it.</summary>
+    public static bool IsMalformed(PipelineTicket ticket) =>
+        ticket.StoppedBecause?.StartsWith(MalformedPrefix, StringComparison.Ordinal) == true;
+
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
 
@@ -62,15 +82,20 @@ public static class TriageStage
         IReadOnlyList<(string Ref, string Text)> notes,
         IReadOnlyList<(string Id, string Title)> cards,
         IReadOnlyList<PipelineTicket>? tickets = null,
-        string? specPath = null)
+        string? specPath = null,
+        IReadOnlyList<PipelineTicket>? silent = null,
+        IReadOnlyList<PipelineTicket>? malformed = null)
     {
-        var ticketSection = TicketSection(tickets ?? []);
+        // BEH-TICKET-5: a ticket whose bundle is malformed is listed under its own heading, not among the open tickets.
+        var ticketSection = TicketSection((tickets ?? []).Where(t => !IsMalformed(t)).ToList());
+        var malformedSection = MalformedSection(malformed ?? []);
+        var silentSection = SilentSection(silent ?? []);
         var spec = specPath ?? "the project's spec file";
         var sb = new StringBuilder();
         sb.Append("You are the triage stage for project \"").Append(project).Append("\". Your job is to turn notes into a spec change and collect context, not to write tests or code.\n\n");
         sb.Append("Steps:\n");
         sb.Append("1. Read the new notes below and the existing cards. Open a file only when a note needs it; read as little as you can.\n");
-        sb.Append("2. For each note decide which existing cards it touches, or that a new card is needed. Do not edit any note.\n");
+        sb.Append("2. For each note decide which existing cards it touches, or that a new card is needed. Do not edit any note. A ticket listed under \"Blocked, no reply from him\" has no answer from him: act on the default written on it, and report its bundle under that ticket's slug.\n");
         sb.Append("3. Group notes in the same domain into ONE work item. Give each work item a slug: lower-case words joined by hyphens, at most ")
             .Append(ContextBundle.MaxSlug).Append(" characters.\n");
         sb.Append("4. For each work item, on branch ").Append(Branch("<work-item-slug>"))
@@ -105,7 +130,7 @@ public static class TriageStage
             var part = $"\n### {reference}\n" + (shown.Length < text.Length
                 ? $"{shown}\n[truncated: {text.Length - shown.Length} more characters, read {reference} for the rest]\n"
                 : $"{shown}\n");
-            if (sb.Length + 40 + used + part.Length + ticketSection.Length > KitRouter.MaxTask - Reserve)
+            if (sb.Length + 40 + used + part.Length + ticketSection.Length + malformedSection.Length + silentSection.Length > KitRouter.MaxTask - Reserve)
             {
                 break;
             }
@@ -134,6 +159,8 @@ public static class TriageStage
         }
 
         sb.Append(ticketSection);
+        sb.Append(malformedSection);
+        sb.Append(silentSection);
         sb.Append("\n## Existing cards (").Append(cards.Count).Append(")\n");
         var listed = 0;
         foreach (var (id, title) in cards)
@@ -197,6 +224,76 @@ public static class TriageStage
         if (listed < open.Count)
         {
             sb.Append('[').Append(open.Count - listed).Append(" more open tickets not listed: a note about one of them may open a duplicate]\n");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// BEH-TICKET-3: the blocked tickets he has not answered, each with the default written on its question, as
+    /// "- slug [state] title: default" lines under a heading triage is told to act on. Empty when there are none.
+    /// </summary>
+    public static string SilentSection(IReadOnlyList<PipelineTicket> silent)
+    {
+        if (silent.Count == 0)
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder("\n## Blocked, no reply from him (act on the default written on each)\n");
+        var listed = 0;
+        foreach (var t in silent.Take(MaxTickets))
+        {
+            var line = $"- {t.Slug} [{t.State.ToString().ToLowerInvariant()}] {Short(t.Title, MaxTicketTitle)}: {DefaultOf(t.BlockedBecause)}\n";
+            if (sb.Length + line.Length > MaxTicketChars - 80)
+            {
+                break;
+            }
+
+            sb.Append(line);
+            listed++;
+        }
+
+        if (listed < silent.Count)
+        {
+            sb.Append('[').Append(silent.Count - listed).Append(" more blocked tickets not listed]\n");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// BEH-TICKET-5: the tickets whose bundle failed its shape check, as "- slug [state] title: reason" lines under a heading
+    /// triage is told to act on: rewrite that bundle, keep its cards and notes, and report it under the ticket's slug. Empty
+    /// when there is none.
+    /// </summary>
+    public static string MalformedSection(IReadOnlyList<PipelineTicket> malformed)
+    {
+        if (malformed.Count == 0)
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder("\n## Malformed bundles (rewrite each)\n");
+        sb.Append("Each bundle below failed its shape check, so no builder can start on it. For each one, on its branch ")
+            .Append(Branch("<slug>")).Append(", open ").Append(BundlePath("<slug>"))
+            .Append(" and rewrite it to the shape above: sections Title, Work-item, Cards, Notes, Files, Context in that order, every list item on its own \"- \" line. Keep its Cards and Notes items unchanged and change nothing else. Do not edit the spec for it. Commit and push, and report the bundle under that ticket's slug.\n");
+        var listed = 0;
+        foreach (var t in malformed)
+        {
+            var line = $"- {t.Slug} [{t.State.ToString().ToLowerInvariant()}] {Short(t.Title, MaxTicketTitle)}: {Short(t.StoppedBecause ?? "", 200)}\n";
+            if (sb.Length + line.Length > MaxTicketChars - 80)
+            {
+                break;
+            }
+
+            sb.Append(line);
+            listed++;
+        }
+
+        if (listed < malformed.Count)
+        {
+            sb.Append('[').Append(malformed.Count - listed).Append(" more malformed bundles not listed]\n");
         }
 
         return sb.ToString();

@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, fetchSession, signIn, signInWithGitHub } from '../api/client'
 import type { SessionState } from '../api/types'
+import { ConnectGitHub } from '../pages/Settings'
 import { githubNavigation } from './githubNavigation'
 import Loading from './Loading'
 import { SessionContext } from './session'
+
+/**
+ * BEH-AUTH-1: a signed-in test user who has not connected GitHub gets the connect
+ * step and nothing else. The operator is not held to it (his projects run on
+ * Kit's own App). Without `gitHubInstall` this Kit cannot offer the connect at
+ * all, so holding anyone at it would lock them out of their projects.
+ */
+function needsGitHubConnect(s: SessionState): boolean {
+  return Boolean(s.accounts && !s.operator && !s.gitHub && s.gitHubInstall)
+}
 
 /**
  * BEH-USERS-10: GitHub sends someone who chose "Sign in with GitHub" back to
@@ -153,6 +164,16 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
         </button>
         {error ? <p role="alert" className="error">{error}</p> : null}
       </form>
+    )
+  }
+
+  if (needsGitHubConnect(state)) {
+    return (
+      <section className="connect-github">
+        <h1>Connect your GitHub</h1>
+        <p className="muted">Kit reads and writes your projects in your own GitHub repos. Connect it to open them.</p>
+        <ConnectGitHub session={state} />
+      </section>
     )
   }
 
