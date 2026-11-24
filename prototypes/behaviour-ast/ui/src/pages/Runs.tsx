@@ -123,11 +123,12 @@ function byStage(runs: AgentRun[]): { stage: string; runs: number; costUsd: numb
  * review, and its runs, one per stage, so which stage spent the money reads off the item. Items are kept in memory,
  * so they are the ones since Kit last started; the cost by stage below them is every run on record.
  */
-function Pipeline({ runs }: { runs: AgentRun[] }) {
+function Pipeline({ runs, only }: { runs: AgentRun[]; only?: string }) {
   const resource = useResource(fetchPipeline, [])
   if (resource.state === 'error') return <p className="muted">The pipeline could not be read: {resource.message}</p>
   if (resource.state !== 'ready' || !resource.value.on || !Array.isArray(resource.value.items)) return null
-  const items = resource.value.items
+  // BEH-SPACE-5: a project's page keeps that project's items; the global page keeps them all.
+  const items = only === undefined ? resource.value.items : resource.value.items.filter((i) => i.project === only)
   const stages = byStage(runs)
   return (
     <>
@@ -175,19 +176,22 @@ function Pipeline({ runs }: { runs: AgentRun[] }) {
  * Every agent run Kit has started, newest first (BEH-USERS-9). The server sends them in that order and
  * this keeps it. A failed run says which step of the runner failed.
  */
-export default function Runs() {
+export default function Runs({ only }: { only?: string } = {}) {
   const resource = useResource(fetchRuns, [])
 
   return (
     <>
-      <h1>Runs</h1>
+      <h1>{only === undefined ? 'Runs' : `Runs · ${only}`}</h1>
 
       <ResourceView resource={resource}>
-        {({ capUsd, runs, claims }) => (
+        {({ capUsd, runs: every, claims }) => {
+          // BEH-SPACE-5: a project's runs are the runs of that project; the global page shows every run (BEH-USERS-9).
+          const runs = only === undefined ? every : every.filter((r) => r.project === only)
+          return (
           <>
             <p className="muted">Each run is capped at ${capUsd}.</p>
             <Now runs={runs} claims={claims ?? []} now={Date.now()} />
-            <Pipeline runs={runs} />
+            <Pipeline runs={runs} only={only} />
             {runs.length === 0 ? (
               <p>No runs yet.</p>
             ) : (
@@ -219,7 +223,8 @@ export default function Runs() {
               </>
             )}
           </>
-        )}
+          )
+        }}
       </ResourceView>
     </>
   )

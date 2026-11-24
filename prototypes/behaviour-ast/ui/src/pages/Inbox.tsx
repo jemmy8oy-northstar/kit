@@ -29,25 +29,25 @@ import {
  * BEH-INBOX-1: the cards whose move is his, one at a time across every project. The order is fixed
  * when the page opens, so answering a card never reshuffles the ones still to come; acting moves on.
  */
-export default function Inbox() {
+export default function Inbox({ only }: { only?: string } = {}) {
   const entries = useResource(loadBoard, [])
   return (
     <>
-      <h1>Inbox</h1>
+      <h1>{only === undefined ? 'Inbox' : `Inbox · ${only}`}</h1>
       <p className="muted">
         The cards that are waiting on you, one at a time: the ones you have not opened first, then the rest, each by priority.
       </p>
-      <ResourceView resource={entries}>{(all) => <Queue entries={all} />}</ResourceView>
+      <ResourceView resource={entries}>{(all) => <Queue key={only ?? ''} only={only} entries={all} />}</ResourceView>
     </>
   )
 }
 
-function Queue({ entries }: { entries: Entry[] }) {
+function Queue({ entries, only }: { entries: Entry[]; only?: string }) {
   // Frozen at open: reading "seen" and ordering once is what keeps the queue from moving under his thumb.
   const [queue] = useState(() => ordered<QueueCard>([...mine(entries), ...goalQuestions(entries, readAnswered())], readSeen()))
   // BEH-INBOX-4: the same `?project=a,b` filter the board keeps in the url (BEH-BOARD-2).
   const [params, setParams] = useSearchParams()
-  const selected = (params.get('project') ?? '').split(',').filter(Boolean)
+  const selected = only !== undefined ? [only] : (params.get('project') ?? '').split(',').filter(Boolean)
   // Cards he has acted on or skipped this visit. The queue is frozen, so the filter changing must not bring them back.
   const [handled, setHandled] = useState<ReadonlySet<string>>(new Set())
   const shown = selected.length === 0 ? queue : queue.filter((c) => selected.includes(c.project))
@@ -68,10 +68,12 @@ function Queue({ entries }: { entries: Entry[] }) {
     saveSeen(seen)
   }, [card])
 
+  // BEH-SPACE-5: a project's own inbox has no picker; its cards are that project's and nothing else's.
+  const scoped = only !== undefined
   if (queue.length === 0) {
-    return <p>Nothing is waiting on you.</p>
+    return <p>{scoped ? `Nothing is waiting on you in ${only}.` : 'Nothing is waiting on you.'}</p>
   }
-  const filter = (
+  const filter = scoped ? null : (
     <div className="board-controls" role="group" aria-label="Project">
       {projects.map((p) => (
         <Button
@@ -95,10 +97,14 @@ function Queue({ entries }: { entries: Entry[] }) {
         {filter}
         <p>
           {shown.length === 0
-            ? 'Nothing is waiting on you in the projects you picked.'
-            : queue.some((c) => !handled.has(keyOf(c)))
-              ? 'That is all of them in the projects you picked. Clear the filter to see the rest.'
-              : 'That is all of them: nothing else is waiting on you.'}
+            ? scoped
+              ? `Nothing is waiting on you in ${only}.`
+              : 'Nothing is waiting on you in the projects you picked.'
+            : scoped
+              ? `That is all of them in ${only}.`
+              : queue.some((c) => !handled.has(keyOf(c)))
+                ? 'That is all of them in the projects you picked. Clear the filter to see the rest.'
+                : 'That is all of them: nothing else is waiting on you.'}
         </p>
       </>
     )

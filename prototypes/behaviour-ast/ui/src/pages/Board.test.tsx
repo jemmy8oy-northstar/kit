@@ -1164,3 +1164,20 @@ describe('BEH-SPACE-3: each project has its own board, a tap from the global one
     expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
   })
 })
+
+describe('BEH-SPACE-5: the global board still shows every project', () => {
+  beforeEach(() => {
+    histories = {}
+    bells = {}
+  })
+
+  it('with no project picked, lists the cards of every project, not one', async () => {
+    mockApi()
+    renderBoard('/board')
+    await loaded()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Board' })).toBeInTheDocument()
+    expect(column('Done').getByText('A-DONE')).toBeInTheDocument()
+    expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
+  })
+})

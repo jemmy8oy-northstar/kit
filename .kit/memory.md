@@ -32,3 +32,8 @@
 - **Malformed bundles (BEH-TICKET-5):** a malformed bundle stops its item with `TriageStage.MalformedPrefix` + the parser's line-named reason, and that reason is the ticket's blocked tag. Triage gets those tickets under "## Malformed bundles (rewrite each)" and reports the fix; the fix is a `kit` comment on the ticket. Nothing starts a triage for a malformed ticket by itself: a note or his reply on it does. The raw bad text is not stored, so the board shows the reason and line, not the bundle.
 - **Test counts here:** `dotnet test ./backend` prints no summary in this sandbox, so use `dotnet test backend/Balenthiran.Kit.Tests` for the count: 1640 passed on 2026-11-21 after BEH-TICKET-5.
 - **BEH-UI-7 (pipeline runs, kit.beh):** kit/work/pipeline-runs-recent-first took BEH-UI-5 before dev reserved it for the agents page, and dev's ticket card took BEH-UI-6. The runs card is BEH-UI-7 after the merge of dev on 2026-11-20 (its C# tests are BEH_UI_7_*).
+
+## Per-project views (BEH-SPACE-5, bundle per-project-views-and-settings)
+- The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
+- Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.
+- The bundle called the Inbox assertion "in Project.test.tsx"; the main-navigation Inbox assertions were in `FeatureGate.test.tsx`.

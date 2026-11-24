@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import SignIn from '../components/SignIn'
-import Settings, { GitHubReturn } from './Settings'
+import Settings, { GitHubReturn, ProjectSettings } from './Settings'
 import { githubNavigation } from '../components/githubNavigation'
 
 /**
@@ -55,6 +55,15 @@ const app = (
     <MemoryRouter><Settings /></MemoryRouter>
     <p>the corpus</p>
   </>
+)
+
+// BEH-SPACE-5: a project's configuration lives on that project's own settings page, not the global one.
+const projectPage = (
+  <MemoryRouter initialEntries={['/projects/snip-it/settings']}>
+    <Routes>
+      <Route path="/projects/:app/settings" element={<ProjectSettings />} />
+    </Routes>
+  </MemoryRouter>
 )
 
 describe('sign-in with accounts', () => {
@@ -232,12 +241,13 @@ describe('Promotion to main (BEH-SETTINGS-4)', () => {
     { app: 'longlist', project: 'longlist', notReal: true },
   ]
 
-  it('shows the operator one switch per project, on only where the grant is', async () => {
+  it("shows the operator this project's switch only, off where the grant is not", async () => {
     vi.stubGlobal('fetch', server([james], undefined, projects).fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     expect(await screen.findByRole('heading', { name: 'Promotion to main' })).toBeInTheDocument()
-    expect(await screen.findByRole('checkbox', { name: 'kit' })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'snip-it' })).not.toBeChecked()
+    expect(await screen.findByRole('checkbox', { name: 'snip-it' })).not.toBeChecked()
+    // BEH-SPACE-5: another project's switch is not on this project's page.
+    expect(screen.queryByRole('checkbox', { name: 'kit' })).not.toBeInTheDocument()
     // A second file of a project, an idea and a trial are not projects to grant.
     expect(screen.queryByRole('checkbox', { name: 'kit-ui' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'ideas' })).not.toBeInTheDocument()
@@ -249,27 +259,23 @@ describe('Promotion to main (BEH-SETTINGS-4)', () => {
   it('posts the named state when a switch is flipped, and says so', async () => {
     const s = server([james], { status: 200, body: { app: 'snip-it' } }, projects)
     vi.stubGlobal('fetch', s.fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     fireEvent.click(await screen.findByRole('checkbox', { name: 'snip-it' }))
     expect(await screen.findByText('The agent may now promote snip-it to main.')).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/projects/snip-it/promote', body: { promote: true } }])
-
-    fireEvent.click(screen.getByRole('checkbox', { name: 'kit' }))
-    expect(await screen.findByText('The agent no longer promotes kit to main.')).toBeInTheDocument()
-    expect(s.posted[1]).toEqual({ path: '/api/projects/kit/promote', body: { promote: false } })
   })
 
   it('shows the server reason when the change is refused', async () => {
     vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }, projects).fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     fireEvent.click(await screen.findByRole('checkbox', { name: 'snip-it' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
   })
 
   it('does not show the section to anyone but the operator', async () => {
     vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects).fn)
-    render(<SignIn>{app}</SignIn>)
-    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    render(<SignIn>{projectPage}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'Settings · snip-it' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Promotion to main' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
@@ -284,12 +290,13 @@ describe('When specs conflict (BEH-CONFLICT-2)', () => {
     { app: 'ideas', project: 'ideas', idea: true },
   ]
 
-  it('shows the operator one choice per project, build anyway unless the project says otherwise', async () => {
+  it("shows the operator this project's choice only, build anyway unless the project says otherwise", async () => {
     vi.stubGlobal('fetch', server([james], undefined, projects).fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     expect(await screen.findByRole('heading', { name: 'When specs conflict' })).toBeInTheDocument()
-    expect(await screen.findByRole('combobox', { name: 'kit: when specs conflict' })).toHaveValue('wait')
-    expect(screen.getByRole('combobox', { name: 'snip-it: when specs conflict' })).toHaveValue('build')
+    expect(await screen.findByRole('combobox', { name: 'snip-it: when specs conflict' })).toHaveValue('build')
+    // BEH-SPACE-5: kit's own choice ("wait") is kit's page's, not this one.
+    expect(screen.queryByRole('combobox', { name: 'kit: when specs conflict' })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'kit-ui: when specs conflict' })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'ideas: when specs conflict' })).not.toBeInTheDocument()
     const options = within(screen.getByRole('combobox', { name: 'snip-it: when specs conflict' })).getAllByRole('option').map((o) => o.textContent)
@@ -299,7 +306,7 @@ describe('When specs conflict (BEH-CONFLICT-2)', () => {
   it('posts the named mode when a choice is made, and says so', async () => {
     const s = server([james], { status: 200, body: { app: 'snip-it' } }, projects)
     vi.stubGlobal('fetch', s.fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: when specs conflict' }), { target: { value: 'ask' } })
     expect(await screen.findByText(/snip-it's specs conflict, the agent will now ask you first/)).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/projects/snip-it/conflicts', body: { mode: 'ask' } }])
@@ -307,15 +314,15 @@ describe('When specs conflict (BEH-CONFLICT-2)', () => {
 
   it('shows the server reason when the conflict choice is refused', async () => {
     vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }, projects).fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: when specs conflict' }), { target: { value: 'wait' } })
     expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
   })
 
   it('does not show the conflict section to anyone but the operator', async () => {
     vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects).fn)
-    render(<SignIn>{app}</SignIn>)
-    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    render(<SignIn>{projectPage}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'Settings · snip-it' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'When specs conflict' })).not.toBeInTheDocument()
   })
 })
@@ -329,12 +336,13 @@ describe('How involved you are (BEH-ARCH-3)', () => {
     { app: 'ideas', project: 'ideas', idea: true },
   ]
 
-  it('shows the operator one depth choice per project, behaviours unless the project says otherwise', async () => {
+  it("shows the operator this project's depth choice only, behaviours unless the project says otherwise", async () => {
     vi.stubGlobal('fetch', server([james], undefined, projects).fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     expect(await screen.findByRole('heading', { name: 'How involved you are' })).toBeInTheDocument()
-    expect(await screen.findByRole('combobox', { name: 'kit: how involved you are' })).toHaveValue('goals')
-    expect(screen.getByRole('combobox', { name: 'snip-it: how involved you are' })).toHaveValue('behaviours')
+    expect(await screen.findByRole('combobox', { name: 'snip-it: how involved you are' })).toHaveValue('behaviours')
+    // BEH-SPACE-5: kit's own choice ("goals") is kit's page's, not this one.
+    expect(screen.queryByRole('combobox', { name: 'kit: how involved you are' })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'kit-ui: how involved you are' })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'ideas: how involved you are' })).not.toBeInTheDocument()
     const options = within(screen.getByRole('combobox', { name: 'snip-it: how involved you are' })).getAllByRole('option').map((o) => o.textContent)
@@ -348,7 +356,7 @@ describe('How involved you are (BEH-ARCH-3)', () => {
   it('posts the named depth when a choice is made, and says so', async () => {
     const s = server([james], { status: 200, body: { app: 'snip-it' } }, projects)
     vi.stubGlobal('fetch', s.fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: how involved you are' }), { target: { value: 'architecture' } })
     expect(await screen.findByText(/For snip-it, Kit will now ask you about how the app is built as well as what it does/)).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/projects/snip-it/depth', body: { mode: 'architecture' } }])
@@ -356,16 +364,37 @@ describe('How involved you are (BEH-ARCH-3)', () => {
 
   it('shows the server reason when the depth choice is refused', async () => {
     vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }, projects).fn)
-    render(<SignIn>{app}</SignIn>)
+    render(<SignIn>{projectPage}</SignIn>)
     fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: how involved you are' }), { target: { value: 'goals' } })
     expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
   })
 
   it('does not show the depth section to anyone but the operator', async () => {
     vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects).fn)
-    render(<SignIn>{app}</SignIn>)
-    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    render(<SignIn>{projectPage}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'Settings · snip-it' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'How involved you are' })).not.toBeInTheDocument()
+  })
+})
+
+describe('BEH-SPACE-5: global Settings holds nothing that belongs to one project', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+  const projects = [
+    { app: 'kit', project: 'kit', promote: 'self', onConflict: 'wait', depth: 'goals' },
+    { app: 'snip-it', project: 'snip-it' },
+  ]
+
+  it('shows no per-project switch on the global page, and keeps the global settings', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+
+    expect(await screen.findByRole('heading', { name: 'Wake the agent' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Promotion to main' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'When specs conflict' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'How involved you are' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'kit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'kit: when specs conflict' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tour' })).toBeInTheDocument()
   })
 })
 

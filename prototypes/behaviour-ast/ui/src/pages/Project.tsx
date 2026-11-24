@@ -23,6 +23,7 @@ import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 import { useFlags } from '../components/flags'
+import { useSession } from '../components/session'
 
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
 export default function Project() {
@@ -59,6 +60,8 @@ function Detail({ project }: { project: ProjectDetail }) {
   const [open, setOpen] = useState<number | null>(null)
   const flags = useFlags()
   const chat = flags.isOn('FEAT-CHAT')
+  const inbox = flags.isOn('FEAT-INBOX')
+  const session = useSession()
   const board = flags.isOn('FEAT-BOARD')
 
   return (
@@ -75,13 +78,17 @@ function Detail({ project }: { project: ProjectDetail }) {
         ) : null}
       </div>
 
-      {/* BEH-SPACE-1: the project is a space of its own, with its own chat, board and notes; the Inbox and
-          Settings stay global, in the main navigation. */}
+      {/* BEH-SPACE-1: the project is a space of its own, with its own chat, board and notes. BEH-SPACE-5: and its
+          own inbox, runs and settings; only Projects, Notifications and Settings stay in the main navigation. */}
       <nav className="badges" aria-label="This project">
         {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}`}>Its chat</Link>}
+        {inbox && <Link to={`/projects/${encodeURIComponent(project.app)}/inbox`}>Its inbox</Link>}
         {/* BEH-SPACE-3: the project's own board, the global board filtered to it. */}
         {board && <Link to={`/board?project=${encodeURIComponent(project.app)}`}>Its board</Link>}
+        {/* BEH-USERS-9: runs spend Kit's own credit, so only the operator is shown the link (the API refuses anyone else). */}
+        {!(session?.accounts && !session.operator) && <Link to={`/projects/${encodeURIComponent(project.app)}/runs`}>Its runs</Link>}
         <Link to={`/projects/${encodeURIComponent(project.app)}?tab=notes`}>Its notes</Link>
+        <Link to={`/projects/${encodeURIComponent(project.app)}/settings`}>Its settings</Link>
         {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
         {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>}
       </nav>

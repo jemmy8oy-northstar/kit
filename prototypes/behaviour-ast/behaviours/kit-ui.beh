@@ -3689,6 +3689,9 @@ behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and on
   contract my assumption: the global Inbox and the global board stay as an all-projects view for seeing everything (BEH-SPACE-3), and nothing is removed from them; this card adds the per-project views, it does not replace the global ones
   contract my assumption: "isolated by repo, like GitHub" means a project's views never show another project's items, runs or config, and switching project is a navigation step, not a filter left on
   contract my assumption: this card does not decide the pipeline or the data store; it changes what each page is scoped to
+  contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
+  contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
+  contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
 
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES
