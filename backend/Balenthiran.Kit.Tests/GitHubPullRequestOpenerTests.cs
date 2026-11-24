@@ -513,6 +513,20 @@ public class GitHubPullRequestOpenerTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_11_a_conflict_names_the_head_commit_it_was_found_at()
+    {
+        // claude-code-bot#151: the merge job compares it with the head its last resolve run started from.
+        var update = new FakeGitHub(PullOnDev(), Compared(1), FakeGitHub.Json(HttpStatusCode.UnprocessableEntity, """{"message":"merge conflict between base and head"}"""));
+        var mergeable = new FakeGitHub(Pull("false"), Runs(Run("completed", "success")));
+
+        var onUpdate = await Opener(update).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+        var onMergeable = await Opener(mergeable).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.Equal((true, Head), (onUpdate.Conflict, onUpdate.HeadSha));
+        Assert.Equal((true, Head), (onMergeable.Conflict, onMergeable.HeadSha));
+    }
+
+    [Fact]
     public async Task BEH_ORCH_11_only_a_conflict_is_marked_as_one_and_no_other_refusal_or_wait_is()
     {
         var mergeable = new FakeGitHub(Pull("false"), Runs(Run("completed", "success")));
