@@ -1063,3 +1063,9 @@ Breaking everything up will reduce clashes, i guess we can have readme clashes b
 Whilst we are at it we need to ditch the distinction between kit and kit-ui there is only one project per repo this project is kit!
 
 Lets update kit first and then migrate the other projects.
+
+## 2026-11-24 22:31Z
+
+<!-- from: note-button -->
+
+kit is able to make multiple tickets per note
