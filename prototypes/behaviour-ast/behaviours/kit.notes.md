@@ -1038,3 +1038,9 @@ I feel like the agents page adds nothing, lets scrap it
 <!-- from: note-button -->
 
 I feel that the runs page is at the moment just a tremendous amount of text lets work on improving the ui ux here. I think here we want to see maybe cards which show all the recent runs, with tags to show their state maybe, maybe total cost then maybe we can click on them to get more detail. You can design the details page. This was really functional whilst we were trying to get things working but we need to start moving it towards being usable.
+
+## 2026-11-24 18:29Z
+
+<!-- from: note-button -->
+
+Kit tickets could have a closed column when they are merged and resolved
