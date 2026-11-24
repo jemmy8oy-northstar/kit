@@ -511,7 +511,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "A_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "A_secondary_file_of_a_project_is_refused_saying_where_to_set_it" },
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "The_body_must_say_true_or_false" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one switch per project, on only where the grant is" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator this project's switch only, off where the grant is not" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named state when a switch is flipped, and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the change is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the section to anyone but the operator" }
@@ -659,7 +659,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_spec_agent_is_told_the_depth_a_project_chose_and_nothing_for_the_default" },
     { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_a_secondary_app_of_a_project_is_told_the_depth_its_primary_file_chose" },
     { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_shared_process_tells_the_coding_agent_how_to_honour_the_depth" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one depth choice per project, behaviours unless the project says otherwise" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator this project's depth choice only, behaviours unless the project says otherwise" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named depth when a choice is made, and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the depth choice is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the depth section to anyone but the operator" }
@@ -876,7 +876,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
     { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_secondary_file_of_a_project_is_refused_saying_where_to_set_it" },
     { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_the_body_must_name_build_ask_or_wait" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one choice per project, build anyway unless the project says otherwise" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator this project's choice only, build anyway unless the project says otherwise" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named mode when a choice is made, and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the conflict choice is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the conflict section to anyone but the operator" }
@@ -894,6 +894,18 @@
   ],
   "BEH-SPACE-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
+  ],
+  "BEH-SPACE-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 keeps Projects, Notifications and Settings in the main navigation, and not the Inbox or Runs" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has Its inbox, Its runs and Its settings beside its chat and board, each on its own project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "does not render the global Settings or Notifications on a project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lists only that project's cards, and another project's waiting card is not in it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "switching to another project shows that project's cards, with no filter from the last one left in the address" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "the global inbox with no project picked still lists every project, and so does its picker" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "lists only that project's runs and pipeline items, and another project's are absent" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows no per-project switch on the global page, and keeps the global settings" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "with no project picked, lists the cards of every project, not one" }
   ],
   "BEH-SPACE-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a board filtered to one project is named for it, and See every project clears the filter" },

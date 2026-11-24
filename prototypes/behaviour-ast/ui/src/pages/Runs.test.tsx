@@ -403,3 +403,40 @@ describe('Runs', () => {
     expect(screen.queryByRole('list', { name: 'Runs going now' })).toBeNull()
   })
 })
+
+describe('BEH-SPACE-5: each project has its own runs', () => {
+  it("lists only that project's runs and pipeline items, and another project's are absent", async () => {
+    // The runs and the pipeline are read whole and kept to one project here, in the page that shows them.
+    // mockRoutes answers the visibility route (the cards) from the same runs, as the server does.
+    mockRoutes({
+      runs: {
+        capUsd: 5,
+        runs: [
+          { ...run, id: 'k', project: 'kit', workItem: 'kit-item', costUsd: 0.1 },
+          { ...run, id: 's', project: 'snip-it', workItem: 'snip-item', costUsd: 0.2 },
+        ],
+      },
+      pipeline: {
+        on: true,
+        items: [
+          { project: 'kit', slug: 'kit-item', stage: 'build', status: 'done' },
+          { project: 'snip-it', slug: 'snip-item', stage: 'build', status: 'done' },
+        ],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <Runs only="kit" />
+      </MemoryRouter>,
+    )
+
+    const runs = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(runs).toHaveLength(1)
+    // Direct children only: each item's own runs are a list inside it.
+    const items = Array.from((await screen.findByRole('list', { name: 'Pipeline work items' })).children)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent('kit · kit-item')
+    expect(screen.queryByText(/snip-it/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/snip-item/)).not.toBeInTheDocument()
+  })
+})
