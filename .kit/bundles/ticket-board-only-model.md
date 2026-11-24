@@ -22,3 +22,8 @@ Kept: BEH-EPIC-4 (epic view) and BEH-NARR-1 (project goal from open epics), whic
 Moving every project to the ticket model is a builder task across projects, not part of this spec edit.
 Next step toward the goal: owner confirms the kit-ui.beh deletion list; then a builder maps BEH-TICKET-6 to 8 to tests and removes the two retired boards.
 Review gaps (2026-11-24): BEH-STAGE-10 and 11 are feature-board placement cards missing from the list; BEH-BOARD-10 to 19 and 21 hang off the columns BEH-BOARD-1 draws; BEH-EPIC-4 depends on BEH-STAGE-8's switch and page:KitStages.
+Test plan:
+- BEH-TICKET-1: opening the board shows tickets, and each ticket shows its status and its open questions; the navbar and the board page show no feature or spec board.
+- BEH-TICKET-6: the navbar and the boards show only the epic board and the ticket board; the eight named cards (BEH-STAGE-1, 7, 8, 9, 10, 11, 12 and BEH-BOARD-1) are marked as to be deleted with a reason beside each and are not removed; BEH-BOARD-10 to 21 are unchanged; BEH-EPIC-4 is its own page, not an option on the BEH-STAGE-8 switch; a ticket's feature and spec pages still open from its feature branch.
+- BEH-TICKET-7: a ticket naming several epics counts toward each of them; a ticket touching several features and specs lists all of them; a ticket naming no epic appears on the ticket board and counts toward no epic's status.
+- BEH-TICKET-8: each open epic's status is counted from the tickets that name it, in the states new, ready, planned, built, blocked and done; the project's first open epic is shown first as its goal; computing the status opens no feature or spec; a blocked ticket is counted once, in the state it is in, and not again as a separate blocked item (BEH-TICKET-3 makes blocked a tag).
