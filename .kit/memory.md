@@ -57,3 +57,12 @@
 - The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
 - Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.
 - The bundle called the Inbox assertion "in Project.test.tsx"; the main-navigation Inbox assertions were in `FeatureGate.test.tsx`.
+
+## Feature folders under .kit/features (BEH-PARSE-5/6, bundle kit-feature-folder-layout)
+- The reader is `backend/Balenthiran.Kit.Services/FeatureFolderReader.cs` (types in `FolderTag.cs`, `FolderFeature.cs`, `FeatureFolders.cs`; StyleCop SA1402 means one type per file). `KitCheck` reads `<repo>/.kit/features` whenever it exists, whatever `--dir` says, and a refusal is exit 2 "cannot look", like a corpus that does not parse.
+- A folder's feature id is its name, and an `in` tag there is a bare folder name (`in Alpha`), not a `FEAT-` id. A line that is `in` and one token, on its own, in a folder's `.kit` or `readme.md` is a folder tag and is blanked before the spec text is parsed, so line numbers stay true.
+- Only a file in a feature nested under another feature needs `in <parent>`. A file directly in a top-level feature folder needs no tag.
+- `CorpusParseException` has a `Refusal` name (`BadFeatureTag`, `MissingParentTag`) for the cards to name. The three existing BEH-PARSE-2 refusals in `CorpusParser.cs` now carry `BadFeatureTag`.
+- **kit.beh BEH-PARSE-3 header lost its space** in fd373305 (`behaviour BEH-PARSE-3"A priority…`). A `behaviour` line needs whitespace before the quote, or `Every_committed_corpus_parses` fails the whole suite. Restored to main's text.
+- Behaviours inside folder `.kit` files are parsed but not yet counted by `kit check`, so a folder spec with no test does not fail the gate. That is not in any card yet.
+- UI job here: `npm ci && npm run lint && npm run build && npm test` in `prototypes/behaviour-ast/ui`, 648 passed on 2026-11-24.

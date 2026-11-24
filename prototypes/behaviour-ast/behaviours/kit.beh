@@ -178,7 +178,7 @@ behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error n
   contract card on a page can never change what Kit refuses to delete
   contract my assumption: a `.kit` file or readme.md inside a feature folder that tags its parent with `in` is the child feature; BEH-PARSE-6 reads that parent tag, so the same refusals apply to folder children
 
-behaviour BEH-PARSE-3"A priority is 1 to 5, set once; anything else is an error naming its line"
+behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
   in FEAT-PARSER
   source defined kit#284
   priority 5
