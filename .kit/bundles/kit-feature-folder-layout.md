@@ -2,9 +2,9 @@
 Work-item: kit-feature-folder-layout
 Flag: the 2026-11-24 22:28Z note is cut after its first 1500 characters and its source ref is not in kit.notes.md on this branch, so the folder layout is written from the visible text only; the owner's reply may ask for more (level: high)
 Cards:
-- BEH-PARSE-2 (changed: contract lines added)
-- BEH-PARSE-5 (new)
-- BEH-PARSE-6 (new)
+- BEH-PARSE-2
+- BEH-PARSE-5
+- BEH-PARSE-6
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-24 22:28Z
 Files:
