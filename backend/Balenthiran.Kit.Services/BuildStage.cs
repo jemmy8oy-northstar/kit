@@ -33,7 +33,7 @@ public static class BuildStage
         sb.Append("1. Check out branch ").Append(branch).Append(" from origin. Every change below goes on it.\n");
         sb.Append("2. Read the bundle below, the spec cards it names under Cards and the files it lists under Files. Search beyond them only when the bundle is wrong.\n");
         sb.Append("3. Write the tests under \"").Append(SpecStage.TestPlanHeading).Append("\" first, each naming its card id the way the tests around it do. Run them and see them fail.\n");
-        sb.Append("4. Write the code until those tests pass, then run the project's whole test suite and make it pass. Change nothing the cards do not ask for.\n");
+        sb.Append("4. Write the code until those tests pass, then run ").Append(TestStage.WholeSuite).Append(", and make it pass. Change nothing the cards do not ask for.\n");
         sb.Append("5. In ").Append(path).Append(", at the end of Context add a line \"").Append(BuiltHeading)
             .Append("\" and under it one \"- \" line per test you wrote, then one line saying how many tests the whole suite ran and that it passed.\n");
         sb.Append("6. If you are unsure of what you built and the bundle has no Flag line, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. ").Append(FlagLevels.Guidance).Append('\n');

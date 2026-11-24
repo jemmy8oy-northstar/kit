@@ -189,7 +189,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     }
 
     /// <summary>BEH-ORCH-20: the stages a runner takes before any other: a test run, and a merge run resolving a conflict.</summary>
-    public static bool GoesFirst(string? stage) => stage is "test" or "resolve";
+    public static bool GoesFirst(string? stage) => stage is "test" or "resolve" or "fix";
 
     /// <summary>The repo of a run this pool handed out that is not over, else null (never handed out, over, or forgotten at a restart).</summary>
     public string? RepoOf(string runId)
