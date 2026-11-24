@@ -1044,3 +1044,22 @@ I feel that the runs page is at the moment just a tremendous amount of text lets
 <!-- from: note-button -->
 
 Kit tickets could have a closed column when they are merged and resolved
+
+## 2026-11-24 22:28Z
+
+<!-- from: note-button -->
+
+"TL;DR Yes, let's discuss it. The conflicts come from one cause: nearly every ticket edits the same three big files, so each merge breaks the PRs still open. The fix run from this morning works (kit#825, kit#865 and kit#881 have merged since), but at about one merge an hour.
+
+Your call (if you don't reply, I do the default on 11-26)
+
+Split the hot files by area. kit-ui.beh becomes one file per area (UI, ORCH, USERS…), with its tests.json split the same way, and Pipeline.cs/PipelineTests.cs become one file per stage. Two tickets in different areas then stop touching the same lines. Default: I do this as one mechanical PR to dev, after kit#832 lands, since kit#832 moves the spec.
+Don't build two tickets on the same area at once. Kit would hold a ticket back while another open PR touches the same area. Default: I write this into the spec as a proposal and don't build it until you say yes."
+
+I do not like this kit structure, i believe that the behaviours should be defined in .kit/ under features/ maybe and we should have a folder hierarchy which defines the features which children best align with, children can still tag other features as their parent as well - we should have some health check to ensure that kits and readme mds do in fact tag their parent, then under the feature folders there are either further feature folders and/or {name}.kit files which define the specs. The feature folders can also have readmes, the readmes for features describe the features - these dont need .kit (previously .beh) files right?
+
+Breaking everything up will reduce clashes, i guess we can have readme clashes but hopefully the top level features will change less. We should document that the readmes are not meant to index the folders but should be explanations of their concept. They should change if their concept changes tho i guess. Hopefully we should run into less merge conflicts this way.
+
+Whilst we are at it we need to ditch the distinction between kit and kit-ui there is only one project per repo this project is kit!
+
+Lets update kit first and then migrate the other projects.
