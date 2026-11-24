@@ -38,7 +38,7 @@
 # kit:principle global Flexibility: the spec is easy to change — a new idea is one optional line, and nothing written before it moves
 # kit:principle global Function: the spec turns into tests — every line Kit reads is parsed, refused when wrong, and gated
 # kit:principle global Readability: a human can read the spec without Kit — a line says what it means in words
-# kit:wake 2026-11-23T23:50:34Z
+# kit:wake 2026-11-24T00:25:38Z
 
 # James asked (claude-code-bot#89): "think about how kit looks as a kit managed
 # project". This corpus is the attempt, and the attempt is the measurement.
