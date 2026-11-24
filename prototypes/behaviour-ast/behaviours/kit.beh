@@ -536,3 +536,15 @@ behaviour BEH-TICKET-5 "A malformed bundle is named and can be resolved, not lef
   then sees region:KitMain
   contract my assumption: a bundle that fails its shape check is shown on the board with the line that is wrong, and no builder starts on it
   contract my assumption: triage rewrites a malformed bundle to the required shape, keeping its cards and notes, and records the fix beside the ticket
+
+behaviour BEH-TICKET-6 "A note shows a triage tag once triage has taken it"
+  source defined kit.notes.md#2026-11-24-2245Z
+  review unreviewed
+  priority 3
+  actor engineer
+  given note:Triaged
+  when opens page:KitNotes
+  then sees tag:Triaged
+  contract my assumption: a note carries a triage tag once triage has turned it into a bundle, set it aside or put it in the backlog; a note triage has not reached shows no triage tag
+  contract my assumption: the triage tag is shown on the Notes page beside the note's source tag, and it is set by triage, never typed by the user
+  contract my assumption: the triage mark is stored beside the note, not written into the note's own text, so the note is not edited to show it
