@@ -231,7 +231,8 @@ public static class ServiceRegistration
             runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
             agentRunCap: settings.AgentRunCapUsd,
             runnerPool: sp.GetService<RunnerPool>(),
-            pipeline: sp.GetService<Pipeline>()));
+            pipeline: sp.GetService<Pipeline>(),
+            botReadToken: settings.BotReadSecret()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

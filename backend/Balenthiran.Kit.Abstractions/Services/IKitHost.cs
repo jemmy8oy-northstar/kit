@@ -15,7 +15,7 @@ public interface IKitHost
     /// request target; <paramref name="origin"/> and <paramref name="cookie"/> the headers,
     /// or null when absent. A POST that may proceed comes back with only <c>Post</c> set.
     /// </summary>
-    IHostAnswer Answer(string method, string target, string? origin, string? cookie);
+    IHostAnswer Answer(string method, string target, string? origin, string? cookie, string? bearer = null);
 
     /// <summary>A POST's body has been read: <paramref name="raw"/> is its bytes, or null when it ran past the limit.</summary>
     IHostAnswer Received(string pathname, byte[]? raw, string? origin, string? cookie);

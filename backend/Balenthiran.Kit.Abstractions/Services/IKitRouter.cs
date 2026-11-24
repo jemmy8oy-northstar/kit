@@ -13,8 +13,10 @@ public interface IKitRouter
     /// <summary>
     /// Answer one request. <paramref name="pathname"/> is the raw, still-encoded path, base
     /// path already removed; <paramref name="body"/> is the parsed JSON body of a POST.
+    /// <paramref name="bearer"/> is the Authorization header's bearer token (BEH-ORCH-6): it can
+    /// only make a GET a read as the operator, never a write.
     /// </summary>
-    IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null);
+    IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null, string? bearer = null);
 
     /// <summary>
     /// <see cref="IGitStore.CatchUp"/> on the clone at <paramref name="dir"/>, holding the same lock
