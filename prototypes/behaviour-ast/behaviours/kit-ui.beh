@@ -1288,6 +1288,8 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract his answer (kit.notes.md#2026-10-23-0638): "let's have a username and password sign in for early access. And then you integrate your GitHub. Then maybe later for general release it's just a GitHub sign in"
   contract early access is invite-only because James creates each account himself; there is no open sign-up, no GitHub allowlist and no code word (he weighed both in kit.notes.md#2026-10-23-0635 and dropped them)
   contract a user can change the password James gave them
+  contract my assumption: the username and password choice is James's decision and reversible; his 06:38Z note ends "Can always change later if need be", so no other card may assume sign-in stays username and password for good
+  contract early access accounts are made only by the operator, for invited people; the card for that is BEH-USERS-14
   contract once signed in, the user connects their GitHub by installing Kit's GitHub App, which is what reads and writes their repos
   contract later, for general release, signing in with GitHub replaces the username and password; that is a separate behaviour, not this one
   contract my assumption: he creates each account inside Kit, signed in as himself, rather than with a command run in the cluster
@@ -1324,6 +1326,8 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
   contract live since kit#503 (2026-10-27 21:39Z): signed out, Kit's sign-in page now offers "Sign in with GitHub"
   contract his question (kit.notes.md#2026-10-31-0055), "Am I able to act as a test user myself by logging in with a different organisation or my personal account?": your personal account, yes; another organisation, no. Kit only records an install on the personal account of whoever authorises (an organisation's install is reachable by any member), and Kit's own install is on the organisation, so your personal account counts as a separate user. Make a test user in Settings, sign in as them in a private window, and connect your personal GitHub. One catch: a GitHub account links to one Kit user, so if you already connected your personal account to yourself in Settings (BEH-SETTINGS-3), the test user needs a second GitHub account
+  contract my assumption, for him to confirm: he tests as a test user by signing in through this card with a second GitHub account; the answer above stands, so another organisation's install is still not claimed
+  contract my assumption, for him to decide: whether to uninstall and reinstall the installed App to test OAuth (kit.notes.md#2026-10-28-0003, "it won't let me install it because it's already installed"); no code change here, and this card is the way to test OAuth without it
 behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their GitHub stops working"
   in FEAT-USER-SIGNUP
   source inferred kit-ui.beh#BEH-USERS-10
@@ -1336,6 +1340,21 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   then sees region:KitMain
   contract my proposal: once a test user signs in only with GitHub (BEH-USERS-10), reinstalling the App, or losing that GitHub account, leaves them no way in
   contract my assumption: in Settings, beside "Add a user", he names a user and gives them a new password; their GitHub link is cleared, so they sign in with that password and connect again
+  contract my assumption: the reinstall case (kit.notes.md#2026-10-28-0003) is the one this card resets; it stays paused, and his answer to that question decides whether it is needed for testing
+
+behaviour BEH-USERS-14 "Early access accounts are made by the operator for invited people only, with no sign-up page"
+  in FEAT-USER-SIGNUP
+  source defined kit.notes.md#2026-10-23-0638
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract my assumption: early access is invite-only; James makes each account himself inside Kit (BEH-USERS-1), so there is no open sign-up, no sign-up page and no code word to try
+  contract my assumption: the GitHub-account whitelist he asked about (kit.notes.md#2026-10-23-0635) is not built in early access; a GitHub account signs in only when James has made the user it belongs to (BEH-USERS-10)
+  contract my assumption: a stranger who opens Kit's sign-in page finds no way to create an account, and a sign-up request is answered as not found
+  contract my assumption, as built: a sign-up request from a stranger is answered 401 not-signed-in, not 404, because the sign-in gate answers before routing (BEH-GATE-H1), so it reveals no route; a signed-in user is answered 403 not-yours (BEH-USERS-8); neither creates an account
+  contract my assumption: this is the default; he can open self sign-up later, which would be a new card
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
@@ -1672,6 +1691,10 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
   contract his comment (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
   contract my assumption: the hold covers every way a run starts, not only the jobs. Production runs the merge job alone, so a planned ticket's build starts the moment the run before it ends. The hold was read only by the jobs, so overnight seven pull requests were built and none was tested. A look that no longer holds the project starts what waited behind it at once
   contract my assumption: "private" was standing in for "has no Actions run", and kit went public (his 2026-11-14 note) with CI still only for main, so its pull requests into dev waited for a run that never starts. On the merge job's path, a pull request with no Actions run at its head is tested by Kit whatever the repo's visibility. One that has a run is unchanged: a failed run refuses, a running one waits, a passed one merges with no Kit test. This supersedes "it applies only to a project whose repo is private" above. The cost is his subscription, not free Actions minutes; CI on pull requests into dev while kit is public would be cheaper, but that is a workflow change and his
+  contract his comment (claude-code-bot#151, 2026-11-24 16:00Z): "It is still experiencing issues"
+  contract my assumption: one definition of "the whole suite" for every stage that runs it (build, resolve, fix and test): every test project and every step the CI workflows run, spec gates included. On 2026-11-24 five pull requests (kit#825, kit#832, kit#865, kit#868, kit#881) passed their build, because it ran only the test projects, then failed the spec gate in their merge-time test run, which ran every CI step, and stopped
+  contract my assumption: a failed test run no longer stops the ticket. It stays built and the next merge look starts a fix run on the pull request's own branch (stage merge, as a resolve run is), told to make the whole suite pass without deleting or weakening a test. This supersedes "a failed test stops the ticket rather than retrying" above: a fix run is not a retry that hides a flaky suite, because the head must change and be tested again. A fix that leaves the head where it was stops the ticket ("its tests still fail at <sha7> after a fix run changed nothing"), and a ticket gets at most 2 fix runs ("… after 2 fix runs"). Both, and "the fix run failed", are blocks a run made, so a restart gives the ticket one more go
+  contract my assumption: only a test run that reached its verdict and did not pass (the runner reports "verdict exit 1") starts a fix run. One that ran out of time or crashed says nothing about the code, so it stops the ticket with "the project's tests failed at <sha7>" as before
 
 behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
   in FEAT-AGENT-PIPELINE
@@ -2689,7 +2712,6 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   source defined kit-ui.notes.md#2026-11-06-1801
   review approved
   priority 5
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2697,6 +2719,13 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   contract it extends BEH-ARCH-1 and does not change it
   contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
   contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
+  contract built: stackDiagram.ts is plain code over the repo's files (RepoFile: path and text). Files are read in path order, so the same files give the same diagram whatever order they arrive in; no model or network is touched
+  contract built: the parts are declared in the repo: a `.kit/stack` file with `database <name> <engine>` and `external-api <name> <url>` lines, and any `Chart.yaml` is the Helm chart, named by its `name:` line (or its directory). Blank lines and # comments are skipped, and an unknown line declares nothing
+  contract my assumption: the `.kit/stack` file and its two keywords are my choice of where a repo declares its databases and external APIs; the owner has not named one, so it is to be confirmed or replaced
+  contract my assumption: a repo that declares none of the three draws no diagram and says so in words, rather than an empty picture
+  contract built: the Architecture tab draws the diagram under the decisions as a plain grouped list (Databases, External APIs, Helm chart), each with the file it came from. The layout is left open by the owner, so this is the simplest form that can be replaced
+  contract my assumption: the diagram is drawn only from what the repo declares; nothing from the spec (behaviours, features) is drawn
+  contract my assumption: the Architecture tab shows the diagram from the project's repoFiles, which the server does not serve yet; until it does, the tab shows the decisions alone, as before
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.

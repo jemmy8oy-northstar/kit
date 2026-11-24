@@ -192,6 +192,35 @@ public class AccountsTests
         Assert.Equal(401, router.Route("POST", "/api/users", body: Json(new { username = "bob", password = AnnPassword })).Status);
     }
 
+    /// <summary>
+    /// kit-ui.beh <c>BEH-USERS-14</c>: early access is invite-only, so no sign-up route exists. A
+    /// stranger's sign-up request is refused by the sign-in gate before routing (BEH-GATE-H1), so it
+    /// learns nothing about which routes exist; a signed-in user is refused by the write gate before
+    /// routing too (BEH-USERS-8, "whatever the URL"); no account results either way.
+    /// </summary>
+    [Theory]
+    [InlineData("/api/signup")]
+    [InlineData("/api/sign-up")]
+    [InlineData("/api/register")]
+    [InlineData("/api/accounts")]
+    public void BEH_USERS_14_no_sign_up_route_exists_and_a_sign_up_request_is_not_found(string path)
+    {
+        var users = Seeded();
+        var router = Router(users);
+        var body = Json(new { username = "bob", password = "a-good-long-password" });
+
+        var stranger = router.Route("POST", path, body: body);
+        Assert.Equal(401, stranger.Status);
+        Assert.Equal("not-signed-in", Assert.IsType<ApiError>(stranger.Body).Error);
+        Assert.Null(stranger.SetCookie);
+
+        var ann = Cookie(SignIn(router, "ann", AnnPassword));
+        var signedIn = router.Route("POST", path, ann, body: body);
+        Assert.Equal(403, signedIn.Status);
+        Assert.Equal("not-yours", Assert.IsType<ApiError>(signedIn.Body).Error);
+        Assert.Null(users.HashOf("bob"));
+    }
+
     [Theory]
     [InlineData("ann", "a-good-long-password", 409, "user-exists")]
     [InlineData(KitRouter.DefaultOperator, "a-good-long-password", 409, "user-exists")]
