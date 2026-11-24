@@ -55,9 +55,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
 
-    // BEH-ORCH-11, slice 7b: tickets that have had their one conflict-resolution run. In memory only: the ticket row has
-    // no column for it, so a restart forgets it and a ticket may then get one more run.
-    private readonly HashSet<(string App, string Slug)> resolved = [];
+    // BEH-ORCH-11, slice 7b: per ticket, the head commit its last conflict-resolution run was started for and how many it has
+    // had. A conflict at that same head means the run changed nothing, so the ticket stops; a conflict at a new head means the
+    // base moved on after a run that worked, so it gets another, up to MaxResolveRuns (claude-code-bot#151). In memory only:
+    // the ticket row has no column for it, so a restart forgets it and a ticket may then get more runs.
+    private readonly Dictionary<(string App, string Slug), (string? Head, int Runs)> resolved = [];
+
+    /// <summary>BEH-ORCH-11: the most conflict-resolution runs one ticket gets, however often its base moves.</summary>
+    public const int MaxResolveRuns = 3;
 
     // BEH-ORCH-12: the head commit a Kit test run passed at, per ticket, which the merge look hands the merger; and the commit
     // a test run in flight was started for. In memory only, like resolved: a restart forgets them and a ticket may get one more test run.
@@ -126,7 +131,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // ticket comes back at the state it reached, so its review would not be what ran again. A genuinely red pull request is
     // tested once more per restart; a built ticket has no other way out of a block (a reply wakes only new, ready, planned).
     private static readonly System.Text.RegularExpressions.Regex RetryableBlock =
-        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost)");
+        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost"
+            // claude-code-bot#151: a conflict is dev moving under the branch, not a decision; its resolve run may now succeed.
+            + @"|the conflict-resolution run failed|its pull request was not merged: (it has a conflict with its base branch|it still conflicts with its base|its base kept moving))");
 
     /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
     public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);
@@ -1033,13 +1040,25 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 return;
             }
 
-            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to one resolve run instead of stopping the item.
+            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to a resolve run instead of stopping the item:
+            // one per head commit, so a base that moved on after a run that worked is resolved again (claude-code-bot#151).
             if (updateFirst && result is { Merged: false, Conflict: true })
             {
-                if (resolved.Contains((item.Project, item.Slug)))
+                var key = (item.Project, item.Slug);
+                if (resolved.TryGetValue(key, out var last))
                 {
-                    Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
-                    return;
+                    // No head to compare (or the same one) means the last run left the branch as it was.
+                    if (result.HeadSha is null || result.HeadSha == last.Head)
+                    {
+                        Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
+                        return;
+                    }
+
+                    if (last.Runs >= MaxResolveRuns)
+                    {
+                        Set(index, Stop(item, $"its pull request was not merged: its base kept moving and it conflicted again after {last.Runs} resolve runs"));
+                        return;
+                    }
                 }
 
                 // A project with a run in flight is busy: the item stays built, the project is kept for it, and the next look asks again.
@@ -1049,7 +1068,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     return;
                 }
 
-                resolved.Add((item.Project, item.Slug));
+                resolved[key] = (result.HeadSha, (resolved.TryGetValue(key, out var had) ? had.Runs : 0) + 1);
                 try
                 {
                     Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued, MergeNote = null }));

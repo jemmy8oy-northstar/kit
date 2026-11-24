@@ -1,0 +1,4 @@
+# .kit/memory.md is a log every pipeline branch appends to, so two branches always add lines at the same place.
+# union keeps both sides' lines when git merges locally (a resolve run, or anyone's `git merge`), so that file never
+# needs an agent (claude-code-bot#151). GitHub's own mergeability check does not read this file.
+.kit/memory.md merge=union
