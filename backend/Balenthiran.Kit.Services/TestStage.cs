@@ -10,6 +10,15 @@ namespace Balenthiran.Kit.Services;
 /// </summary>
 public static class TestStage
 {
+    /// <summary>
+    /// claude-code-bot#151: what "the project's whole test suite" means, the same words in every stage that runs it (build,
+    /// resolve, fix and test). The build stage once ran only the test projects and the test stage ran every CI step, so five
+    /// pull requests passed their build, failed the spec gate at merge, and stopped.
+    /// </summary>
+    public const string WholeSuite = "the project's whole test suite: every test project, and every step its CI workflows under .github/workflows run "
+        + "(build, lint, and any spec gate such as a `check` command), not a subset";
+
+
     /// <summary>The task for a test run of <paramref name="bundle"/>'s branch at commit <paramref name="sha"/> in <paramref name="project"/>, whose pull request goes into <paramref name="baseBranch"/>. A merge train (BEH-ORCH-18) names its own <paramref name="train"/> branch and the pull requests riding it.</summary>
     public static string BuildTask(string project, ContextBundle bundle, string baseBranch, string sha, (string Branch, IReadOnlyList<string> Riders)? train = null)
     {
@@ -24,7 +33,7 @@ public static class TestStage
 
         sb.Append("Steps:\n");
         sb.Append("1. Fetch branch ").Append(branch).Append(" from origin and check out exactly commit ").Append(sha).Append(" (a detached checkout). Test that commit and nothing else.\n");
-        sb.Append("2. Install what the project needs and run its whole test suite, every test project and every test step it has, not a subset.\n");
+        sb.Append("2. Install what the project needs and run ").Append(WholeSuite).Append(".\n");
         sb.Append("3. Report the result: the run succeeds only if the whole suite passed at that commit. If any test fails, or the suite cannot be run, the run has failed: say which test or step and why.\n");
         sb.Append("4. Leave the working directory checked out at commit ").Append(sha).Append(" when you finish: the runner checks HEAD.\n\n");
         sb.Append("Change nothing: do not edit, commit or push anything, do not open a pull request, and do not fix a failing test. STOP when the suite has finished.\n\n");
