@@ -1166,8 +1166,8 @@ describe('navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
   })
 
-  it('switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)', async () => {
-    window.history.pushState({}, '', '/stages')
+  it('switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)', async () => {
+    window.history.pushState({}, '', '/board')
     vi.stubGlobal(
       'fetch',
       vi.fn(async (path: string) => ({
@@ -1184,25 +1184,17 @@ describe('navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).queryByRole('link', { name: 'Stages' })).not.toBeInTheDocument()
     const views = screen.getByRole('navigation', { name: 'Board view' })
-    expect(within(views).getByRole('link', { name: 'Features' })).toHaveAttribute('aria-current', 'page')
-    fireEvent.click(within(views).getByRole('link', { name: 'Behaviours' }))
-    expect(await screen.findByRole('navigation', { name: 'Board view' })).toBeInTheDocument()
-    expect(within(screen.getByRole('navigation', { name: 'Board view' })).getByRole('link', { name: 'Behaviours' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(window.location.pathname).toBe('/board')
-
-    // BEH-EPIC-4: epics are a third view, above features, and the Board link stays current on it.
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Board view' })).getByRole('link', { name: 'Epics' }))
+    expect(within(views).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(within(views).getByRole('link', { name: 'Epics' }))
     expect(await screen.findByRole('region', { name: 'Epics' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/epics')
     expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
+    // BEH-TICKET-6: the feature and spec views are no longer switch options.
     expect(
       within(screen.getByRole('navigation', { name: 'Board view' }))
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Epics', 'Features', 'Behaviours'])
+    ).toEqual(['Epics', 'Tickets'])
   })
 
   it('links Ideas from every page, to the Ideas project (BEH-IDEA-1)', async () => {
