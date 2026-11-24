@@ -1119,3 +1119,9 @@ Lets update kit first and then migrate the other projects.
 
 
 This is about the file structure not the view structure
+
+## 2026-11-24 23:08Z
+
+<!-- from: note-button -->
+
+kit is able to perform a dev -> main release (this can be toggled in the projects settings and is default off) lets switch this on for kit though
