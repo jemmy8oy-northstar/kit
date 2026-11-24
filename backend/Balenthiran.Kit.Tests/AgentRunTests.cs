@@ -809,6 +809,34 @@ public class AgentRunTests
     }
 
     [Fact]
+    public void BEH_UI_7_the_runs_page_reads_its_cards_from_the_visibility_route_newest_start_first()
+    {
+        var (router, store, _, cookie) = OperatorRouter();
+        var older = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(-30));
+        var newest = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(10));
+
+        var r = router.Route("GET", "/api/runs/visibility", cookie);
+
+        Assert.Equal(200, r.Status);
+        var page = Assert.IsAssignableFrom<IRunVisibility>(r.Body);
+        Assert.Equal([newest.Id, older.Id], page.Recent.Select(x => x.Id).ToArray());
+    }
+
+    [Fact]
+    public void BEH_UI_8_the_visibility_route_gives_each_recent_run_its_tokens_its_failure_and_unknown_cost()
+    {
+        var (router, store, _, cookie) = OperatorRouter();
+        var run = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon, "slug-a", "spec");
+        store.AddUsage(run.Id, new AgentUsage(10, 20, 30, 40), 0.5m);
+        store.SetStatus(run.Id, AgentRunStatus.Failed, Noon.AddMinutes(1), "clone exit 128");
+
+        var page = Assert.IsAssignableFrom<IRunVisibility>(router.Route("GET", "/api/runs/visibility", cookie).Body);
+
+        var card = Assert.Single(page.Recent);
+        Assert.Equal((AgentRunStatus.Failed, 100L, "clone exit 128", (decimal?)null), (card.Status, card.Tokens, card.Failure, card.CostUsd));
+    }
+
+    [Fact]
     public void BEH_ORCH_16_a_projects_tickets_are_listed_to_the_operator_alone()
     {
         var (router, _, _, cookie) = OperatorRouter();

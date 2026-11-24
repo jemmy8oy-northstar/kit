@@ -21,6 +21,18 @@ public static class RunVisibilityBuilder
     {
         var chronological = runs.OrderBy(r => r.Started).ToList();
 
+        // Each run's cost is read once, whichever list asks first, so the record is asked the same questions it was before.
+        var costAsked = new Dictionary<string, decimal?>(StringComparer.Ordinal);
+        decimal? CostOf(string runId)
+        {
+            if (!costAsked.TryGetValue(runId, out var usd))
+            {
+                usd = costs.CostOf(runId);
+                costAsked[runId] = usd;
+            }
+            return usd;
+        }
+
         var running = chronological
             .Where(r => r.Status == AgentRunStatus.Running)
             .Select(r =>
@@ -54,7 +66,7 @@ public static class RunVisibilityBuilder
                     RunId = r.Id,
                     Stage = r.Stage,
                     Model = r.Model,
-                    CostUsd = costs.CostOf(r.Id),
+                    CostUsd = CostOf(r.Id),
                 }).ToList(),
                 Reviews = g.Where(r => r.Stage == ReviewStage)
                     .Select(r => (IRequestedReview)new RequestedReview
@@ -67,7 +79,25 @@ public static class RunVisibilityBuilder
             .Reverse()
             .ToList();
 
-        return new RunVisibility { Running = running, Finished = finished };
+        var recent = chronological
+            .OrderByDescending(r => r.Started)
+            .Select(r => (IRecentRun)new RecentRun
+            {
+                Id = r.Id,
+                Project = r.Project,
+                WorkItem = r.WorkItem,
+                Stage = r.Stage,
+                Model = r.Model,
+                Status = r.Status,
+                Started = r.Started,
+                Ended = r.Ended,
+                Tokens = r.InputTokens + r.OutputTokens + r.CacheWriteTokens + r.CacheReadTokens,
+                Failure = r.Failure,
+                CostUsd = CostOf(r.Id),
+            })
+            .ToList();
+
+        return new RunVisibility { Running = running, Finished = finished, Recent = recent };
     }
 
     /// <summary>The stage run before <paramref name="run"/> on the same work item, that is not itself a review; null when none.</summary>

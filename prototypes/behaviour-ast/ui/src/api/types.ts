@@ -655,6 +655,68 @@ export interface AgentRunList {
   claims?: RunClaim[]
 }
 
+/** One run on the runs page's cards (BEH-UI-7, BEH-UI-8), from GET /api/runs/visibility. */
+export interface RecentRun {
+  id: string
+  project: string
+  workItem: string | null
+  stage: string | null
+  model: string
+  /** The state the run record holds: queued, running, finished or failed. */
+  status: string
+  /** ISO 8601 UTC. */
+  started: string
+  ended: string | null
+  /** Input, output and cache tokens together. */
+  tokens: number
+  failure: string | null
+  /** The run's recorded session cost (BEH-COST-1). Null is unknown, never zero. */
+  costUsd: number | null
+}
+
+/** An agent running now (BEH-VIS-1). */
+export interface RunningAgent {
+  id: string
+  project: string
+  workItem: string | null
+  stage: string | null
+  model: string
+  started: string
+  flag: string | null
+  flaggedBy: string | null
+}
+
+/** One stage run of a finished work item (BEH-VIS-2). `costUsd` null is unknown, never zero. */
+export interface FinishedStage {
+  runId: string
+  stage: string | null
+  model: string
+  costUsd: number | null
+}
+
+/** A review a finished work item requested: the stage that asked and the agent that did. */
+export interface RequestedReview {
+  runId: string
+  stage: string | null
+  requestedBy: string | null
+}
+
+/** A work item whose pipeline run has finished (BEH-VIS-2). */
+export interface FinishedRun {
+  project: string
+  workItem: string
+  stages: FinishedStage[]
+  reviews: RequestedReview[]
+}
+
+/** `GET /api/runs/visibility` (BEH-VIS-1, BEH-VIS-2, BEH-UI-7, BEH-UI-8). Operator only. */
+export interface RunVisibility {
+  running: RunningAgent[]
+  finished: FinishedRun[]
+  /** Every run, newest start first. */
+  recent: RecentRun[]
+}
+
 /** One work item of the pipeline (BEH-ORCH-9). */
 export interface PipelineItem {
   project: string
