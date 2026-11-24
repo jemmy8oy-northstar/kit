@@ -136,3 +136,80 @@ describe('BEH-NAV-1: every page carries the navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Projects' })).toBeInTheDocument()
   })
 })
+
+/** The server for the navbar and board tests below: the session, the project list, and one project's detail. */
+function stubKitServer(detail: object = snipIt) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const notes = noNotes(url, init)
+      if (notes) return notes
+      const body = url.endsWith('/api/session')
+        ? { required: false, signedIn: true }
+        : url.endsWith('/api/projects')
+          ? projectsFixture
+          : url.endsWith('/api/projects/snip-it')
+            ? detail
+            : url.endsWith('/tickets')
+              ? { on: true, tickets: [] }
+              : null
+      return body
+        ? { ok: true, status: 200, statusText: 'OK', json: async () => body }
+        : { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-route' }) }
+    }),
+  )
+}
+
+describe('BEH-TICKET-6: the navbar and the boards show only the epic board and the ticket board', () => {
+  it('the navbar has one Board link and no feature or spec board in it (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', '/board')
+    stubKitServer()
+    render(<App />)
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/board')
+    expect(within(nav).queryByRole('link', { name: 'Features' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Stages' })).not.toBeInTheDocument()
+  })
+
+  it('the board switch offers the epic board and the ticket board and no feature or spec view (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', '/board')
+    stubKitServer()
+    render(<App />)
+    const views = await screen.findByRole('navigation', { name: 'Board view' })
+    expect(within(views).getAllByRole('link').map((a) => a.textContent)).toEqual(['Epics', 'Tickets'])
+    expect(within(views).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('BEH-EPIC-4 is its own page: /epics opens the epic board, with no switch option standing for it (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', '/epics')
+    stubKitServer()
+    render(<App />)
+    expect(await screen.findByRole('region', { name: 'Epics' })).toBeInTheDocument()
+    const views = screen.getByRole('navigation', { name: 'Board view' })
+    expect(within(views).getByRole('link', { name: 'Epics' })).toHaveAttribute('aria-current', 'page')
+    expect(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Board' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  it("a ticket's feature page still opens from its feature branch (BEH-TICKET-6)", async () => {
+    window.history.pushState({}, '', '/projects/snip-it/features/FEAT-APP')
+    stubKitServer({ ...snipIt, features: [{ id: 'FEAT-APP', title: 'The app feature', in: [], at: 'snip-it.beh:1' }] })
+    render(<App />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'The app feature' })).toBeInTheDocument()
+  })
+})
+
+describe('BEH-TICKET-1: the navbar and the board page show no feature board', () => {
+  it('the board page keeps its ticket view and the navbar has no Features link (BEH-TICKET-1)', async () => {
+    window.history.pushState({}, '', '/board?project=snip-it')
+    stubKitServer()
+    render(<App />)
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).queryByRole('link', { name: 'Features' })).not.toBeInTheDocument()
+    const views = screen.getByRole('navigation', { name: 'Board view' })
+    expect(within(views).queryByRole('link', { name: 'Features' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^Tickets/ })).toBeInTheDocument()
+  })
+})

@@ -27,3 +27,22 @@ Test plan:
 - BEH-TICKET-6: the navbar and the boards show only the epic board and the ticket board; the eight named cards (BEH-STAGE-1, 7, 8, 9, 10, 11, 12 and BEH-BOARD-1) are marked as to be deleted with a reason beside each and are not removed; BEH-BOARD-10 to 21 are unchanged; BEH-EPIC-4 is its own page, not an option on the BEH-STAGE-8 switch; a ticket's feature and spec pages still open from its feature branch.
 - BEH-TICKET-7: a ticket naming several epics counts toward each of them; a ticket touching several features and specs lists all of them; a ticket naming no epic appears on the ticket board and counts toward no epic's status.
 - BEH-TICKET-8: each open epic's status is counted from the tickets that name it, in the states new, ready, planned, built, blocked and done; the project's first open epic is shown first as its goal; computing the status opens no feature or spec; a blocked ticket is counted once, in the state it is in, and not again as a separate blocked item (BEH-TICKET-3 makes blocked a tag).
+
+Built:
+- BEH-TICKET-1 (UI, components/Tickets.test.tsx): shows each ticket with its status and its open question
+- BEH-TICKET-1 (UI, App.test.tsx): the board page keeps its ticket view and the navbar has no Features link
+- BEH-TICKET-6 (UI, App.test.tsx): the navbar has one Board link and no feature or spec board in it
+- BEH-TICKET-6 (UI, App.test.tsx): the board switch offers the epic board and the ticket board and no feature or spec view
+- BEH-TICKET-6 (UI, App.test.tsx): BEH-EPIC-4 is its own page: /epics opens the epic board, with no switch option standing for it
+- BEH-TICKET-6 (UI, App.test.tsx): a ticket's feature page still opens from its feature branch
+- BEH-TICKET-6 (UI, test/ticketBoardSpec.test.ts): marks the eight cards BEH-TICKET-6 names as to be deleted, with a reason beside each, and removes none
+- BEH-TICKET-6 (UI, test/ticketBoardSpec.test.ts): BEH-BOARD-10 to BEH-BOARD-21 carry no deletion mark and are still in the corpus
+- BEH-TICKET-6 (UI, test/ticketBoardSpec.test.ts): BEH-EPIC-4 and BEH-NARR-1 are kept, unmarked
+- BEH-TICKET-7 (UI, components/Tickets.test.tsx): still shows a ticket that names no epic, on the ticket board
+- BEH-TICKET-7 (UI, components/Tickets.test.tsx): lists every feature its specs sit in, and every spec it touches
+- BEH-TICKET-7 (UI, pages/Epics.test.tsx): counts a ticket toward each epic it names, through the features its specs sit in
+- BEH-TICKET-7 (UI, pages/Epics.test.tsx): counts a ticket that names no epic toward no epic
+- BEH-TICKET-8 (UI, pages/Epics.test.tsx): counts each open epic's tickets by state, a blocked ticket once in the state it is in
+- BEH-TICKET-8 (UI, pages/Epics.test.tsx): computing the status opens no feature or spec page
+- BEH-TICKET-8 (UI, pages/Epics.test.tsx): shows a project's first open epic first, as its goal
+Whole suite: 2143 backend tests (dotnet test ./backend) and 631 UI tests (npm test), all passed; UI lint and build, and the kit and kit-ui Stage-0 gates, pass.

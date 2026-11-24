@@ -32,3 +32,10 @@
 - **Malformed bundles (BEH-TICKET-5):** a malformed bundle stops its item with `TriageStage.MalformedPrefix` + the parser's line-named reason, and that reason is the ticket's blocked tag. Triage gets those tickets under "## Malformed bundles (rewrite each)" and reports the fix; the fix is a `kit` comment on the ticket. Nothing starts a triage for a malformed ticket by itself: a note or his reply on it does. The raw bad text is not stored, so the board shows the reason and line, not the bundle.
 - **Test counts here:** `dotnet test ./backend` prints no summary in this sandbox, so use `dotnet test backend/Balenthiran.Kit.Tests` for the count: 1640 passed on 2026-11-21 after BEH-TICKET-5.
 - **BEH-UI-7 (pipeline runs, kit.beh):** kit/work/pipeline-runs-recent-first took BEH-UI-5 before dev reserved it for the agents page, and dev's ticket card took BEH-UI-6. The runs card is BEH-UI-7 after the merge of dev on 2026-11-20 (its C# tests are BEH_UI_7_*).
+
+## Ticket board and epic board (BEH-TICKET-6 to 8, bundle ticket-board-only-model)
+- The gate reads test titles as literal strings. A title built from `it.each` or a template string is not found, so `check kit-ui` fails with "has no test titled ...". Give each mapped test a literal title.
+- When a test title is renamed, check `kit-ui.tests.json` for every card that maps to it. BEH-STAGE-8 and BEH-EPIC-4 share one title, and the gate names only the first missing one.
+- A ticket has no epic field. It names the epics of the features its specs sit in (`epicsOfTicket` in `ui/src/epics.ts`, the BEH-TICKET-7 contract), so an epic's ticket counts are derived in the page, not stored.
+- The feature board (`/stages`) and the spec board (`/board` behaviour list) are out of the navbar and the view switch; the routes still work by URL. The `/board` page still lists behaviour cards under the tickets until the owner answers the spec-board question on BEH-TICKET-6.
+- `ui/src/tickets.ts` and `ui/src/components/Tickets.tsx` do exist, under `prototypes/behaviour-ast/ui/src/`.

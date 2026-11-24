@@ -1,5 +1,5 @@
 import { ApiError, fetchTickets } from './api/client'
-import type { Ticket, TicketList } from './api/types'
+import type { Behaviour, Ticket, TicketList } from './api/types'
 
 /**
  * A project's tickets (BEH-ORCH-16 slice 4), or null for someone they are refused to, or a filter naming no project
@@ -56,4 +56,13 @@ export function ticketColumns(tickets: Ticket[]): TicketColumn[] {
       .sort((x, y) => x.t.priority - y.t.priority || Number(!!y.t.blockedBecause) - Number(!!x.t.blockedBecause) || x.i - y.i)
       .map(({ t }) => t),
   }))
+}
+
+/**
+ * BEH-TICKET-7: the features a ticket touches, from the specs it names. A spec sits in the features its `in` lines
+ * name, so the features are those, once each, in the order the specs name them. A spec Kit cannot find is skipped.
+ */
+export function featuresOfTicket(ticket: Ticket, behaviours: Behaviour[]): string[] {
+  const named = new Set(ticket.cards)
+  return [...new Set(behaviours.filter((b) => named.has(b.id)).flatMap((b) => b.in))]
 }

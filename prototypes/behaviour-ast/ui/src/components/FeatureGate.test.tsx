@@ -114,12 +114,12 @@ describe('A switched-off feature is gone for that group (BEH-FLAGS-2)', () => {
   })
 
   it('BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on', async () => {
-    window.history.pushState({}, '', '/epics')
-    vi.stubGlobal('fetch', server(ann, { group: 'testers', off: ['FEAT-BOARD', 'FEAT-EPICS'] }).fn)
+    window.history.pushState({}, '', '/board')
+    vi.stubGlobal('fetch', server(ann, { group: 'testers', off: ['FEAT-BOARD'] }).fn)
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Not available' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/stages')
+    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/epics')
   })
 
   it('BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard', async () => {
