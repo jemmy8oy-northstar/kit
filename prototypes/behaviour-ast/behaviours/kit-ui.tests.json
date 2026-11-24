@@ -1177,6 +1177,32 @@
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_run_of_another_stage_or_none_is_unchanged_and_still_pushes_what_it_left" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_The_pool_gives_a_run_its_stage_only_when_the_claim_has_one" }
   ],
+  "BEH-UI-7": [
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_7_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_7_a_run_still_running_is_placed_by_its_start_not_at_the_bottom" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_7_the_runs_page_reads_its_cards_from_the_visibility_route_newest_start_first" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_7_the_recent_runs_are_newest_start_first_whatever_order_they_were_given_in" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "renders the runs in the order the API sends, with no client-side re-sort (BEH-UI-7)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-7 shows each recent run as a card read from GET /api/runs/visibility, not as a text row" }
+  ],
+  "BEH-UI-8": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_8_each_recent_run_carries_the_state_the_run_record_holds" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_8_with_no_cost_record_every_recent_run_costs_unknown" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_8_a_run_with_no_recorded_cost_is_unknown_and_a_run_recorded_at_zero_is_zero" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_8_the_visibility_route_gives_each_recent_run_its_tokens_its_failure_and_unknown_cost" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-8 shows each run state as a tag matching the state the run record holds" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-8 shows a run with no recorded cost as unknown, never as zero" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-8 shows a run recorded at cost 0.00 differently from a run with no recorded cost" }
+  ],
+  "BEH-UI-9": [
+    { "file": "backend/Balenthiran.Kit.Tests/CommittedArtefactTests.cs", "title": "BEH_UI_9_the_run_cards_and_details_are_declared_in_kit_ui_beh_beside_the_run_page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-9 opens the details page for the run whose card was clicked, and no other run" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 shows the stages and their recorded costs, with unknown for a stage with no cost, and the reviews it requested (BEH-VIS-2)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 shows the agents running on the run work item and any review each flagged (BEH-VIS-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 does not repeat the cost by stage that BEH-ORCH-9 shows on the runs page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 says run not found for a run id that no longer exists, not an empty page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 reads the run from GET /api/runs/visibility, the route the runs page cards read" }
+  ],
   "BEH-VIS-1": [
     { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_running_run_lists_each_running_agent_with_its_current_stage" },
     { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_review_an_agent_flagged_shows_on_its_stage_with_the_agent_that_flagged_it" },

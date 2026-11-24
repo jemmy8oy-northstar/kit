@@ -3723,3 +3723,40 @@ behaviour BEH-VIS-2 "A historic run shows what each stage cost, and which review
   then reports run:Costs
   review unreviewed
   contract my assumption: the costs come from the per-session record of BEH-COST-1 when it exists, and a stage with no recorded cost shows as unknown, never as zero
+
+# ── the runs page as cards, and a run's details page (moved from kit.beh, 2026-11-24: a screen, which kit.beh may not hold) ──
+
+behaviour BEH-UI-7 "The pipeline runs page lists the most recent run first"
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports order:NewestFirst
+  contract my assumption: the runs page is ordered by when each run started, newest
+  contract at the top; the older runs follow, and paging does not reverse that order
+  contract my assumption: this card is placed under the server area because the spec
+  contract for the runs page is not in this file; check with the owner
+  contract my assumption: each run on the runs page is a card, not a text row; BEH-UI-8 and BEH-UI-9 say what the card and its details page show
+
+behaviour BEH-UI-8 "Each recent run on the runs page is a card showing its state as a tag and its total cost"
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports layout:RunCards
+  contract my assumption: the runs page lists the recent runs as cards, not as a long block of text
+  contract my assumption: each card shows the run's state as a tag, for example running, passed, failed or blocked
+  contract my assumption: each card shows the run's total cost; a run whose cost is unknown shows unknown, not zero
+  contract my assumption: the card design is the builder's to choose, within the existing visual design system
+
+behaviour BEH-UI-9 "Clicking a run card opens that run's details page"
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports page:RunDetails
+  contract my assumption: the details page for a run is designed by the builder and shown for review; it is not a fixed layout in this spec
+  contract my assumption: the details page shows the run the card was clicked on, and a run that no longer exists shows a clear message, not an empty page
