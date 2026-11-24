@@ -403,6 +403,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   then sees heading:KitBoardTitle
   contract the navbar marks the view you are on; the projects link is the existing project list
   contract my assumption: the navbar is on every page, feature and behaviour pages included, not only the board and the project list (kit.notes.md#2026-10-11-1239: "a docker or navbar with two views")
+  contract my assumption (kit.notes.md#2026-11-24-2246Z): once the UI is separated by project, the page Kit opens on is the current projects page (KitProjects), not the board
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
   in FEAT-BOARD
@@ -2865,6 +2866,7 @@ behaviour BEH-NARR-1 "Each project says what it is working towards, taken from i
   contract my assumption: the top of a project's page names its current goal (its highest-priority open epic) and how far along it is, and the agent picks work that moves that goal before anything else
   contract built 2026-10-31: the project page leads with "Working towards" and its goal epic, linked, with how many of its behaviours are built; an epic is open while any behaviour under it is pending, and the goal is the first open epic in the corpus (epics carry no priority yet), never one its title parks "out of scope"
   contract my assumption: the agent ranking its own work by that goal is not built here; its Queue order still comes from card priorities
+  contract my assumption (kit.notes.md#2026-11-24-2246Z): on the projects page the opening page shows, "Working towards: {epic}" is the first thing shown for each project, before its other content; the epic is the same goal epic as above
 
 behaviour BEH-NARR-2 "A project with no goal gets asked what it is working towards, or whether it is being maintained"
   in FEAT-NARRATIVE
