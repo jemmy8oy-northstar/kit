@@ -12,6 +12,12 @@ Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md
 Context:
 Note asks that the epic view show the features under an epic, and asks whether features can tag epics at all. Spec already lets a feature tag an epic with `in EPIC-...` (BEH-EPIC-2, BEH-EPIC-1). BEH-EPIC-4 (epic board card) and BEH-EPIC-8 (epic page) already list tagged features as an assumption; this change adds the contract that the features under an epic are shown, at any depth, in both views. Owner has not said whether a behaviour may take the epic tag directly (open in BEH-EPIC-2); this change does not decide that.
+Built:
+- BEH-EPIC-4 (Epics.test.tsx): "lists a feature tagged three levels down, and not the untagged parents above it (BEH-EPIC-4)"
+- BEH-EPIC-4 (Epics.test.tsx): "lists a feature tagged into an epic with no behaviours, and reads 0 of 0 built (BEH-EPIC-4)"
+- BEH-EPIC-8 (EpicPage.test.tsx): "links the feature tagged three levels down and the feature with no behaviours in its Features region (BEH-EPIC-8)"
+- BEH-EPIC-8 (EpicPage.test.tsx): "lists the same feature ids on the epic page as on its board card (BEH-EPIC-8)"
+- Whole suite: 2834 tests ran and all passed (backend 2182, UI 652 with 5 todo not run); both Stage-0 gates and UI lint and build pass.
 Test plan:
 - BEH-EPIC-4: existing Epics.test.tsx "shows an epic its tagged features, linked, and their behaviours built out of total at any depth" covers a tagged feature listed and linked on its epic's card; keep it.
 - BEH-EPIC-4 (new, Epics.test.tsx): a feature tagged into the epic three levels below the project's top feature is listed on the card, and its untagged parents are not.

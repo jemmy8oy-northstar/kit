@@ -52,6 +52,21 @@ const details: Record<string, { epics?: Epic[]; features: Feature[]; behaviours:
   ideas: { epics: [epic('EPIC-IDEA')], features: [], behaviours: [] },
 }
 
+// A project whose epic tags sit low in the tree: FEAT-DEEP is three levels below the top feature.
+const deepDetails: typeof details = {
+  deep: {
+    epics: [epic('EPIC-DEEP'), epic('EPIC-BARE')],
+    features: [
+      feat('FEAT-ROOT'),
+      feat('FEAT-L1', { in: ['FEAT-ROOT'] }),
+      feat('FEAT-L2', { in: ['FEAT-L1'] }),
+      feat('FEAT-DEEP', { in: ['FEAT-L2'], epics: ['EPIC-DEEP'] }),
+      feat('FEAT-BARE', { epics: ['EPIC-BARE'] }),
+    ],
+    behaviours: [beh('D-1', { in: ['FEAT-DEEP'] })],
+  },
+}
+
 const summaries = [
   { app: 'alpha' },
   { app: 'kit-ui', project: 'kit' },
@@ -60,12 +75,12 @@ const summaries = [
   { app: 'broken', error: 'broken.beh:3: expected a verb' },
 ]
 
-function renderEpics(projects = summaries) {
+function renderEpics(projects = summaries, data: typeof details = details) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (path: string) => {
       const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
-      return { ok: true, status: 200, statusText: 'OK', json: async () => (app ? { app, ...details[app] } : { projects }) }
+      return { ok: true, status: 200, statusText: 'OK', json: async () => (app ? { app, ...data[app] } : { projects }) }
     }),
   )
   render(
@@ -102,6 +117,25 @@ describe('Epics', () => {
     )
     expect(card('EPIC-EMPTY').getByText('0 of 0 behaviours built')).toBeInTheDocument()
     expect(card('EPIC-EMPTY').getByText('No feature is in it yet.')).toBeInTheDocument()
+  })
+
+  it('lists a feature tagged three levels down, and not the untagged parents above it (BEH-EPIC-4)', async () => {
+    renderEpics([{ app: 'deep' }], deepDetails)
+    await screen.findByRole('region', { name: 'Epics' })
+    const deepCard = card('EPIC-DEEP')
+    expect(deepCard.getByRole('link', { name: 'title of FEAT-DEEP' })).toHaveAttribute('href', '/projects/deep/features/FEAT-DEEP')
+    for (const parent of ['FEAT-ROOT', 'FEAT-L1', 'FEAT-L2']) {
+      expect(deepCard.queryByRole('link', { name: `title of ${parent}` })).toBeNull()
+    }
+    expect(deepCard.getByText('1 of 1 behaviours built')).toBeInTheDocument()
+  })
+
+  it('lists a feature tagged into an epic with no behaviours, and reads 0 of 0 built (BEH-EPIC-4)', async () => {
+    renderEpics([{ app: 'deep' }], deepDetails)
+    await screen.findByRole('region', { name: 'Epics' })
+    const bareCard = card('EPIC-BARE')
+    expect(bareCard.getByRole('link', { name: 'title of FEAT-BARE' })).toHaveAttribute('href', '/projects/deep/features/FEAT-BARE')
+    expect(bareCard.getByText('0 of 0 behaviours built')).toBeInTheDocument()
   })
 
   it('says so when no project declares an epic', async () => {
