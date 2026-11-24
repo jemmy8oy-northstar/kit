@@ -131,7 +131,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // ticket comes back at the state it reached, so its review would not be what ran again. A genuinely red pull request is
     // tested once more per restart; a built ticket has no other way out of a block (a reply wakes only new, ready, planned).
     private static readonly System.Text.RegularExpressions.Regex RetryableBlock =
-        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost)");
+        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost"
+            // claude-code-bot#151: a conflict is dev moving under the branch, not a decision; its resolve run may now succeed.
+            + @"|the conflict-resolution run failed|its pull request was not merged: (it has a conflict with its base branch|it still conflicts with its base|its base kept moving))");
 
     /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
     public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);

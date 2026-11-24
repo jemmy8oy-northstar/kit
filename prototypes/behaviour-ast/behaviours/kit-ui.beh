@@ -1805,6 +1805,7 @@ behaviour BEH-ORCH-19 "A run that failed, was lost or changed nothing is tried a
   contract known cost: a pull request whose tests really fail is tested once more at each restart, and each release is a restart. A built ticket has no other way out of a block, as a reply wakes only new, ready and planned tickets
   contract my assumption: when Kit starts, a run that has been going since more than a lease before the start is counted lost at once, instead of getting a fresh lease from each restart. Each release restarts Kit, so runs days old stayed "running since before Kit last started" on Runs → Now
   contract built (Pipeline.TryAgain, Pipeline.Retryable, RunnerPool.Forgotten): retries are counted in memory per ticket and reset when a run moves it on
+  contract my assumption (claude-code-bot#151): a conflict block is a run's, not a decision, so it is retried at a restart like a failed test: "the conflict-resolution run failed", and a pull request not merged because it has a conflict, still conflicts after a resolve run, or conflicted again after 3. The ticket comes back built, and the merge job gives it a resolve run (BEH-ORCH-11). A red Actions check is still not retried. Kit#868, #878, #881, #889 and #895 were stopped for good before this, as a built ticket has no reply path
 
 behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
   in FEAT-AGENT-PIPELINE
