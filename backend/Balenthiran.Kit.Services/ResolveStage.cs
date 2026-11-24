@@ -22,7 +22,7 @@ public static class ResolveStage
         sb.Append("2. Merge origin/").Append(baseBranch).Append(" into it (a merge, not a rebase). Git will stop at the conflicts.\n");
         sb.Append("3. Resolve each conflict keeping the intent of both sides: what the branch added and what ").Append(baseBranch)
             .Append(" changed must both still work. Read the bundle below to see what the branch is for. Change nothing the conflicts do not need.\n");
-        sb.Append("4. Run `git grep -n -E '^(<<<<<<<|=======|>>>>>>>)( |$)'`: it must find nothing. Then run the project's whole test suite and make it pass.\n");
+        sb.Append("4. Run `git grep -n -E '^(<<<<<<<|=======|>>>>>>>)( |$)'`: it must find nothing. Then run ").Append(TestStage.WholeSuite).Append(", and make it pass.\n");
         sb.Append("5. Commit the merge and push it to ").Append(branch).Append(" on origin as a plain push, then STOP.\n\n");
         // claude-code-bot#151: nearly every conflict the pipeline met was two branches adding lines at the same place in the
         // same shared files, so the run is told what each of those files is rather than left to work it out.
