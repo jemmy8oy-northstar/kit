@@ -21,3 +21,10 @@ Test plan:
 - BEH-AGENTPAGE-1: App.tsx has no KitAgents route and no import of pages/Agents, and the navbar has no agents link.
 - BEH-AGENTPAGE-1: the navbar still shows Runs (BEH-USERS-9), and the Runs page still reads GET /api/runs unchanged.
 - BEH-AGENTPAGE-1: the full UI suite (npm test in prototypes/behaviour-ast/ui) passes after removal, with no test importing the deleted page.
+Built:
+- BEH-AGENTPAGE-1: the agents page is removed from pages/ (Agents.tsx and Agents.test.tsx are gone)
+- BEH-AGENTPAGE-1: App.tsx has no KitAgents route, no import of pages/Agents, and no agents navbar link
+- BEH-AGENTPAGE-1: kit-ui.tests.json has no BEH-AGENTPAGE-1 key, so no mapping names a missing file
+- BEH-AGENTPAGE-1: kit-ui.beh has no BEH-AGENTPAGE-1 card and no FEAT-AGENTS feature
+- BEH-AGENTPAGE-1: the navbar still shows Runs (BEH-USERS-9), and the Runs page still reads GET /api/runs
+- Ran: UI suite (npm test in prototypes/behaviour-ast/ui) 614 passed, 5 todo, 53 files, all passed; backend suite (dotnet test backend/Balenthiran.Kit.Tests, with ICU) 2143 passed, 0 failed; stage-0 gate `check kit` and `check kit-ui` pass
