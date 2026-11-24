@@ -218,7 +218,13 @@ describe('Board', () => {
 
     const section = within(await screen.findByRole('region', { name: /Tickets/ }))
     expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
-    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Move the spec move-spec', 'Sort the list sorting'])
+    // BEH-UI-6: the merged ticket is in the closed column, which does not add to the open count.
+    expect(within(section.getByRole('region', { name: 'closed' })).getByRole('heading', { level: 4 })).toHaveTextContent('closed 1')
+    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Move the spec move-spec',
+      'Sort the list sorting',
+      'Already merged gone',
+    ])
     expect(section.getByTestId('blocked-because')).toHaveTextContent('which title should the card keep?')
     expect(section.getByText('Blocked: which title should the card keep?')).toBeVisible()
     expect(section.getByRole('link', { name: 'A-2' })).toHaveAttribute('href', '/projects/alpha/behaviours/A-2')
@@ -248,7 +254,7 @@ describe('Board', () => {
     tickets = {}
   })
 
-  it('shows each open state as a labelled column, and no column for a state with none open (BEH-UI-6)', async () => {
+  it('shows each open state as a labelled column, then a closed column last for merged tickets, and no column for a state with none open (BEH-UI-6)', async () => {
     mockApi()
     tickets = {
       alpha: {
@@ -265,12 +271,17 @@ describe('Board', () => {
     const root = await screen.findByRole('region', { name: /Tickets/ })
     const section = within(root)
     const columns = Array.from(root.querySelectorAll('section.ticket-column'))
-    expect(columns.map((c) => c.getAttribute('data-state'))).toEqual(['new', 'ready'])
+    expect(columns.map((c) => c.getAttribute('data-state'))).toEqual(['new', 'ready', 'closed'])
     expect(section.getByRole('region', { name: 'new' })).toHaveAttribute('data-state', 'new')
     expect(section.getByRole('region', { name: 'ready' })).toHaveAttribute('data-state', 'ready')
+    // BEH-UI-6: the merged ticket is in the closed region, which is last and holds it.
+    const closed = section.getByRole('region', { name: 'closed' })
+    expect(closed).toHaveAttribute('data-state', 'closed')
+    expect(within(closed).getByRole('heading', { level: 3 })).toHaveTextContent('Merged one m1')
     expect(section.queryByRole('region', { name: 'planned' })).not.toBeInTheDocument()
     expect(section.queryByRole('region', { name: 'built' })).not.toBeInTheDocument()
-    expect(section.queryByRole('region', { name: 'merged' })).not.toBeInTheDocument()
+    // The Tickets total still counts only the open tickets: the merged one is not among them.
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
     tickets = {}
   })
 
