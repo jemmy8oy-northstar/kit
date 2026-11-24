@@ -436,6 +436,10 @@
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_read_one_of_his_projects_by_its_url" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
   ],
+  "BEH-USERS-14": [
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "BEH_USERS_14_no_sign_up_route_exists_and_a_sign_up_request_is_not_found" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_wrong_password_and_an_unknown_user_answer_alike" }
+  ],
   "BEH-LOADING-1": [
     { "file": "prototypes/behaviour-ast/ui/src/components/Loading.test.tsx", "title": "opens on Kit's name and a spinner while it asks the server who you are" },
     { "file": "prototypes/behaviour-ast/ui/src/components/Loading.test.tsx", "title": "says it is still waiting once the server is slow, and not before" }
