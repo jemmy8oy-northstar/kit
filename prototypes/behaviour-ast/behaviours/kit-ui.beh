@@ -3662,6 +3662,8 @@ behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, 
   contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
   contract built: a project's page has its own navigation, "This project": its chat (the Chat on that project), its board (the board filtered to it) and its notes, beside designing it with the spec agent; the main navigation keeps Projects, the Inbox and Settings
   contract my assumption: a project's configuration is, for now, the tabs its page already has (schedule, principles, architecture); its integrations and secrets join it with the integrations page (BEH-PROJCONF-1)
+  contract "Everything should be organised by project (repo). Just like in git. We should be able to view the boards, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: the 2026-11-23 note moves the Inbox and the runs into each project, so the "Inbox" in the built line above is the global Inbox only, and each project gets its own; the global level keeps Projects, the global Notifications and global Settings, and the project level holds its Chat, Inbox, board, runs and settings (BEH-SPACE-5)
 
 behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
   in FEAT-PROJECT-SPACES
@@ -3689,6 +3691,25 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
   contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
+
+behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and only the entry page, global notifications and global settings are kept above projects"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-23-2257
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "We should be able to view the boars, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: each project's page has its own Inbox (only items of that project), its runs (only that project's pipeline runs) and its settings (its configuration, BEH-SPACE-1), beside its Chat and board
+  contract my assumption: the global navigation keeps Projects, the global Notifications and the global Settings; global Settings holds what is not about one project, and project settings hold what is
+  contract my assumption: the global Inbox and the global board stay as an all-projects view for seeing everything (BEH-SPACE-3), and nothing is removed from them; this card adds the per-project views, it does not replace the global ones
+  contract my assumption: "isolated by repo, like GitHub" means a project's views never show another project's items, runs or config, and switching project is a navigation step, not a filter left on
+  contract my assumption: this card does not decide the pipeline or the data store; it changes what each page is scoped to
+  contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
+  contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
+  contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
 
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES
