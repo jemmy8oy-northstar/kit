@@ -1075,3 +1075,9 @@ kit is able to make multiple tickets per note
 <!-- from: note-button -->
 
 kit triage should run in serial to ensure that there are no duplicates or overlap in parallel additions
+
+## 2026-11-24 22:41Z
+
+<!-- from: note-button -->
+
+instead of tickets being under board -> behaviours, it should be under board -> tickets
