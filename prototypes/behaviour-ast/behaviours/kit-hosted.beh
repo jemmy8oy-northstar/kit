@@ -374,6 +374,7 @@ behaviour BEH-GATE-H1 "Nothing of Kit is read by anyone who has not signed in"
   contract another user is refused each of the operator's projects with 403 not-yours, and their list holds only their own (BEH-USERS-2, BEH-USERS-8)
   contract my assumption: still open signed out are health and session (the sign-in page needs them), the idle setting (the agent reads it with no session) and the dev process (each run fetches it with no session); the UI bundle and the splash are pages, not data
   contract on a Kit with no password, loopback reads everything, as it writes everything; any other interface reads nothing
+  contract my assumption: the early-access username and password sign-in (BEH-USERS-1) and its GitHub sign-in (BEH-USERS-10) are the only ways in while signed out; they add no read to the list above, so this card's answers do not change for them
 
 behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the operator"
   in FEAT-LOCK
