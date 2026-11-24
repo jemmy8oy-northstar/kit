@@ -176,8 +176,9 @@ behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error n
   contract and a feature id declared twice; silence on any of them leaves a behaviour drawn nowhere
   contract a tag is not a dependency: `in` names only FEAT- ids and `serves` only BEH- ids, so moving a
   contract card on a page can never change what Kit refuses to delete
+  contract my assumption: a `.kit` file or readme.md inside a feature folder that tags its parent with `in` is the child feature; BEH-PARSE-6 reads that parent tag, so the same refusals apply to folder children
 
-behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
+behaviour BEH-PARSE-3"A priority is 1 to 5, set once; anything else is an error naming its line"
   in FEAT-PARSER
   source defined kit#284
   priority 5
@@ -198,6 +199,30 @@ behaviour BEH-PARSE-4 "A review request must say what to look at"
   then raises error:ReviewRequestWithoutWhat
   contract `review requested <what>` is the agent asking for his eyes on built work; like a denial, a bare one is refused
   contract it is explicit, so a later `source inferred` line does not reset it to unreviewed
+
+behaviour BEH-PARSE-5 "Features are folders under .kit/features, and a folder's readme describes its feature"
+  in FEAT-PARSER
+  source defined kit.notes.md#2026-11-24-2228Z
+  review unreviewed
+  priority 2
+  actor engineer
+  given corpus:FeatureFolders
+  when runs command:KitParse
+  then reports feature:FromFolders
+  contract my assumption: a folder under .kit/features is a feature; its subfolders are child features, its {name}.kit files are the specs it holds, and its readme.md describes it without being a spec
+  contract my assumption: a folder with neither a readme nor a .kit file is not a feature and is skipped, so an empty folder never fails a build
+
+behaviour BEH-PARSE-6 "A kit or readme under a feature folder that does not tag its parent is an error naming its file"
+  in FEAT-PARSER
+  source defined kit.notes.md#2026-11-24-2228Z
+  review unreviewed
+  priority 2
+  actor engineer
+  given corpus:UntaggedChild
+  when runs command:KitParse
+  then raises error:MissingParentTag
+  contract my assumption: every child .kit file and readme.md under a feature folder carries an `in` line naming its parent folder's feature; a child may name further features too, and those extra tags are never refused
+  contract my assumption: the check runs with the other parse checks, so a missing parent tag fails the same build as a behaviour with no test (BEH-GATE-1)
 
 behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
   in FEAT-SERVER
