@@ -11,6 +11,7 @@ import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Health from './pages/Health'
 import Runs from './pages/Runs'
+import RunDetails from './pages/RunDetails'
 import Inbox from './pages/Inbox'
 import Chat from './pages/Chat'
 import Notifications from './pages/Notifications'
@@ -124,6 +125,7 @@ export default function App() {
               <Route path="/chat" element={gated('FEAT-CHAT', <Chat />)} />
               <Route path="/activity" element={gated('FEAT-ACTIVITY', <Activity />)} />
               <Route path="/runs" element={<Runs />} />
+              <Route path="/runs/:id" element={<RunDetails />} />
               <Route path="/notifications" element={gated('FEAT-NOTIFICATIONS', <Notifications />)} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/projects/:app"element={<Project />} />

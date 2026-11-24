@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
+import { noNotes } from './test/noNotes'
+import projectsFixture from './test/fixtures/projects.json'
+import snipIt from './test/fixtures/project-snip-it.json'
 
 /**
  * The router's `basename` — kit#49, rule 8.
@@ -93,5 +96,43 @@ describe('the router under a path prefix', () => {
     const brand = await screen.findByRole('link', { name: 'Kit' })
     expect(brand.getAttribute('href')).toBe('/')
     await waitFor(() => expect(asked).toContain('/api/projects'))
+  })
+})
+
+describe('BEH-NAV-1: every page carries the navbar', () => {
+  // One of each page the card names: the project list, the board, a project, a feature and a behaviour.
+  const pages: [string, string][] = [
+    ['the project list', '/'],
+    ['the board', '/board'],
+    ['a project', '/projects/snip-it'],
+    ['a feature', '/projects/snip-it/features/FEAT-APP'],
+    ['a behaviour', `/projects/snip-it/behaviours/${snipIt.behaviours[0].id}`],
+  ]
+
+  it.each(pages)('%s renders the navbar, with the board and the projects in it', async (_name, path) => {
+    window.history.pushState({}, '', path)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const notes = noNotes(url, init)
+        if (notes) return notes
+        const body = url.endsWith('/api/session')
+          ? { required: false, signedIn: true }
+          : url.endsWith('/api/projects')
+            ? projectsFixture
+            : url.endsWith('/api/projects/snip-it')
+              ? snipIt
+              : null
+        return body
+          ? { ok: true, status: 200, statusText: 'OK', json: async () => body }
+          : { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-route' }) }
+      }),
+    )
+
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Board' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Projects' })).toBeInTheDocument()
   })
 })

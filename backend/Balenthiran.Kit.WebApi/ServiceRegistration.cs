@@ -77,12 +77,14 @@ public static class ServiceRegistration
         // BEH-USERS-9: runs are recorded in the accounts' database when there is one; without, they die with the pod.
         // No runner exists yet, so a run stays queued; the model proxy is the one way a run reaches the model.
         services.TryAddSingleton<IAgentRunStore>(_ => settings.Accounts ? new PostgresAgentRunStore(settings.ConnectionString()!) : new MemoryAgentRunStore());
+        // BEH-COST-1: each session's reported cost is kept in the accounts' database beside the runs, never in a repo.
+        services.TryAddSingleton<ISessionCostStore>(_ => settings.Accounts ? new PostgresSessionCostStore(settings.ConnectionString()!) : new MemorySessionCostStore());
         // BEH-USERS-9: with KIT_RUNNER_POOL_TOKEN set, runner pods claim queued runs from Kit; the pool is the launcher.
         if (settings.RunnerPool)
         {
             services.TryAddSingleton(sp => new RunnerPool(sp.GetRequiredService<IAgentRunStore>()));
             services.TryAddSingleton<IAgentRunLauncher>(sp => sp.GetRequiredService<RunnerPool>());
-            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>(), sp.GetService<IGitHubTokenSource>() as GitHubAppTokenSource, settings.AgentRunMaxAge, sp.GetService<Pipeline>()));
+            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>(), sp.GetService<IGitHubTokenSource>() as GitHubAppTokenSource, settings.AgentRunMaxAge, sp.GetService<Pipeline>(), sp.GetRequiredService<ISessionCostStore>()));
         }
 
         // BEH-ORCH-3: with KIT_PIPELINE=on a note queues a triage run on the pool. Off, nothing here exists.
@@ -111,7 +113,8 @@ public static class ServiceRegistration
                 merger: sp.GetService<IPullRequestMerger>(),
                 merge: settings.PipelineMerge,
                 tickets: sp.GetRequiredService<ITicketStore>(),
-                jobs: settings.PipelineJobs.ToHashSet()));
+                jobs: settings.PipelineJobs.ToHashSet(),
+                runRetries: Pipeline.RunRetries));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
 
             // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD, KIT_PIPELINE_JOB_MERGE) exists to take a waiting ticket to its run (or, for merge, its pull request to a merge).
@@ -228,7 +231,8 @@ public static class ServiceRegistration
             runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
             agentRunCap: settings.AgentRunCapUsd,
             runnerPool: sp.GetService<RunnerPool>(),
-            pipeline: sp.GetService<Pipeline>()));
+            pipeline: sp.GetService<Pipeline>(),
+            botReadToken: settings.BotReadSecret()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

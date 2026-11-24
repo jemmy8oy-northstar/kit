@@ -377,9 +377,9 @@ public class TriageTests
     {
         var text = TriageContext.ChatInstructions;
         Assert.Contains("Asked what you can do, give the can list and the cannot list above plainly.", text, StringComparison.Ordinal);
-        Assert.Contains("What you cannot do: reorder, pause, schedule or change the priority of items, or edit the spec.", text, StringComparison.Ordinal);
-        Assert.Contains("do not say it is done: offer to leave it as a note for the coding agent to make the change", text, StringComparison.Ordinal);
-        Assert.Contains("call save_note when they agree", text, StringComparison.Ordinal);
+        Assert.Contains("What Kit cannot do: reorder, pause, schedule or change the priority of items, or edit the spec.", text, StringComparison.Ordinal);
+        Assert.Contains("say so and call save_note with their words, so the coding agent makes the change", text, StringComparison.Ordinal);
+        Assert.Contains("never say it is done", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -392,6 +392,15 @@ public class TriageTests
         Assert.Null(Assert.IsType<TriageAnswer>(show.Body).Action);
         var shown = Router(new FakeModel("Here it is.", new TriageAction("show"))).Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "show it again")));
         Assert.Equal(new TriageAction("show"), Assert.IsType<TriageAnswer>(shown.Body).Action);
+    }
+
+    [Fact]
+    public void The_chat_instructions_say_what_kit_cannot_do_and_leave_such_a_request_as_a_note()
+    {
+        // BEH-CHAT-7 (his 23:40Z note): the cannot list, and that such a request is left for the coding agent, never claimed done.
+        Assert.Contains("What Kit cannot do: reorder, pause, schedule or change the priority of items, or edit the spec.", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("call save_note with their words, so the coding agent makes the change", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("never say it is done", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
     [Fact]

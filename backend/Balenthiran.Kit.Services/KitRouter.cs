@@ -81,9 +81,16 @@ public sealed partial class KitRouter(
     IAgentRunLauncher? runLauncher = null,
     decimal agentRunCap = AgentProxy.DefaultCapUsd,
     RunnerPool? runnerPool = null,
-    Pipeline? pipeline = null) : IKitRouter
+    Pipeline? pipeline = null,
+    string? botReadToken = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
+
+    // BEH-ORCH-6: with KIT_BOT_READ_TOKEN set, a GET bearing it is read as the operator. It is
+    // admitted as a session value only this process knows, so it can never arrive in a Cookie header.
+    private readonly byte[]? botRead = string.IsNullOrWhiteSpace(botReadToken) ? null : Encoding.UTF8.GetBytes(botReadToken.Trim());
+
+    private readonly string botSession = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32));
 
     // `auth.enabled()`: a password that is more than JavaScript whitespace.
     private readonly bool lockRequired = password is not null && password.Trim(CorpusParser.WsChars).Length > 0;
@@ -127,8 +134,14 @@ public sealed partial class KitRouter(
     private static readonly Regex Behaviours =new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
-    public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
+    public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null, string? bearer = null)
     {
+        // BEH-ORCH-6: reads only. A session cookie that is valid wins; otherwise a matching bearer reads as the operator.
+        if (method == "GET" && botRead is not null && UserOf(cookie) is null && BotBearer(bearer))
+        {
+            cookie = $"{Cookie}={botSession}";
+        }
+
         if (method == "POST")
         {
             try
@@ -212,6 +225,12 @@ public sealed partial class KitRouter(
         if (pathname == "/api/pipeline")
         {
             return PipelineList(cookie);
+        }
+
+        // BEH-VIS-1, BEH-VIS-2: the run page's data (running agents, finished items with stage costs), for the operator only.
+        if (pathname == "/api/runs/visibility")
+        {
+            return RunVisibilityView(cookie);
         }
 
         // BEH-ORCH-16: a project's tickets and their comment threads, for the operator only, as the pipeline is.
