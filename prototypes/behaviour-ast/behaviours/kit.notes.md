@@ -1081,3 +1081,9 @@ kit triage should run in serial to ensure that there are no duplicates or overla
 <!-- from: note-button -->
 
 instead of tickets being under board -> behaviours, it should be under board -> tickets
+
+## 2026-11-24 22:45Z
+
+<!-- from: note-button -->
+
+notes should show a triage tag if they have been triaged
