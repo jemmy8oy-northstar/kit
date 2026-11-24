@@ -1,6 +1,7 @@
 # Kit specs as feature folders under .kit/features
 Work-item: kit-feature-folder-layout
 Flag: the 23:07Z note is cut after its first 1500 characters and its text is not in kit.notes.md on this branch, so the owner's reply is taken from the visible text only, and the rest of the note may ask for more; the 22:28Z note is also absent; BEH-PARSE-5 and BEH-PARSE-6 rest on the visible text only and stay unreviewed (level: high)
+Review: agreed — checked: neither note is in kit.notes.md, but both cards are unreviewed, tests-first, move no files and add nothing past the visible text, so a fuller note only adds new cards; the builder should know BEH-PARSE-5/6 cite #2026-11-24-2228Z although their text comes from the 23:07Z reply
 Cards:
 - BEH-PARSE-2
 - BEH-PARSE-5
