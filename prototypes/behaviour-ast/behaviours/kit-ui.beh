@@ -1288,6 +1288,8 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract his answer (kit.notes.md#2026-10-23-0638): "let's have a username and password sign in for early access. And then you integrate your GitHub. Then maybe later for general release it's just a GitHub sign in"
   contract early access is invite-only because James creates each account himself; there is no open sign-up, no GitHub allowlist and no code word (he weighed both in kit.notes.md#2026-10-23-0635 and dropped them)
   contract a user can change the password James gave them
+  contract my assumption: the username and password choice is James's decision and reversible; his 06:38Z note ends "Can always change later if need be", so no other card may assume sign-in stays username and password for good
+  contract early access accounts are made only by the operator, for invited people; the card for that is BEH-USERS-14
   contract once signed in, the user connects their GitHub by installing Kit's GitHub App, which is what reads and writes their repos
   contract later, for general release, signing in with GitHub replaces the username and password; that is a separate behaviour, not this one
   contract my assumption: he creates each account inside Kit, signed in as himself, rather than with a command run in the cluster
@@ -1324,6 +1326,8 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
   contract live since kit#503 (2026-10-27 21:39Z): signed out, Kit's sign-in page now offers "Sign in with GitHub"
   contract his question (kit.notes.md#2026-10-31-0055), "Am I able to act as a test user myself by logging in with a different organisation or my personal account?": your personal account, yes; another organisation, no. Kit only records an install on the personal account of whoever authorises (an organisation's install is reachable by any member), and Kit's own install is on the organisation, so your personal account counts as a separate user. Make a test user in Settings, sign in as them in a private window, and connect your personal GitHub. One catch: a GitHub account links to one Kit user, so if you already connected your personal account to yourself in Settings (BEH-SETTINGS-3), the test user needs a second GitHub account
+  contract my assumption, for him to confirm: he tests as a test user by signing in through this card with a second GitHub account; the answer above stands, so another organisation's install is still not claimed
+  contract my assumption, for him to decide: whether to uninstall and reinstall the installed App to test OAuth (kit.notes.md#2026-10-28-0003, "it won't let me install it because it's already installed"); no code change here, and this card is the way to test OAuth without it
 behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their GitHub stops working"
   in FEAT-USER-SIGNUP
   source inferred kit-ui.beh#BEH-USERS-10
@@ -1336,6 +1340,21 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   then sees region:KitMain
   contract my proposal: once a test user signs in only with GitHub (BEH-USERS-10), reinstalling the App, or losing that GitHub account, leaves them no way in
   contract my assumption: in Settings, beside "Add a user", he names a user and gives them a new password; their GitHub link is cleared, so they sign in with that password and connect again
+  contract my assumption: the reinstall case (kit.notes.md#2026-10-28-0003) is the one this card resets; it stays paused, and his answer to that question decides whether it is needed for testing
+
+behaviour BEH-USERS-14 "Early access accounts are made by the operator for invited people only, with no sign-up page"
+  in FEAT-USER-SIGNUP
+  source defined kit.notes.md#2026-10-23-0638
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract my assumption: early access is invite-only; James makes each account himself inside Kit (BEH-USERS-1), so there is no open sign-up, no sign-up page and no code word to try
+  contract my assumption: the GitHub-account whitelist he asked about (kit.notes.md#2026-10-23-0635) is not built in early access; a GitHub account signs in only when James has made the user it belongs to (BEH-USERS-10)
+  contract my assumption: a stranger who opens Kit's sign-in page finds no way to create an account, and a sign-up request is answered as not found
+  contract my assumption, as built: a sign-up request from a stranger is answered 401 not-signed-in, not 404, because the sign-in gate answers before routing (BEH-GATE-H1), so it reveals no route; a signed-in user is answered 403 not-yours (BEH-USERS-8); neither creates an account
+  contract my assumption: this is the default; he can open self sign-up later, which would be a new card
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
