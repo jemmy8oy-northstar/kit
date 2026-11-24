@@ -1,6 +1,7 @@
 # Scrap the agents page
 Work-item: scrap-agents-page
 Flag: the owner says the page "adds nothing" in a tentative note, so it may be a doubt rather than a decision, and the card sits in kit-ui.beh, not kit.beh as the triage brief names (level: high)
+Review: agreed — "lets scrap it" is a direct instruction, not a doubt, and the delete is held as an unreviewed contract he can deny; kit-ui.beh is the right file (the card moved there from kit.beh), and the bundle already names it
 Cards:
 - BEH-AGENTPAGE-1
 Notes:
