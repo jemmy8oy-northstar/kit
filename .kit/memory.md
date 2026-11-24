@@ -52,3 +52,8 @@
 - **Runs cards and run details (BEH-UI-7, BEH-UI-8, BEH-UI-9, bundle runs-page-cards-and-details):** the three cards live in kit-ui.beh now, after BEH-VIS-2. kit-ui.beh cannot tag `in FEAT-SERVER` (that feature is in kit.beh), so the moved cards have no feature tag, as BEH-VIS-1 and BEH-VIS-2 have none. The cards read `recent` from GET /api/runs/visibility, which reads cost through NoStageCostRecord, so every card shows "cost unknown" until a session cost is read there.
 - **Mapped test titles must not contain an apostrophe:** `check` reads the title as written in source (`run\'s` never matches `run's`). Write "run state", not "run's state", in any test a `.tests.json` line maps.
 - **Only CommittedArtefactTests.cs may read `RepoLayout.Behaviours`** (ConformanceTests.Only_the_committed_artefact_checks_read_the_live_corpora). A corpus check in any other test file fails the suite.
+
+## Per-project views (BEH-SPACE-5, bundle per-project-views-and-settings)
+- The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
+- Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.
+- The bundle called the Inbox assertion "in Project.test.tsx"; the main-navigation Inbox assertions were in `FeatureGate.test.tsx`.

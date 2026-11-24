@@ -374,11 +374,69 @@ describe('Runs', () => {
     expect(row).not.toContain('counted lost')
   })
 
+  it('BEH-ORCH-17 shows the give-up time the claim carries, not one counted from thirty minutes', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-19T19:30:00Z'))
+    mockBoth(
+      {
+        capUsd: 5,
+        runs: [{ ...run, id: 't', stage: 'test', workItem: 'list-sorting', status: 'running', started: '2026-11-19T19:20:00Z', ended: null }],
+        claims: [{ runId: 't', claimedAt: '2026-11-19T19:20:00Z', givesUpAt: '2026-11-19T20:20:00Z', lostAt: '2026-11-19T20:30:00Z' }],
+      },
+      { on: true, items: [] },
+    )
+    renderRuns()
+
+    const now = await screen.findByRole('list', { name: 'Runs going now' })
+    const row = within(now).getByRole('listitem').textContent
+    const giveUp = new Date('2026-11-19T20:20:00Z').toLocaleTimeString(undefined, { timeStyle: 'short' })
+    vi.useRealTimers()
+    expect(row).toContain(`gives up at ${giveUp}`)
+    expect(row).not.toContain(new Date('2026-11-19T19:50:00Z').toLocaleTimeString(undefined, { timeStyle: 'short' }))
+  })
+
   it('BEH-ORCH-17 shows no Now section when nothing is going', async () => {
     mockBoth({ capUsd: 5, runs: [run] }, { on: true, items: [] })
     renderRuns()
 
     await screen.findByRole('list', { name: 'Agent runs' })
     expect(screen.queryByRole('list', { name: 'Runs going now' })).toBeNull()
+  })
+})
+
+describe('BEH-SPACE-5: each project has its own runs', () => {
+  it("lists only that project's runs and pipeline items, and another project's are absent", async () => {
+    // The runs and the pipeline are read whole and kept to one project here, in the page that shows them.
+    // mockRoutes answers the visibility route (the cards) from the same runs, as the server does.
+    mockRoutes({
+      runs: {
+        capUsd: 5,
+        runs: [
+          { ...run, id: 'k', project: 'kit', workItem: 'kit-item', costUsd: 0.1 },
+          { ...run, id: 's', project: 'snip-it', workItem: 'snip-item', costUsd: 0.2 },
+        ],
+      },
+      pipeline: {
+        on: true,
+        items: [
+          { project: 'kit', slug: 'kit-item', stage: 'build', status: 'done' },
+          { project: 'snip-it', slug: 'snip-item', stage: 'build', status: 'done' },
+        ],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <Runs only="kit" />
+      </MemoryRouter>,
+    )
+
+    const runs = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(runs).toHaveLength(1)
+    // Direct children only: each item's own runs are a list inside it.
+    const items = Array.from((await screen.findByRole('list', { name: 'Pipeline work items' })).children)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent('kit · kit-item')
+    expect(screen.queryByText(/snip-it/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/snip-item/)).not.toBeInTheDocument()
   })
 })

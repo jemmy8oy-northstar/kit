@@ -511,7 +511,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "A_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "A_secondary_file_of_a_project_is_refused_saying_where_to_set_it" },
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "The_body_must_say_true_or_false" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one switch per project, on only where the grant is" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator this project's switch only, off where the grant is not" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named state when a switch is flipped, and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the change is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the section to anyone but the operator" }
@@ -659,7 +659,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_spec_agent_is_told_the_depth_a_project_chose_and_nothing_for_the_default" },
     { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_a_secondary_app_of_a_project_is_told_the_depth_its_primary_file_chose" },
     { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_shared_process_tells_the_coding_agent_how_to_honour_the_depth" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one depth choice per project, behaviours unless the project says otherwise" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator this project's depth choice only, behaviours unless the project says otherwise" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named depth when a choice is made, and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the depth choice is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the depth section to anyone but the operator" }
@@ -694,6 +694,13 @@
   ],
   "BEH-NARR-3": [
     { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "BEH_NARR_3_the_shared_process_steers_the_agent_toward_the_goal" }
+  ],
+  "BEH-ARCH-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: generating the diagram twice for the same repo gives byte-identical output, and a repo whose files are read in a different order gives the same output too" },
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: a repo that declares a database, an external API and a Helm chart shows each one as a part, taken from the repo’s own files" },
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: a repo with none of the three shows no diagram and draws no invented part" },
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: the diagram is produced by code and makes no model call, so it works with the model unavailable" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/StackDiagram.test.tsx", "title": "BEH-ARCH-4: a repo with none of the three shows the page without error and draws no invented part" }
   ],
   "BEH-ARCH-1": [
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_decision_is_its_own_block_with_a_part_and_repeating_considered_and_because" },
@@ -869,7 +876,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
     { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_secondary_file_of_a_project_is_refused_saying_where_to_set_it" },
     { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_the_body_must_name_build_ask_or_wait" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one choice per project, build anyway unless the project says otherwise" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator this project's choice only, build anyway unless the project says otherwise" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named mode when a choice is made, and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the conflict choice is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the conflict section to anyone but the operator" }
@@ -887,6 +894,18 @@
   ],
   "BEH-SPACE-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
+  ],
+  "BEH-SPACE-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 keeps Projects, Notifications and Settings in the main navigation, and not the Inbox or Runs" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has Its inbox, Its runs and Its settings beside its chat and board, each on its own project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "does not render the global Settings or Notifications on a project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lists only that project's cards, and another project's waiting card is not in it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "switching to another project shows that project's cards, with no filter from the last one left in the address" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "the global inbox with no project picked still lists every project, and so does its picker" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "lists only that project's runs and pipeline items, and another project's are absent" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows no per-project switch on the global page, and keeps the global settings" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "with no project picked, lists the cards of every project, not one" }
   ],
   "BEH-SPACE-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a board filtered to one project is named for it, and See every project clears the filter" },
@@ -976,7 +995,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows each run still going: how long it has run and when it counts as lost, or how long it has waited" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows no Now section when nothing is going" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 says when a run with its own time limit gives up" },
-    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_test_run_limit_is_three_times_the_slower_recorded_time_once_a_cold_run_is_recorded" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_Only_a_test_run_has_a_time_limit_of_its_own" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_test_runs_lease_is_its_limit_plus_ten_minutes_and_a_run_with_no_limit_keeps_150" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_test_run_gives_up_at_its_limit_and_is_counted_lost_ten_minutes_after_that_not_at_150" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows the give-up time the claim carries, not one counted from thirty minutes" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_17_The_pool_gives_a_run_the_claims_time_limit_and_none_when_the_claim_has_none" }
   ],

@@ -450,6 +450,30 @@ describe('BEH-SPACE-1: each project is its own space', () => {
   })
 })
 
+describe('BEH-SPACE-5: a project has its own inbox, runs and settings', () => {
+  it('has Its inbox, Its runs and Its settings beside its chat and board, each on its own project page', async () => {
+    renderApp(snipIt, 'snip-it')
+
+    const nav = await screen.findByRole('navigation', { name: 'This project' })
+    expect(within(nav).getByRole('link', { name: 'Its inbox' })).toHaveAttribute('href', '/projects/snip-it/inbox')
+    expect(within(nav).getByRole('link', { name: 'Its runs' })).toHaveAttribute('href', '/projects/snip-it/runs')
+    expect(within(nav).getByRole('link', { name: 'Its settings' })).toHaveAttribute('href', '/projects/snip-it/settings')
+    expect(within(nav).getByRole('link', { name: 'Its chat' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Its board' })).toBeInTheDocument()
+  })
+
+  it('does not render the global Settings or Notifications on a project page', async () => {
+    renderApp(snipIt, 'snip-it')
+
+    expect(await screen.findByRole('heading', { name: 'snip-it', level: 1 })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Settings' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Notifications' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Promotion to main' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'When specs conflict' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'How involved you are' })).not.toBeInTheDocument()
+  })
+})
+
 describe('BEH-SPACE-3: a project links to its own board', () => {
   it('links to the board filtered to this project, and to designing it in the Chat', async () => {
     renderApp(snipIt, 'snip-it')
