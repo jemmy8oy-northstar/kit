@@ -2708,7 +2708,6 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   source defined kit-ui.notes.md#2026-11-06-1801
   review approved
   priority 5
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
