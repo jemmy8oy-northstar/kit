@@ -11,7 +11,7 @@ import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Health from './pages/Health'
 import Runs from './pages/Runs'
-import Agents from './pages/Agents'
+import RunDetails from './pages/RunDetails'
 import Inbox from './pages/Inbox'
 import Chat from './pages/Chat'
 import Notifications from './pages/Notifications'
@@ -23,7 +23,6 @@ import { BoardNavLink } from './components/BoardViews'
 import { OpeningPage } from './components/OpeningPage'
 import { FeatureGate, FlagsProvider } from './components/FeatureGate'
 import { FEATURE_PAGES, useFlags } from './components/flags'
-import { useSession } from './components/session'
 import { IDEAS } from './board'
 
 /** BEH-FLAGS-2: a page that belongs to a feature, shown only when that feature is on for this group. */
@@ -47,12 +46,6 @@ function ProjectInbox() {
 function ProjectRuns() {
   const { app = '' } = useParams()
   return <Runs only={app} />
-}
-
-/** BEH-AGENTPAGE-1: the agents' work is the runs it reads, so the link is shown where Runs is (BEH-USERS-9). */
-function AgentsNavLink() {
-  const session = useSession()
-  return session?.accounts && !session.operator ? null : <NavLink to="/agents">Agents</NavLink>
 }
 
 export default function App() {
@@ -109,7 +102,6 @@ export default function App() {
               <NavLink to="/principles">Principles</NavLink>
               <FeatureNavLink feature="FEAT-HEALTH" />
               <FeatureNavLink feature="FEAT-ACTIVITY" />
-              <AgentsNavLink />
               <FeatureNavLink feature="FEAT-NOTIFICATIONS" />
               {/* BEH-SETTINGS-1: the account area, GitHub and config, on a page of its own. */}
               <NavLink to="/settings">Settings</NavLink>
@@ -136,7 +128,7 @@ export default function App() {
               <Route path="/chat" element={gated('FEAT-CHAT', <Chat />)} />
               <Route path="/activity" element={gated('FEAT-ACTIVITY', <Activity />)} />
               <Route path="/runs" element={<Runs />} />
-              <Route path="/agents" element={<Agents />} />
+              <Route path="/runs/:id" element={<RunDetails />} />
               <Route path="/notifications" element={gated('FEAT-NOTIFICATIONS', <Notifications />)} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/projects/:app"element={<Project />} />

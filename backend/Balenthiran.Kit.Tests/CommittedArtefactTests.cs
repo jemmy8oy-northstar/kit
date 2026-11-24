@@ -241,4 +241,22 @@ public class CommittedArtefactTests
         Assert.NotNull(after);
         Assert.Equal(before.OrderBy(x => x, StringComparer.Ordinal), after!.OrderBy(x => x, StringComparer.Ordinal));
     }
+
+    /// <summary>
+    /// BEH-UI-7, BEH-UI-8, BEH-UI-9: the runs page's cards and details are declared in kit-ui.beh beside the run page
+    /// (BEH-VIS-1, BEH-VIS-2), and not in kit.beh, which is the command-line layer.
+    /// </summary>
+    [Fact]
+    public void BEH_UI_9_the_run_cards_and_details_are_declared_in_kit_ui_beh_beside_the_run_page()
+    {
+        var ui = File.ReadAllText(Path.Combine(RepoLayout.Behaviours, "kit-ui.beh"));
+        var kit = File.ReadAllText(Path.Combine(RepoLayout.Behaviours, "kit.beh"));
+
+        foreach (var id in new[] { "BEH-UI-7", "BEH-UI-8", "BEH-UI-9", "BEH-VIS-1", "BEH-VIS-2" })
+        {
+            Assert.Contains($"behaviour {id} \"", ui, StringComparison.Ordinal);
+            Assert.DoesNotContain($"behaviour {id} \"", kit, StringComparison.Ordinal);
+        }
+        Assert.True(ui.IndexOf("behaviour BEH-UI-8 \"", StringComparison.Ordinal) > ui.IndexOf("behaviour BEH-VIS-2 \"", StringComparison.Ordinal));
+    }
 }

@@ -321,26 +321,52 @@ public class PipelineTests
     }
 
     [Fact]
-    public void BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150()
+    public void BEH_ORCH_17_A_test_run_limit_is_three_times_the_slower_recorded_time_once_a_cold_run_is_recorded()
+    {
+        // BEH-ORCH-17: the warm suite took 378 seconds on 2026-11-19; the limit waits on a cold run timed on the runner.
+        // A changed recorded figure fails here, so the limit cannot drift from the card without someone noticing.
+        int? cold = Orchestrator.TestColdSeconds;
+        var expected = cold is { } c ? (3 * Math.Max(378, c) + 59) / 60 * 60 : 1800;
+        Assert.Equal(expected, Orchestrator.TestSeconds);
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_Only_a_test_run_has_a_time_limit_of_its_own()
+    {
+        Assert.Equal(Orchestrator.TestSeconds, Orchestrator.SecondsFor(PipelineStage.Test));
+        foreach (var stage in Enum.GetValues<PipelineStage>().Where(s => s != PipelineStage.Test))
+        {
+            Assert.Null(Orchestrator.SecondsFor(stage));
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_test_runs_lease_is_its_limit_plus_ten_minutes_and_a_run_with_no_limit_keeps_150()
+    {
+        Assert.Equal(TimeSpan.FromMinutes(10), RunnerPool.LeaseMargin);
+        Assert.Equal(TimeSpan.FromSeconds(Orchestrator.TestSeconds) + RunnerPool.LeaseMargin, RunnerPool.LeaseFor(Orchestrator.TestSeconds));
+        Assert.Equal(TimeSpan.FromMinutes(150), RunnerPool.LeaseFor(null));
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_test_run_gives_up_at_its_limit_and_is_counted_lost_ten_minutes_after_that_not_at_150()
     {
         // BEH-ORCH-17: kit#768's test run went 90 minutes without a word on 2026-11-19, on a suite that takes 6.
-        Assert.Equal(1800, Orchestrator.SecondsFor(PipelineStage.Test));
-        Assert.Null(Orchestrator.SecondsFor(PipelineStage.Build));
-
         var clock = new Ticking();
         using var rig = new Rig(clock: clock);
         var test = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "list-sorting", "test");
         rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
         var taken = Assert.IsType<PoolClaim>(rig.Claim());
-        Assert.Equal(1800, taken.MaxSeconds);
+        Assert.Equal(Orchestrator.TestSeconds, taken.MaxSeconds);
 
+        var limit = TimeSpan.FromSeconds(Orchestrator.TestSeconds);
         var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
-        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(30), claim.GivesUpAt);
-        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(40), claim.LostAt);
+        Assert.Equal(clock.GetUtcNow() + limit, claim.GivesUpAt);
+        Assert.Equal(clock.GetUtcNow() + limit + RunnerPool.LeaseMargin, claim.LostAt);
 
-        clock.Advance(TimeSpan.FromMinutes(39));
+        clock.Advance(limit + RunnerPool.LeaseMargin - TimeSpan.FromSeconds(1));
         Assert.Empty(rig.Pool.Lost());
-        clock.Advance(TimeSpan.FromMinutes(2));
+        clock.Advance(TimeSpan.FromSeconds(1));
         Assert.Equal(test.Id, Assert.Single(rig.Pool.Lost()));
     }
 
@@ -979,6 +1005,11 @@ public class PipelineTests
     [InlineData("the build run failed (claude exit 1), 3 runs in a row", true)]
     [InlineData("the spec run wrote no test plan", false)]
     [InlineData("its pull request was not merged: conflict", false)]
+    [InlineData("the conflict-resolution run failed", true)]
+    [InlineData("its pull request was not merged: it has a conflict with its base branch", true)]
+    [InlineData("its pull request was not merged: it still conflicts with its base after an agent tried to resolve it", true)]
+    [InlineData("its pull request was not merged: its base kept moving and it conflicted again after 3 resolve runs", true)]
+    [InlineData("its pull request was not merged: ci did not succeed (failure)", false)]
     [InlineData("Decision for a person: which sort order", false)]
     public void BEH_ORCH_19_only_a_block_a_run_made_is_retryable(string because, bool retryable) =>
         Assert.Equal(retryable, Pipeline.Retryable(because));
@@ -3483,6 +3514,12 @@ public class PipelineTests
     private static void EndRun(Rig rig, PoolClaim claim, bool succeeded) =>
         Assert.Equal(200, rig.Routes.Finished(claim.Token, Json(new { status = succeeded ? "finished" : "failed" })).Status);
 
+    // A failed run as the runner reports it, naming its step: "verdict exit 1" is a test run that did not pass.
+    private static void EndRunFailed(Rig rig, PoolClaim claim, string failure) =>
+        Assert.Equal(200, rig.Routes.Finished(claim.Token, Json(new { status = "failed", failure })).Status);
+
+    private const string Red = "verdict exit 1";
+
     [Fact]
     public async Task BEH_ORCH_11_with_the_merge_switch_off_a_conflict_still_stops_the_item_and_starts_no_run()
     {
@@ -3566,6 +3603,89 @@ public class PipelineTests
         var item = ItemOf(rig, "a");
         Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
         Assert.Null(rig.Claim());
+    }
+
+    private static PullRequestMerge ConflictingAt(string head) => new() { Conflict = true, HeadSha = head, Reason = "it has a conflict with its base branch" };
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_at_a_new_head_after_a_resolve_run_that_worked_gets_another_run()
+    {
+        // claude-code-bot#151: the run resolved it (new head h1), then the base moved on again.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        rig.Merges.Answer = ConflictingAt("h1");
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (item.Stage, item.Status));
+        Assert.Contains("You are the conflict-resolution stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_at_the_same_head_after_a_resolve_run_stops_the_item_without_another_run()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_ticket_gets_at_most_three_resolve_runs_however_often_its_base_moves()
+    {
+        Assert.Equal(3, Pipeline.MaxResolveRuns);
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        for (var run = 0; run < Pipeline.MaxResolveRuns; run++)
+        {
+            rig.Merges.Answer = ConflictingAt($"h{run}");
+            await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+            EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        }
+
+        rig.Merges.Answer = ConflictingAt("h9");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: its base kept moving and it conflicted again after 3 resolve runs"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_built_ticket_blocked_by_a_conflict_comes_back_after_a_restart_and_gets_a_resolve_run()
+    {
+        // claude-code-bot#151: kit#868 and others were stopped for good, because a built ticket has no reply path.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1) with { BlockedBecause = "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it" });
+
+        Assert.Null(rig.Tickets.Read("demo").Single().BlockedBecause);
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (ItemOf(rig, "a").Stage, ItemOf(rig, "a").Status));
+        Assert.Contains("You are the conflict-resolution stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_task_says_how_to_resolve_each_shared_kind_of_file()
+    {
+        var task = ResolveStage.BuildTask("demo", ContextBundle.Parse(Specced("a")).Bundle!, "dev");
+
+        Assert.Contains("git diff --name-only --diff-filter=U", task);
+        Assert.Contains(".kit/memory.md is a log of notes: keep every line from both sides", task);
+        Assert.Contains("A .beh spec: usually each side added its own behaviour blocks", task);
+        Assert.Contains("keep dev's id and give the branch's behaviour the next free one", task);
+        Assert.Contains("do not pick one: push nothing and say the run failed, naming that behaviour", task);
+        Assert.Contains("A .tests.json map: keep every key from both sides", task);
+        Assert.Contains("it must find nothing", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
     }
 
     [Fact]
@@ -3687,21 +3807,137 @@ public class PipelineTests
     }
 
     [Fact]
-    public async Task BEH_ORCH_12_a_test_run_that_failed_stops_the_item_with_why_and_is_not_asked_again()
+    public async Task BEH_ORCH_12_a_test_run_that_failed_leaves_the_item_built_and_the_next_merge_look_starts_a_fix_run_at_that_head()
+    {
+        // claude-code-bot#151: five pull requests failed the spec gate at their merge-time test and each stopped for good.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, null), (item.Stage, item.Status, item.StoppedBecause));
+        Assert.Null(rig.Tickets.Read("demo").Single().BlockedBecause);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var fix = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("fix", fix.Stage);
+        Assert.True(RunnerPool.GoesFirst(fix.Stage));
+        Assert.Contains("You are the fix stage for project \"demo\"", fix.Task);
+        Assert.Contains(HeadA, fix.Task);
+        Assert.Contains("kit/work/a", fix.Task);
+        Assert.Contains("Do not delete or weaken a test", fix.Task);
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (ItemOf(rig, "a").Stage, ItemOf(rig, "a").Status));
+
+        // The fix pushed a new head; the next look tests that one, not the red one.
+        EndRun(rig, fix, true);
+        rig.Merges.Answer = NeedsTest(HeadB);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var retest = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", retest.Stage);
+        Assert.Contains(HeadB, retest.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_fix_run_that_left_the_head_where_it_was_stops_the_item_with_why()
     {
         using var rig = ResolveRig(null, BuiltSeed("a", 1));
         rig.Merges.Answer = NeedsTest(HeadA);
         await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
-        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        // Still at HeadA, the commit that already failed: no test is paid for again, and no second fix.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its tests still fail at abc1234 after a fix run changed nothing"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+        Assert.True(Pipeline.Retryable(item.StoppedBecause));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_ticket_gets_at_most_two_fix_runs_and_a_failed_fix_run_says_so()
+    {
+        Assert.Equal(2, Pipeline.MaxFixRuns);
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        string[] heads = ["h0aaaaaaaa", "h1bbbbbbbb", "h2cccccccc"];
+        for (var run = 0; run < Pipeline.MaxFixRuns; run++)
+        {
+            rig.Merges.Answer = NeedsTest(heads[run]);
+            await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+            EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red); // the test at this head fails
+            await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+            var fix = Assert.IsType<PoolClaim>(rig.Claim());
+            Assert.Contains("You are the fix stage", fix.Task);
+            EndRun(rig, fix, true);
+        }
+
+        rig.Merges.Answer = NeedsTest(heads[2]);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its tests still fail at h2ccccc after 2 fix runs"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+
+        // A fix run that fails names itself, not a conflict resolution.
+        using var other = ResolveRig(null, BuiltSeed("b", 2));
+        other.Merges.Answer = NeedsTest(HeadA);
+        await other.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRunFailed(other, Assert.IsType<PoolClaim>(other.Claim()), Red);
+        await other.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(other, Assert.IsType<PoolClaim>(other.Claim()), false);
+
+        var failed = ItemOf(other, "b");
+        Assert.Equal((WorkItemStatus.Stopped, "the fix run failed"), (failed.Status, failed.StoppedBecause));
+        Assert.True(Pipeline.Retryable(failed.StoppedBecause));
+    }
+
+    [Theory]
+    [InlineData("time exit 124")]
+    [InlineData("claude exit 1")]
+    [InlineData(null)]
+    public async Task BEH_ORCH_12_a_test_run_that_ran_out_of_time_or_crashed_stops_the_item_and_starts_no_fix(string? failure)
+    {
+        // A run that never reached its verdict says nothing about the code, so there is nothing for a fix run to fix.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        if (failure is null)
+        {
+            EndRun(rig, claim, false);
+        }
+        else
+        {
+            EndRunFailed(rig, claim, failure);
+        }
 
         var item = ItemOf(rig, "a");
         Assert.Equal((WorkItemStatus.Stopped, "the project's tests failed at abc1234"), (item.Status, item.StoppedBecause));
-        Assert.Equal((TicketState.Built, item.StoppedBecause), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().BlockedBecause));
 
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
 
         Assert.Equal([PullOf(1)], rig.Merges.Asked);
         Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_build_resolve_fix_and_test_all_name_the_same_whole_suite_with_its_ci_steps()
+    {
+        // claude-code-bot#151: the build ran the test projects, the test run ran every CI step, and only the second ran the spec gate.
+        Assert.Contains(".github/workflows", TestStage.WholeSuite);
+        Assert.Contains("spec gate", TestStage.WholeSuite);
+        var bundle = ContextBundle.Parse(Specced("a")).Bundle!;
+        Assert.Contains(TestStage.WholeSuite, BuildStage.BuildTask("demo", bundle));
+        Assert.Contains(TestStage.WholeSuite, ResolveStage.BuildTask("demo", bundle, "dev"));
+        Assert.Contains(TestStage.WholeSuite, FixStage.BuildTask("demo", bundle, "dev", HeadA));
+        Assert.Contains(TestStage.WholeSuite, TestStage.BuildTask("demo", bundle, "dev", HeadA));
     }
 
     [Fact]

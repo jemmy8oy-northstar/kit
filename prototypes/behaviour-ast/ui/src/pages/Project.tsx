@@ -15,6 +15,7 @@ import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
 import DecisionsList from '../components/DecisionsList'
+import StackDiagram from '../components/StackDiagram'
 import PrinciplesList from '../components/PrinciplesList'
 import WorkingTowards from '../components/WorkingTowards'
 import PublishedHint from '../components/PublishedHint'
@@ -109,7 +110,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         schedule={<SchedulePanel apps={[project.app]} />}
         principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
-        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} behaviours={project.behaviours.map((b) => ({ ...b, app: project.app }))} /> : null}
+        architecture={project.decisions?.length ? <><DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} behaviours={project.behaviours.map((b) => ({ ...b, app: project.app }))} /><StackDiagram files={project.repoFiles} /></> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />

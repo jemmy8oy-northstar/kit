@@ -1,4 +1,20 @@
-# Kit repo memory
+# Repo memory
+
+## Running the backend tests in a bare sandbox
+- No `dotnet` on PATH: the SDK is net10.0. Install with `dotnet-install.sh --channel 10.0` into a temp dir.
+- ICU is missing and nobody can `apt-get install` without root. Without it the SDK aborts, and `ReportConformanceTests` expects ICU collation. Fix without root: `apt-get download` `libicu72` and `procps` from a private apt cache (`-o Dir::State::Lists=... -o Dir::Cache=...`), `dpkg -x` them into a local dir, then set `LD_LIBRARY_PATH` to its `usr/lib/aarch64-linux-gnu` and put its `bin` on `PATH`.
+- `ClaimerSidecarTests` starts `kill` by name, so `procps` must be on PATH.
+- Setting `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` avoids the ICU abort but makes `ReportConformanceTests` fail. Do not use it.
+- Full run: `dotnet test backend/Balenthiran.Kit.slnx`, about 30 s, 1997 tests.
+
+## Sign-in gates
+- The sign-in gate answers before routing, for every method. A signed-out request to any path, even one that does not exist, gets 401 `not-signed-in`. A signed-in non-operator gets 403 `not-yours` on any write. Only a signed-in operator reaches the 404 `no-such-route`. See BEH-GATE-H1 and BEH-USERS-8.
+
+## Pipeline PRs (BEH-PR-1/2, bundle pipeline-raises-pull-requests)
+- Raising a pull request after a build is already shipped as BEH-ORCH-3 (`Pipeline.OpenPullRequestAsync`), and merge-off is BEH-ORCH-10 with `KIT_PIPELINE_MERGE` off by default. BEH-PR-2's "merge only with a corpus line" conflicts with BEH-ORCH-10's "merge on green checks when the switch is on". Raised as a review request on BEH-PR-2 in kit.beh; the built reading is BEH-ORCH-10 as shipped. Owner's answer on "complete means merge" is still open.
+
+## Stage-0 gate
+- `dotnet run --project backend/Balenthiran.Kit.Cli --no-build -- check kit --repo . --dir prototypes/behaviour-ast/behaviours`. `--configuration Release` has no build output here, so leave it out.
 
 - `depends-on` in a `.beh` file takes decision ids only (`ADR-<PART>-<N>`). A behaviour id there fails `CommittedArtefactTests.Every_committed_corpus_parses` and so the whole backend suite. Write a dependency on a behaviour as a `contract` line instead.
 - Running `dotnet test ./backend` on a host without ICU fails with "Couldn't find a valid ICU package". `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` avoids the crash but then `ReportConformanceTests` fails on purpose. Install libicu, or extract `libicu72` from Debian into a local directory and set `LD_LIBRARY_PATH`.
@@ -29,10 +45,13 @@
 - The UI test suite is `npm test` in `prototypes/behaviour-ast/ui` (vitest, 618 tests as of 2026-11-24). The C# backend tests need `dotnet`, which is not installed on the build runner, so they have not run here.
 - Ticket state columns (`Tickets.tsx`) sit in a `div.board` with the spec board's CSS. Their headings stay `h4`, not the spec board's `h2`: `Board.test.tsx` reads the Tickets total as the only `h2` and the card titles as `h3`, so an `h2` or `h3` heading there breaks the existing tests.
 - BEH-UI-6 (kit.beh) builds on tickets, not cards, and conflicts with the built BEH-ORCH-16 blocked-first ordering. It is under review; see its `review requested` line.
-- **BEH-UI-5 is taken by the agents page** (kit-ui.beh, renamed BEH-AGENTPAGE-1). `Agents.test.tsx` fails if `BEH-UI-5` appears in kit.beh, so the ticket-board card is BEH-UI-6 in kit.beh (merge of kit/work/ticket-board-priority with dev, 2026-11-20). The `.kit/bundles/ticket-board-priority.md` bundle still says BEH-UI-5.
+- **The agents page was removed (BEH-AGENTPAGE-1, bundle scrap-agents-page, 2026-11-24).** FEAT-AGENTS and its card are gone from kit-ui.beh. The guard test `ui/src/test/agentsPageRemoved.test.ts` keeps the removal honest. The ticket-board card is still BEH-UI-6 in kit.beh; do not renumber it back.
 - **Malformed bundles (BEH-TICKET-5):** a malformed bundle stops its item with `TriageStage.MalformedPrefix` + the parser's line-named reason, and that reason is the ticket's blocked tag. Triage gets those tickets under "## Malformed bundles (rewrite each)" and reports the fix; the fix is a `kit` comment on the ticket. Nothing starts a triage for a malformed ticket by itself: a note or his reply on it does. The raw bad text is not stored, so the board shows the reason and line, not the bundle.
 - **Test counts here:** `dotnet test ./backend` prints no summary in this sandbox, so use `dotnet test backend/Balenthiran.Kit.Tests` for the count: 1640 passed on 2026-11-21 after BEH-TICKET-5.
 - **BEH-UI-7 (pipeline runs, kit.beh):** kit/work/pipeline-runs-recent-first took BEH-UI-5 before dev reserved it for the agents page, and dev's ticket card took BEH-UI-6. The runs card is BEH-UI-7 after the merge of dev on 2026-11-20 (its C# tests are BEH_UI_7_*).
+- **Runs cards and run details (BEH-UI-7, BEH-UI-8, BEH-UI-9, bundle runs-page-cards-and-details):** the three cards live in kit-ui.beh now, after BEH-VIS-2. kit-ui.beh cannot tag `in FEAT-SERVER` (that feature is in kit.beh), so the moved cards have no feature tag, as BEH-VIS-1 and BEH-VIS-2 have none. The cards read `recent` from GET /api/runs/visibility, which reads cost through NoStageCostRecord, so every card shows "cost unknown" until a session cost is read there.
+- **Mapped test titles must not contain an apostrophe:** `check` reads the title as written in source (`run\'s` never matches `run's`). Write "run state", not "run's state", in any test a `.tests.json` line maps.
+- **Only CommittedArtefactTests.cs may read `RepoLayout.Behaviours`** (ConformanceTests.Only_the_committed_artefact_checks_read_the_live_corpora). A corpus check in any other test file fails the suite.
 
 ## Per-project views (BEH-SPACE-5, bundle per-project-views-and-settings)
 - The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
