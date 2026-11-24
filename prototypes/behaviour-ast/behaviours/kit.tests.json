@@ -1012,16 +1012,6 @@
       }
     }
   ],
-  "BEH-UI-7": [
-    {
-      "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs",
-      "title": "BEH_UI_7_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in"
-    },
-    {
-      "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs",
-      "title": "BEH_UI_7_a_run_still_running_is_placed_by_its_start_not_at_the_bottom"
-    }
-  ],
   "BEH-UI-6": [
     { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "keeps each ticket in the column of its state, and leaves merged tickets off the board (BEH-UI-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "orders each column by priority, 1 first and 5 last (BEH-UI-6)" },

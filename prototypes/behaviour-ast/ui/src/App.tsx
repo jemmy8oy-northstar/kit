@@ -11,7 +11,7 @@ import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Health from './pages/Health'
 import Runs from './pages/Runs'
-import Agents from './pages/Agents'
+import RunDetails from './pages/RunDetails'
 import Inbox from './pages/Inbox'
 import Chat from './pages/Chat'
 import Notifications from './pages/Notifications'
@@ -41,12 +41,6 @@ function FeatureNavLink({ feature }: { feature: string }) {
 function RunsNavLink() {
   const session = useSession()
   return session?.accounts && !session.operator ? null : <NavLink to="/runs">Runs</NavLink>
-}
-
-/** BEH-AGENTPAGE-1: the agents' work is the runs it reads, so the link is shown where Runs is (BEH-USERS-9). */
-function AgentsNavLink() {
-  const session = useSession()
-  return session?.accounts && !session.operator ? null : <NavLink to="/agents">Agents</NavLink>
 }
 
 export default function App() {
@@ -105,7 +99,6 @@ export default function App() {
               <FeatureNavLink feature="FEAT-HEALTH" />
               <FeatureNavLink feature="FEAT-ACTIVITY" />
               <RunsNavLink />
-              <AgentsNavLink />
               <FeatureNavLink feature="FEAT-NOTIFICATIONS" />
               {/* BEH-SETTINGS-1: the account area, GitHub and config, on a page of its own. */}
               <NavLink to="/settings">Settings</NavLink>
@@ -132,7 +125,7 @@ export default function App() {
               <Route path="/chat" element={gated('FEAT-CHAT', <Chat />)} />
               <Route path="/activity" element={gated('FEAT-ACTIVITY', <Activity />)} />
               <Route path="/runs" element={<Runs />} />
-              <Route path="/agents" element={<Agents />} />
+              <Route path="/runs/:id" element={<RunDetails />} />
               <Route path="/notifications" element={gated('FEAT-NOTIFICATIONS', <Notifications />)} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/projects/:app"element={<Project />} />
