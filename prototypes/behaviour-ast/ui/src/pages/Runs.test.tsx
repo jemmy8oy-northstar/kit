@@ -374,6 +374,27 @@ describe('Runs', () => {
     expect(row).not.toContain('counted lost')
   })
 
+  it('BEH-ORCH-17 shows the give-up time the claim carries, not one counted from thirty minutes', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-19T19:30:00Z'))
+    mockBoth(
+      {
+        capUsd: 5,
+        runs: [{ ...run, id: 't', stage: 'test', workItem: 'list-sorting', status: 'running', started: '2026-11-19T19:20:00Z', ended: null }],
+        claims: [{ runId: 't', claimedAt: '2026-11-19T19:20:00Z', givesUpAt: '2026-11-19T20:20:00Z', lostAt: '2026-11-19T20:30:00Z' }],
+      },
+      { on: true, items: [] },
+    )
+    renderRuns()
+
+    const now = await screen.findByRole('list', { name: 'Runs going now' })
+    const row = within(now).getByRole('listitem').textContent
+    const giveUp = new Date('2026-11-19T20:20:00Z').toLocaleTimeString(undefined, { timeStyle: 'short' })
+    vi.useRealTimers()
+    expect(row).toContain(`gives up at ${giveUp}`)
+    expect(row).not.toContain(new Date('2026-11-19T19:50:00Z').toLocaleTimeString(undefined, { timeStyle: 'short' }))
+  })
+
   it('BEH-ORCH-17 shows no Now section when nothing is going', async () => {
     mockBoth({ capUsd: 5, runs: [run] }, { on: true, items: [] })
     renderRuns()
