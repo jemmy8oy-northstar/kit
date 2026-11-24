@@ -1069,3 +1069,9 @@ Lets update kit first and then migrate the other projects.
 <!-- from: note-button -->
 
 kit is able to make multiple tickets per note
+
+## 2026-11-24 22:31Z
+
+<!-- from: note-button -->
+
+kit triage should run in serial to ensure that there are no duplicates or overlap in parallel additions
