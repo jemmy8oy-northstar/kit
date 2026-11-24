@@ -11,4 +11,7 @@ public sealed class RunVisibility : IRunVisibility
 
     [JsonPropertyOrder(2)]
     public required IReadOnlyList<IFinishedRun> Finished { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<IRecentRun> Recent { get; init; }
 }

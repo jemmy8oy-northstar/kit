@@ -250,9 +250,6 @@
   "page:KitActivity": {
     "route": "/activity"
   },
-  "page:KitAgents": {
-    "route": "/agents"
-  },
   "heading:KitActivityTitle": {
     "role": "heading",
     "name": "Activity",

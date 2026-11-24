@@ -979,6 +979,11 @@ public class PipelineTests
     [InlineData("the build run failed (claude exit 1), 3 runs in a row", true)]
     [InlineData("the spec run wrote no test plan", false)]
     [InlineData("its pull request was not merged: conflict", false)]
+    [InlineData("the conflict-resolution run failed", true)]
+    [InlineData("its pull request was not merged: it has a conflict with its base branch", true)]
+    [InlineData("its pull request was not merged: it still conflicts with its base after an agent tried to resolve it", true)]
+    [InlineData("its pull request was not merged: its base kept moving and it conflicted again after 3 resolve runs", true)]
+    [InlineData("its pull request was not merged: ci did not succeed (failure)", false)]
     [InlineData("Decision for a person: which sort order", false)]
     public void BEH_ORCH_19_only_a_block_a_run_made_is_retryable(string because, bool retryable) =>
         Assert.Equal(retryable, Pipeline.Retryable(because));
@@ -3566,6 +3571,89 @@ public class PipelineTests
         var item = ItemOf(rig, "a");
         Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
         Assert.Null(rig.Claim());
+    }
+
+    private static PullRequestMerge ConflictingAt(string head) => new() { Conflict = true, HeadSha = head, Reason = "it has a conflict with its base branch" };
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_at_a_new_head_after_a_resolve_run_that_worked_gets_another_run()
+    {
+        // claude-code-bot#151: the run resolved it (new head h1), then the base moved on again.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        rig.Merges.Answer = ConflictingAt("h1");
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (item.Stage, item.Status));
+        Assert.Contains("You are the conflict-resolution stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_at_the_same_head_after_a_resolve_run_stops_the_item_without_another_run()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_ticket_gets_at_most_three_resolve_runs_however_often_its_base_moves()
+    {
+        Assert.Equal(3, Pipeline.MaxResolveRuns);
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        for (var run = 0; run < Pipeline.MaxResolveRuns; run++)
+        {
+            rig.Merges.Answer = ConflictingAt($"h{run}");
+            await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+            EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        }
+
+        rig.Merges.Answer = ConflictingAt("h9");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: its base kept moving and it conflicted again after 3 resolve runs"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_built_ticket_blocked_by_a_conflict_comes_back_after_a_restart_and_gets_a_resolve_run()
+    {
+        // claude-code-bot#151: kit#868 and others were stopped for good, because a built ticket has no reply path.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1) with { BlockedBecause = "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it" });
+
+        Assert.Null(rig.Tickets.Read("demo").Single().BlockedBecause);
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (ItemOf(rig, "a").Stage, ItemOf(rig, "a").Status));
+        Assert.Contains("You are the conflict-resolution stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_task_says_how_to_resolve_each_shared_kind_of_file()
+    {
+        var task = ResolveStage.BuildTask("demo", ContextBundle.Parse(Specced("a")).Bundle!, "dev");
+
+        Assert.Contains("git diff --name-only --diff-filter=U", task);
+        Assert.Contains(".kit/memory.md is a log of notes: keep every line from both sides", task);
+        Assert.Contains("A .beh spec: usually each side added its own behaviour blocks", task);
+        Assert.Contains("keep dev's id and give the branch's behaviour the next free one", task);
+        Assert.Contains("do not pick one: push nothing and say the run failed, naming that behaviour", task);
+        Assert.Contains("A .tests.json map: keep every key from both sides", task);
+        Assert.Contains("it must find nothing", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
     }
 
     [Fact]
