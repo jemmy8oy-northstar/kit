@@ -1,6 +1,7 @@
 # Epic view shows the features under each epic
 Work-item: epic-view-shows-features
 Flag: Note may already be covered by BEH-EPIC-2, -4 and -8; unsure which card the wording belongs to (level: low)
+Review: agreed — the wording belongs on BEH-EPIC-4 (board card) and BEH-EPIC-8 (page), which both already carry the contract; BEH-EPIC-2 needs no change and stays open on behaviour tags. The 22:43Z note text is not in kit-ui.notes.md, only cited by the contracts.
 Cards:
 - BEH-EPIC-4
 - BEH-EPIC-8
