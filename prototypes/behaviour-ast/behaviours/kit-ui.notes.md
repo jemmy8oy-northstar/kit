@@ -225,3 +225,11 @@ BEH-ARCH-4 (architecture page diagram, from kit-ui.notes.md#2026-11-06-1801): do
 ## 2026-11-16 22:56Z · BEH-USERS-12
 
 I think this is ready now
+
+## 2026-11-24 22:43Z
+
+<!-- from: note-button -->
+
+epic view should show features under it - the features that relate to the epic. I am guessing that there are features that releate to an epic not just behaviours?
+
+If features are currently unable to tag epics we need to enable that.
