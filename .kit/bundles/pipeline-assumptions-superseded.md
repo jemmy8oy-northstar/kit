@@ -1,6 +1,7 @@
 # Pipeline agents may merge assumed behaviour, marked as assumed, and owner behaviour supersedes it quietly
 Work-item: pipeline-assumptions-superseded
 Flag: the card sits beside BEH-ADJ-1 in kit.beh, but the pipeline's own cards (BEH-ORCH-*) are in kit-ui.beh, which this work item does not edit; the placement is a guess (level: low)
+Review: agreed — placement in kit.beh under FEAT-RESOLVER is sound (it is about what KitResolve merges and supersedes, not the pipeline stages); BEH-ADJ-1 and BEH-ADJ-2 also exist in kit-ui.beh with different meanings, so refer to this card as kit.beh BEH-ADJ-2 and leave kit-ui.beh untouched
 Cards:
 - BEH-ADJ-2
 Notes:
