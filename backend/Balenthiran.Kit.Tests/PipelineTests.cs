@@ -33,7 +33,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false, IPullRequestMerger? merger = null, int runRetries = 0)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -50,7 +50,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store, clock);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: merger ?? Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob), runRetries: runRetries) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, clock: clock, pipeline: Pipeline);
@@ -297,6 +297,143 @@ public class PipelineTests
         var retry = Assert.IsType<PoolClaim>(rig.Claim());
         Assert.NotEqual(lost.Id, retry.Id);
         Assert.Contains("the list should sort by date", retry.Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_The_runs_list_says_when_a_runner_took_each_run_still_going_and_when_it_counts_as_lost()
+    {
+        // BEH-ORCH-17: his 2026-11-19 19:29Z note: "how long does a test run actually take atm".
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("the list should sort by date");
+        Assert.Empty(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+
+        clock.Advance(TimeSpan.FromMinutes(3));
+        var taken = Assert.IsType<PoolClaim>(rig.Claim());
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Equal(taken.Id, claim.RunId);
+        Assert.Equal(clock.GetUtcNow(), claim.ClaimedAt);
+        Assert.Equal(claim.ClaimedAt + RunnerPool.Lease, claim.LostAt);
+
+        // Once it reports, it is over and no longer claimed.
+        rig.FinishWith(taken, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        Assert.DoesNotContain(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims, c => c.RunId == taken.Id);
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150()
+    {
+        // BEH-ORCH-17: kit#768's test run went 90 minutes without a word on 2026-11-19, on a suite that takes 6.
+        Assert.Equal(1800, Orchestrator.SecondsFor(PipelineStage.Test));
+        Assert.Null(Orchestrator.SecondsFor(PipelineStage.Build));
+
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var test = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "list-sorting", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+        var taken = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(1800, taken.MaxSeconds);
+
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(30), claim.GivesUpAt);
+        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(40), claim.LostAt);
+
+        clock.Advance(TimeSpan.FromMinutes(39));
+        Assert.Empty(rig.Pool.Lost());
+        clock.Advance(TimeSpan.FromMinutes(2));
+        Assert.Equal(test.Id, Assert.Single(rig.Pool.Lost()));
+    }
+
+    [Fact]
+    public void BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = rig.Store.Create("operator", "kit-ui", "m", "h1", clock.GetUtcNow(), "a-page", "build");
+        rig.Pool.Enqueue(build, "tok", "o/ui", "t", "dev", 15);
+        var resolve = rig.Store.Create("operator", "other", "m", "h2", clock.GetUtcNow(), "a-conflict", "resolve");
+        rig.Pool.Enqueue(resolve, "tok", "o/other", "t", "dev", 15);
+        var test = rig.Store.Create("operator", "kit", "m", "h3", clock.GetUtcNow(), "list-sorting", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+
+        // Oldest first among test and merge runs, and the build only once neither is left.
+        Assert.Equal(resolve.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.Equal(test.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.Equal(build.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+    }
+
+    [Fact]
+    public void BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var running = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "first", "build");
+        rig.Pool.Enqueue(running, "tok", "o/r", "t", "dev", 15);
+        Assert.Equal(running.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+
+        var test = rig.Store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "second", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+        var build = rig.Store.Create("operator", "kit-ui", "m", "h3", clock.GetUtcNow(), "a-page", "build");
+        rig.Pool.Enqueue(build, "tok", "o/ui", "t", "dev", 15);
+
+        Assert.Equal(build.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.True(RunnerPool.GoesFirst("test") && RunnerPool.GoesFirst("resolve"));
+        Assert.False(RunnerPool.GoesFirst("build") || RunnerPool.GoesFirst("triage") || RunnerPool.GoesFirst(null));
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "list-sorting", "build");
+        rig.Pool.Enqueue(build, "tok", "o/r", "t", "dev", 15);
+        Assert.Null(Assert.IsType<PoolClaim>(rig.Claim()).MaxSeconds);
+
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Null(claim.GivesUpAt);
+        Assert.Equal(clock.GetUtcNow() + RunnerPool.Lease, claim.LostAt);
+        clock.Advance(TimeSpan.FromMinutes(41));
+        Assert.Empty(rig.Pool.Lost());
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_its_own_lease()
+    {
+        // BEH-ORCH-17: his 2026-11-19 20:28Z screenshot of Runs → Now: runs "waiting for a runner · 306h" and "running since
+        // before Kit last started", left going for ever by earlier restarts. BEH-ORCH-19: his 23:43Z screenshot still had
+        // them, because the lease was counted from the restart and Kit restarts at every release.
+        var clock = new Ticking();
+        var store = new MemoryAgentRunStore();
+        var queued = store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), null, "triage");
+        var old = store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "list-sorting", "build");
+        Assert.True(store.StartIfQueued(old.Id));
+        clock.Advance(TimeSpan.FromHours(3));
+        var recent = store.Create("operator", "kit", "m", "h4", clock.GetUtcNow(), "other", "build");
+        Assert.True(store.StartIfQueued(recent.Id));
+        clock.Advance(TimeSpan.FromMinutes(10));
+
+        // Kit starts again: a new pool over the same store.
+        var pool = new RunnerPool(store, clock);
+        var routes = new RunnerPoolRoutes(pool, store, PoolToken, TimeSpan.Zero, clock: clock);
+        var fresh = store.Create("operator", "kit", "m", "h3", clock.GetUtcNow(), null, "triage");
+        Assert.Equal(204, routes.ClaimAsync(PoolToken).GetAwaiter().GetResult().Status);
+
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == queued.Id).Status, store.List().Single(r => r.Id == queued.Id).Failure));
+        // Three hours in, it is past its lease: it goes at once rather than getting a fresh one.
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == old.Id).Status, store.List().Single(r => r.Id == old.Id).Failure));
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == recent.Id).Status);
+        Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
+        Assert.Empty(pool.Claimed());
+
+        // One made ten minutes before the restart may still report until the lease, counted from the restart, runs out.
+        clock.Advance(RunnerPool.Lease - TimeSpan.FromMinutes(1));
+        routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == recent.Id).Status);
+        clock.Advance(TimeSpan.FromMinutes(2));
+        routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == recent.Id).Status, store.List().Single(r => r.Id == recent.Id).Failure));
+        Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
     }
 
     [Fact]
@@ -764,6 +901,87 @@ public class PipelineTests
         Assert.Equal((PipelineStage.Build, WorkItemStatus.Stopped, why), (item.Stage, item.Status, item.StoppedBecause));
         Assert.Empty(rig.Pulls.Asked);
     }
+
+    [Fact]
+    public void BEH_ORCH_19_a_build_run_that_fails_is_run_again_twice_and_then_blocked_saying_where_it_stopped()
+    {
+        // His 2026-11-19 23:57Z screenshot of Blocked: "almost every run is the bundle was unchanged or build failed", each
+        // stopped for good by its first failure.
+        using var rig = new Rig(runRetries: 2);
+        var build = Specced(rig);
+
+        for (var run = 1; run <= 2; run++)
+        {
+            Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed", failure = "claude exit 1" })).Status);
+            var queued = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+            Assert.Equal((PipelineStage.Build, WorkItemStatus.Running), (queued.Stage, queued.Status));
+            var again = Assert.IsType<PoolClaim>(rig.Claim());
+            Assert.NotEqual(build.Id, again.Id);
+            Assert.Contains("You are the build stage", again.Task);
+            build = again;
+        }
+
+        Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed", failure = "claude exit 1" })).Status);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((WorkItemStatus.Stopped, "the build run failed (claude exit 1), 3 runs in a row"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_a_build_run_that_changed_nothing_is_run_again_and_a_good_one_then_opens_the_pull_request()
+    {
+        using var rig = new Rig(runRetries: 2);
+        var build = Specced(rig);
+
+        rig.FinishWith(build, new { slug = "list-sorting", text = Specced("list-sorting") });
+        rig.FinishWith(Assert.IsType<PoolClaim>(rig.Claim()), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        Assert.Single(rig.Pulls.Asked);
+        Assert.Equal(WorkItemStatus.Done, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting").Status);
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_with_no_retries_a_lost_build_run_blocks_at_once_and_says_it_was_lost()
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+
+        rig.Pipeline!.RunEnded(build.Id, false, failure: RunnerPool.LostFailure);
+
+        Assert.Equal("the build run failed (lost)", Assert.Single(rig.Pipeline.Items(), i => i.Slug == "list-sorting").StoppedBecause);
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_after_a_restart_a_ticket_a_run_blocked_is_tried_again_and_one_waiting_on_a_person_is_not()
+    {
+        var store = new MemoryTicketStore();
+        store.Save(Seeded("list-sorting") with { BlockedBecause = "the spec run failed" });
+        store.Save(Seeded("other", priority: 4) with { BlockedBecause = "Decision for a person: which sort order" });
+        using var rig = new Rig(tickets: store);
+
+        rig.Pipeline!.Resume();
+
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage", spec.Task);
+        Assert.Contains("list-sorting", spec.Task);
+        Assert.Null(store.Read("demo").Single(t => t.Slug == "list-sorting").BlockedBecause);
+        Assert.Equal("Trying again after a restart: the block was a run's, not a decision (the spec run failed)", store.Comments("demo", "list-sorting").Last().Body);
+        Assert.Equal((WorkItemStatus.Stopped, "Decision for a person: which sort order"), (rig.Pipeline.Items().Single(i => i.Slug == "other").Status, rig.Pipeline.Items().Single(i => i.Slug == "other").StoppedBecause));
+    }
+
+    [Theory]
+    [InlineData("the build run failed", true)]
+    [InlineData("the spec run left the bundle unchanged", true)]
+    [InlineData("the context run reported no bundle for its work item", true)]
+    [InlineData("the test run was lost, 3 runs in a row", true)]
+    [InlineData("the review run failed", false)]
+    [InlineData("the project's tests failed at abc1234", true)]
+    [InlineData("the build run failed (claude exit 1), 3 runs in a row", true)]
+    [InlineData("the spec run wrote no test plan", false)]
+    [InlineData("its pull request was not merged: conflict", false)]
+    [InlineData("Decision for a person: which sort order", false)]
+    public void BEH_ORCH_19_only_a_block_a_run_made_is_retryable(string because, bool retryable) =>
+        Assert.Equal(retryable, Pipeline.Retryable(because));
 
     [Fact]
     public void A_build_that_flags_itself_is_reviewed_and_an_agreed_review_opens_the_pull_request()
@@ -1251,6 +1469,57 @@ public class PipelineTests
         }
     }
 
+    // ---- BEH-PR-1: the pipeline raises a pull request for finished work, into the integration branch ----
+
+    [Fact]
+    public void BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Contains("Built:\n- BEH-A: ListTests.Sorts_by_date", asked.Body);
+    }
+
+    [Fact]
+    public void BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Equal("dev", asked.Base);
+        Assert.NotEqual("main", asked.Base);
+    }
+
+    [Fact]
+    public void BEH_PR_1_work_that_is_not_finished_raises_no_pull_request()
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+        Assert.Empty(rig.Pulls.Asked);
+
+        Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed" })).Status);
+
+        Assert.Empty(rig.Pulls.Asked);
+    }
+
+    // ---- BEH-PR-2: the pipeline completes a pull request only when the corpus says it may merge -------
+
+    [Fact]
+    public async Task BEH_PR_2_a_raised_pull_request_with_merging_off_is_left_open_and_nothing_is_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        var item = BuiltItem(rig);
+        Assert.Equal((WorkItemStatus.Done, "https://github.com/someone/demo/pull/7", false), (item.Status, item.PullRequest, item.Merged));
+    }
+
     // ---- BEH-ORCH-10: the pipeline merges the pull request of what it built ---------------------------
 
     private static async Task<Rig> BuiltRig(bool merge = true)
@@ -1344,6 +1613,59 @@ public class PipelineTests
         Assert.True(Assert.Single(list.Items, i => i.Slug == "list-sorting").Merged);
         Assert.Contains("\"merged\":true", JsonSerializer.Serialize(list, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
     }
+
+    [Fact]
+    public async Task BEH_ORCH_10_with_merging_off_the_built_item_says_why_it_is_not_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Equal(("build", "done"), (item.Stage, item.Status));
+        Assert.Contains("KIT_PIPELINE_MERGE is off", item.MergeNote);
+        Assert.Null(item.StoppedBecause);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_a_built_item_still_waiting_says_what_it_waits_for_and_is_not_stopped()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Null(item.StoppedBecause);
+        Assert.Equal("waiting for its checks to pass, or for GitHub to say whether it can merge", item.MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_the_reason_a_look_is_waiting_is_the_one_shown()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true, Reason = "brought up to date with dev" };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal("brought up to date with dev", Assert.Single(Listed(rig), i => i.Slug == "list-sorting").MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_once_merged_the_waiting_note_is_gone()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.True(item.Merged);
+        Assert.Null(item.MergeNote);
+    }
+
+    private static IReadOnlyList<IPipelineItem> Listed(Rig rig) =>
+        Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Items;
 
     [Fact]
     public void BEH_ORCH_10_KIT_PIPELINE_MERGE_is_off_unless_it_says_on_and_a_typo_throws()
@@ -1840,15 +2162,15 @@ public class PipelineTests
     public void BEH_ORCH_16_after_a_restart_a_blocked_ticket_stays_stopped_and_no_job_takes_it()
     {
         using var rig = new Rig();
-        var spec = Triaged(rig);
-        rig.Finish(spec, status: "failed");
+        // Not a run's own failure, which BEH-ORCH-19 tries again after a restart.
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
 
         using var restarted = rig.Restart(tickets: rig.Tickets);
         restarted.Pipeline!.Resume();
 
         Assert.Null(restarted.Claim());
         var item = Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
-        Assert.Equal((WorkItemStatus.Stopped, "the spec run failed"), (item.Status, item.StoppedBecause));
+        Assert.Equal((WorkItemStatus.Stopped, "the spec run wrote no test plan"), (item.Status, item.StoppedBecause));
         Assert.Single(restarted.Tickets.Comments("demo", "list-sorting"));
     }
 
@@ -1921,7 +2243,7 @@ public class PipelineTests
     public async Task BEH_ORCH_11_after_a_restart_stopped_and_merged_tickets_are_not_resumed()
     {
         using var stopped = new Rig();
-        stopped.Finish(Triaged(stopped), status: "failed");
+        stopped.FinishWith(Triaged(stopped), new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
         using var afterStop = stopped.Restart(tickets: stopped.Tickets);
         afterStop.Pipeline!.Resume();
         Assert.Null(afterStop.Claim());
@@ -2611,6 +2933,44 @@ public class PipelineTests
         Assert.Single(Jobs(baseline with { PipelineJobPlan = true }));
         Assert.Equal(2, Jobs(baseline with { PipelineJobContext = true, PipelineJobPlan = true }).Count);
         Assert.Empty(Jobs(new KitSettings("d", "r", null, "dist") with { PipelineJobPlan = true }));
+    }
+
+    // ---- BEH-SCHED-1 (kit.beh): each pipeline stage runs on its own schedule ----------------------------
+    // A stage's wake is what starts it: a note for triage, its own job tick for build (BEH-ORCH-11). The
+    // conflict in kit.beh BEH-SCHED-1 (a slow build on the same project against one live run per project,
+    // BEH-ORCH-3) is not tested here: it is raised for review, and the reading built keeps one run per project.
+
+    [Fact]
+    public void BEH_SCHED_1_a_build_that_has_not_woken_does_not_run_while_triage_runs_on_its_own_wake()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Triage's wake is a note left in Kit: triage runs, and its bundle makes the spec stage the next run.
+        var spec = Triaged(rig);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "list-sorting").Status);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        // The build's wake has not fired, so the specced item waits as a planned ticket and no build runs.
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+
+        // Only its own wake starts the build.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_SCHED_1_an_idle_build_does_not_hold_back_triage_when_triage_wakes()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Build's wake fires with nothing waiting for it: it makes no model call.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Null(rig.Claim());
+
+        // Triage's wake, a note, runs triage at once, without another tick.
+        rig.Note("the list should sort by date");
+        Assert.Contains("You are the triage stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
     }
 
     // ---- BEH-ORCH-11, slice 5: the build job -------------------------------------------------------------
@@ -3345,6 +3705,47 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_19_a_lost_test_run_leaves_the_ticket_built_and_the_next_merge_look_tests_it_again()
+    {
+        // kit#768's test run was lost at the 2026-11-19 20:17Z restart, which blocked it as "tests failed".
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+
+        // As RunnerPoolRoutes.FailLost does it: the run is failed as lost, then its item is told.
+        rig.Store.SetStatus(lost.Id, AgentRunStatus.Failed, DateTimeOffset.UtcNow, RunnerPool.LostFailure);
+        rig.Pipeline.RunEnded(lost.Id, false, failure: RunnerPool.LostFailure);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, null), (item.Stage, item.Status, item.StoppedBecause));
+        Assert.Null(rig.Tickets.Read("demo").Single().BlockedBecause);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.NotEqual(lost.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_test_run_lost_three_times_in_a_row_blocks_the_ticket_rather_than_testing_for_ever()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+
+        for (var run = 1; run <= Pipeline.RunRetries + 1; run++)
+        {
+            await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+            var lost = Assert.IsType<PoolClaim>(rig.Claim());
+            rig.Store.SetStatus(lost.Id, AgentRunStatus.Failed, DateTimeOffset.UtcNow, RunnerPool.LostFailure);
+            rig.Pipeline.RunEnded(lost.Id, false, failure: RunnerPool.LostFailure);
+        }
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "the test run was lost, 3 runs in a row"), (item.Status, item.StoppedBecause));
+        Assert.Equal((TicketState.Built, item.StoppedBecause), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().BlockedBecause));
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
     public async Task BEH_ORCH_12_a_head_that_moved_after_a_pass_is_tested_again_at_the_new_commit()
     {
         using var rig = ResolveRig(null, BuiltSeed("a", 1));
@@ -3389,6 +3790,103 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_12_a_test_the_merge_job_could_not_start_gets_the_projects_next_free_slot_before_another_build()
+    {
+        // His 2026-11-19 21:07Z comment on claude-code-bot#145: "I don't see the merge runners at all". The build job took
+        // a freed project at once, while the merge look was still asking GitHub, so with tickets planned no test ever ran.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, buildJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+
+        // The build ends: the build job, looking first, leaves the project for the merge job's test.
+        EndRun(rig, build, true);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+
+        // Once the test is going, the merge job wants nothing more: when it ends, the build job takes the project again.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, test, true);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_with_only_the_merge_job_on_a_run_that_ends_leaves_the_project_for_the_test_the_merge_job_wants()
+    {
+        // His 2026-11-20 01:20Z comment on claude-code-bot#145: "I still don't see things getting merged". Production runs
+        // the merge job alone, so a planned ticket's build starts the moment the run before it ends, never from a job tick,
+        // and the reservation above was read by the build job only: seven pull requests were built overnight, none tested.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+
+        // The build ends: the next planned ticket waits, and the merge job's next look starts the test.
+        EndRun(rig, build, true);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+
+        // When the test ends, the waiting build goes.
+        EndRun(rig, test, true);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_reservation_the_merge_job_no_longer_needs_starts_what_waited_behind_it()
+    {
+        // The merge job wanted the project, then found nothing to test (the pull request was merged elsewhere): the build
+        // that waited must not wait for some other run's end that may never come.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, build, true);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.True(ItemOf(rig, "a").Merged);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_12_no_other_ticket_of_the_project_merges_while_its_test_run_is_in_flight()
     {
         // b (priority 1) is the top item and needs a test; a waits behind it. Another project is not held.
@@ -3404,6 +3902,246 @@ public class PipelineTests
 
         Assert.Empty(rig.Merges.Asked);
         Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    // ---- BEH-ORCH-18: the merge train --------------------------------------------------------------------------
+
+    private const string TrainHead = "7a1n0000000000000000000000000000000000aa";
+
+    private const string BaseHead = "ba5e0000000000000000000000000000000000bb";
+
+    // A merger that can also build trains: GitHub's side of BEH-ORCH-18, with the head each pull request rode at named after it.
+    private sealed class TrainMerger : IPullRequestMerger, IMergeTrain
+    {
+        // The rig's own merger, for the single way.
+        public Merger Single { get; set; } = new();
+
+        public bool Private { get; set; } = true;
+
+        public HashSet<string> Conflicts { get; } = [];
+
+        public string Base { get; set; } = BaseHead;
+
+        public List<(string Repository, string Base, string Branch, IReadOnlyList<string> Pulls)> Built { get; } = [];
+
+        public List<(string Url, string Sha)> MergedAt { get; } = [];
+
+        public Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false, string? testedSha = null) =>
+            Single.MergeIfGreenAsync(pullRequestUrl, repository, cancellationToken, updateFirst, testedSha);
+
+        public Task<TrainBuilt> BuildAsync(string repository, string baseBranch, string trainBranch, IReadOnlyList<string> pullRequestUrls, CancellationToken cancellationToken)
+        {
+            Built.Add((repository, baseBranch, trainBranch, pullRequestUrls));
+            return Task.FromResult(Private
+                ? new TrainBuilt(TrainHead, Base, pullRequestUrls.Where(u => !Conflicts.Contains(u)).Select(u => (u, HeadAt(u))).ToList(), pullRequestUrls.Where(Conflicts.Contains).ToList())
+                : new TrainBuilt(null, null, [], [], NotPrivate: true));
+        }
+
+        public Task<string?> MergeAtAsync(string pullRequestUrl, string headSha, CancellationToken cancellationToken)
+        {
+            MergedAt.Add((pullRequestUrl, headSha));
+            return Task.FromResult<string?>(null);
+        }
+
+        public Task<string?> HeadOfAsync(string repository, string branch, CancellationToken cancellationToken) => Task.FromResult<string?>(Base);
+
+        public static string HeadAt(string url) => "head-of-" + url[(url.LastIndexOf('/') + 1)..];
+    }
+
+    private static (Rig Rig, TrainMerger Train) TrainRig(params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var train = new TrainMerger();
+        var rig = new Rig(PriorityCorpus(), mergeJob: true, tickets: store, merger: train);
+        train.Single = rig.Merges;
+        rig.Merges.Answer = NeedsTest(HeadA);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return (rig, train);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_built_tickets_on_one_private_repo_ride_one_train_and_one_test_run_tests_it()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("c", 3, "demo", "BEH-B"));
+        using var _ = rig;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var built = Assert.Single(train.Built);
+        Assert.Equal(("someone/demo", "dev", "kit/train/dev"), (built.Repository, built.Base, built.Branch));
+        Assert.Equal(3, built.Pulls.Count);
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", claim.Stage);
+        Assert.Contains("kit/train/dev", claim.Task);
+        Assert.Contains(TrainHead, claim.Task);
+        Assert.Single(rig.Store.List(), r => r.Stage == "test");
+
+        // While it runs, nothing of the project is merged or tested alone, and the train is not built again.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Single(train.Built);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_repo_refused_a_train_once_is_asked_again_at_the_next_look()
+    {
+        // The refusal is about the pull requests of that look (one had its own Actions run), not the repo for ever.
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        train.Private = false;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Null(rig.Claim());
+
+        train.Private = true;
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(2, train.Built.Count);
+        Assert.Contains("kit/train/dev", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_with_only_the_merge_job_on_a_train_gets_its_lead_projects_next_free_slot()
+    {
+        // Production's shape (claude-code-bot#145, 2026-11-20): builds start as runs end, not from a job.
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), PlannedSeed("p1", 1), PlannedSeed("p2", 2));
+        using var _ = rig;
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Null(rig.Claim());
+
+        EndRun(rig, build, true);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+        Assert.Contains("kit/train/dev", test.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_train_that_passed_merges_each_pull_request_in_order_at_the_commit_it_rode_at()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var order = train.Built[0].Pulls;
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(order.Select(u => (u, TrainMerger.HeadAt(u))).ToList(), train.MergedAt);
+        Assert.True(ItemOf(rig, "a").Merged);
+        Assert.True(ItemOf(rig, "b").Merged);
+        Assert.All(rig.Tickets.Read("demo"), t => Assert.Equal(TicketState.Merged, t.State));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_base_that_moved_after_the_train_was_built_merges_nothing_and_the_train_is_built_again()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        train.Base = "m0ved000000000000000000000000000000000cc";
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Empty(train.MergedAt);
+        Assert.False(ItemOf(rig, "a").Merged);
+        Assert.Equal(2, train.Built.Count);
+        Assert.Equal("test", Assert.IsType<PoolClaim>(rig.Claim()).Stage);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_passed_train_whose_base_cannot_be_read_waits_and_one_whose_rider_changed_merges_nothing()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        // GitHub could not say where the base is: nothing is merged, nothing is rebuilt, and no test is paid for again.
+        train.Base = null!;
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Empty(train.MergedAt);
+        Assert.Single(train.Built);
+        Assert.Null(rig.Claim());
+
+        // A triage rewrote a rider's bundle meanwhile, so it is no longer built: the train without it was never tested, and
+        // none of it is merged.
+        train.Base = BaseHead;
+        rig.Note("b should also sort by name");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(200, rig.FinishWith(triage, new { slug = "b", text = BundleText("b") }).Status);
+        Assert.False(rig.Pipeline.Items().Any(i => i.Project == "demo" && i.Slug == "b" && i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done }));
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Empty(train.MergedAt);
+        Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_train_that_failed_stops_no_ticket_and_its_riders_go_the_single_way()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+
+        Assert.All(new[] { ItemOf(rig, "a"), ItemOf(rig, "b") }, i => Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (i.Stage, i.Status)));
+        rig.Merges.Asked.Clear();
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Single(train.Built);
+        Assert.Single(rig.Merges.Asked);
+        var alone = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains(HeadA, alone.Task);
+        Assert.DoesNotContain("kit/train/", alone.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+        rig.Store.SetStatus(lost.Id, AgentRunStatus.Failed, DateTimeOffset.UtcNow, RunnerPool.LostFailure);
+        rig.Pipeline.RunEnded(lost.Id, false, failure: RunnerPool.LostFailure);
+
+        Assert.All(new[] { ItemOf(rig, "a"), ItemOf(rig, "b") }, i => Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (i.Stage, i.Status)));
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(2, train.Built.Count);
+        Assert.Contains("kit/train/", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_rider_that_conflicts_leaves_the_train_and_a_public_repo_gets_none()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("c", 3, "demo", "BEH-B"));
+        using var _ = rig;
+        train.Conflicts.Add(PullOf(3));
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(PullOf(3), Assert.IsType<PoolClaim>(rig.Claim()).Task.Split('\n').First(l => l.StartsWith("This branch is a merge train", StringComparison.Ordinal)));
+
+        var (open, publicTrain) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var __ = open;
+        publicTrain.Private = false;
+        await open.Pipeline!.MergeTickAsync(CancellationToken.None);
+        await open.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Single(publicTrain.Built);
+        Assert.DoesNotContain("kit/train/", Assert.IsType<PoolClaim>(open.Claim()).Task);
     }
 
     [Fact]
@@ -3459,5 +4197,314 @@ public class PipelineTests
         Assert.Equal("m-test", Orchestrator.ModelFor(PipelineStage.Test, models with { Test = "m-test" }));
         Assert.Equal(StageTurnSettings.DefaultBuild, Orchestrator.TurnsFor(PipelineStage.Test, StageTurnSettings.Defaults));
         Assert.Equal(5, Orchestrator.TurnsFor(PipelineStage.Test, StageTurnSettings.Defaults with { Test = 5 }));
+    }
+
+    // ---- BEH-TICKET-1 to 4: a ticket is not a spec; triage turns loose input into a change and a ticket; blocked is a tag;
+    // technical design and implementation follow a ready ticket. The same rig as the BEH-ORCH cards above.
+
+    // A question for him an escalated review raises, with the default he gets if he stays silent (BEH-TICKET-3).
+    private const string Question = "which sort order does he want? Silence: sort by date, newest first";
+
+    private static string Escalated(string text, string question) => text.Replace("Cards:", $"Review: escalated — {question}\nCards:");
+
+    [Fact]
+    public void BEH_TICKET_1_a_ticket_on_the_board_shows_its_status_and_open_questions_and_no_spec_text()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        var list = Assert.IsType<TicketList>(rig.Router.Route("GET", "/api/projects/demo/tickets").Body);
+
+        var ticket = Assert.Single(list.Tickets);
+        Assert.Equal(("ready", "the spec run failed"), (ticket.State, ticket.BlockedBecause));
+        Assert.Equal(["Blocked: the spec run failed"], ticket.Comments.Select(c => c.Body));
+        Assert.Equal(new[] { "Slug", "Title", "State", "Priority", "Cards", "PullRequest", "BlockedBecause", "Comments" }, typeof(ITicketView).GetProperties().Select(p => p.Name));
+        var json = JsonSerializer.Serialize(list);
+        Assert.DoesNotContain("src/List.cs", json);
+        Assert.DoesNotContain("sort by date", json);
+    }
+
+    [Fact]
+    public void BEH_TICKET_1_the_spec_of_a_change_is_read_from_that_changes_feature_branch()
+    {
+        using var rig = new Rig();
+
+        var spec = Triaged(rig);
+
+        Assert.Contains("Check out branch kit/work/list-sorting from origin", spec.Task);
+        Assert.Contains("Read the cards under Cards in the spec at demo.beh", spec.Task);
+        Assert.Equal("kit/work/list-sorting", TriageStage.Branch(Ticket(rig).Slug));
+    }
+
+    [Fact]
+    public void BEH_TICKET_1_two_changes_give_two_tickets_each_on_its_own_feature_branch()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date and export");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") }, new { slug = "list-export", text = BundleText("list-export") });
+
+        var tickets = rig.Tickets.Read("demo");
+        Assert.Equal(["list-export", "list-sorting"], tickets.Select(t => t.Slug).OrderBy(s => s, StringComparer.Ordinal));
+        Assert.Equal(2, tickets.Select(t => TriageStage.Branch(t.Slug)).Distinct().Count());
+        Assert.Equal(["kit/work/list-export", "kit/work/list-sorting"], tickets.Select(t => TriageStage.Branch(t.Slug)).OrderBy(s => s, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_note_reaches_triage_and_makes_a_ticket_in_the_new_state()
+    {
+        using var rig = new Rig(contextJob: true);
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_comment_on_a_card_reaches_triage_and_makes_a_ticket_in_the_new_state()
+    {
+        using var rig = new Rig(contextJob: true);
+        rig.Note("sorting should be stable", behaviour: "BEH-A");
+
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("sorting should be stable", triage.Task);
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_chat_message_he_has_Kit_note_reaches_triage_as_a_note_and_makes_a_ticket_in_the_new_state()
+    {
+        // The Chat page saves what he asks it to note through the notes route, as a note: the server writes nothing for a chat turn.
+        using var rig = new Rig(contextJob: true);
+        rig.Note("the list should sort by date, as we discussed in chat");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_triage_makes_its_spec_change_on_a_feature_branch_and_never_on_the_default_branch()
+    {
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", "the list should sort by date")], []).Text;
+
+        Assert.Contains("on branch kit/work/<work-item-slug>", task);
+        Assert.Contains("not the default branch", task);
+        Assert.DoesNotContain("on the default branch", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_card_triage_removes_is_marked_to_be_deleted_with_its_reason_and_not_deleted_outright()
+    {
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", "drop the export")], []).Text;
+
+        Assert.Contains("Delete no card", task);
+        Assert.Contains("contract my assumption: delete this card, because <reason>", task);
+        Assert.Contains("Delete no card: when a note says one should go, add to it", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_a_ticket_with_an_open_question_for_him_is_blocked_and_stays_the_same_ticket()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Specced("list-sorting", "two cards may conflict"), Question) });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"));
+        Assert.Equal(("list-sorting", TicketState.Ready, Question), (ticket.Slug, ticket.State, ticket.BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_blocked_combines_with_new_and_setting_and_clearing_the_tag_leaves_the_state_new()
+    {
+        using var rig = new Rig(contextJob: true);
+        TriagedForContext(rig);
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+        rig.Finish(rig.Claim()!, status: "failed");
+        Assert.Equal((TicketState.New, "the context run failed"), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.New, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_blocked_combines_with_ready_and_setting_and_clearing_the_tag_leaves_the_state_ready()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        Assert.Equal((TicketState.Ready, "the spec run failed"), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_his_reply_is_recorded_on_the_ticket_and_the_ticket_moves_to_ready_once_no_question_is_open()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date, newest first" }));
+        Assert.Equal(["Blocked: the spec run failed", "sort by date, newest first"], rig.Tickets.Comments("demo", "list-sorting").Select(c => c.Body));
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+        Assert.NotNull(Ticket(rig).BlockedBecause);
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_if_he_stays_silent_on_a_blocked_ticket_triage_acts_on_the_default_written_on_it()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Specced("list-sorting", "two cards may conflict"), Question) });
+        Assert.Contains("Silence: sort by date, newest first", Ticket(rig).BlockedBecause);
+
+        // He says nothing. The next note makes triage run, and it is told the default on the blocked ticket.
+        rig.Note("the export should keep the sort order");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("## Blocked, no reply from him (act on the default written on each)\n- list-sorting [ready] Sort the list: sort by date, newest first\n", triage.Task);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+        Assert.Contains("end the note with \"Silence: <what you would do if he says nothing>\"", ReviewStage.BuildTask("demo", ContextBundle.Parse(BundleText("list-sorting", "unsure")).Bundle!));
+    }
+
+    [Fact]
+    public void BEH_TICKET_4_a_ready_ticket_goes_to_technical_design_then_to_implementation_in_that_order()
+    {
+        using var rig = new Rig();
+        var design = Triaged(rig);
+        Assert.Contains("You are the spec stage for project \"demo\"", design.Task);
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+
+        rig.FinishWith(design, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        var implement = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the build stage for project \"demo\"", implement.Task);
+        Assert.Equal(TicketState.Planned, Ticket(rig).State);
+
+        rig.FinishWith(implement, new { slug = "list-sorting", text = Built("list-sorting") });
+
+        Assert.Equal(TicketState.Built, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_4_technical_design_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Specced("list-sorting", "two cards may conflict"), Question) });
+        Assert.Equal((TicketState.Ready, Question), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "newest first" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_4_implementation_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open()
+    {
+        using var rig = new Rig();
+        var implement = Specced(rig);
+        rig.FinishWith(implement, new { slug = "list-sorting", text = Built("list-sorting", flag: "unsure which sort") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Built("list-sorting", "unsure which sort"), Question) });
+        Assert.Equal((TicketState.Planned, Question), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "newest first" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Null(Ticket(rig).BlockedBecause);
+    }
+
+    // A bundle whose Cards item has no "- " (line 4), so ContextBundle.Parse refuses it.
+    private static string MalformedCards(string slug) =>
+        $"# Sort the list\nWork-item: {slug}\nCards:\nBEH-A\nNotes:\n- demo.notes.md#x\nFiles:\n- src/List.cs\nContext:\nsort by date\n";
+
+    // A triage stopped on a malformed bundle, then a later triage that rewrote it to the shape with the same Cards and Notes.
+    private static void RewriteMalformedBundle(Rig rig)
+    {
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+        rig.Note("and sort by name too");
+        rig.FinishWith(Assert.IsType<PoolClaim>(rig.Claim()), new { slug = "list-sorting", text = BundleText("list-sorting") });
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_a_bundle_that_fails_its_shape_check_is_listed_on_the_board_with_the_line_that_is_wrong_and_no_build_starts()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"), t => t.Slug == "list-sorting");
+        Assert.Equal("its bundle is malformed: line 4 is not a \"- item\" in Cards", ticket.BlockedBecause);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_a_well_formed_bundle_is_not_listed_as_malformed_and_its_build_run_starts_as_before()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        Assert.Null(Ticket(rig).BlockedBecause);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        Assert.Null(Ticket(rig).BlockedBecause);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_triage_rewrites_a_malformed_bundle_so_that_it_parses_keeps_its_cards_and_notes_and_puts_each_item_on_its_own_line()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+
+        rig.Note("and sort by name too");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("## Malformed bundles (rewrite each)", triage.Task);
+        Assert.Contains("- list-sorting [new] ", triage.Task);
+        Assert.Contains("its bundle is malformed: line 4 is not a \"- item\" in Cards", triage.Task);
+        Assert.Contains("Keep its Cards and Notes items unchanged", triage.Task);
+        Assert.Contains("every list item on its own \"- \" line", triage.Task);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (item.Stage, item.Status));
+        var bundle = rig.Pipeline.Bundle("demo", "list-sorting")!;
+        Assert.Equal(["BEH-A"], bundle.Cards);
+        Assert.Equal(["demo.notes.md#x"], bundle.Notes);
+        Assert.Contains("Cards:\n- BEH-A\nNotes:\n- demo.notes.md#x\n", bundle.Render());
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_after_triage_rewrites_a_malformed_bundle_the_fix_is_recorded_beside_the_ticket()
+    {
+        using var rig = new Rig();
+
+        RewriteMalformedBundle(rig);
+
+        var fix = Assert.Single(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.StartsWith("Fixed: triage rewrote the malformed bundle", StringComparison.Ordinal));
+        Assert.Equal("kit", fix.Author);
+        Assert.Contains("It was: its bundle is malformed: line 4 is not a \"- item\" in Cards", fix.Body);
+        Assert.Null(Ticket(rig).BlockedBecause);
     }
 }

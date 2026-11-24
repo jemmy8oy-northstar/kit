@@ -1,4 +1,5 @@
 import type { Behaviour, Feature, ProjectSummary } from './api/types'
+import { LAYERS } from './board'
 
 /** A project's tag graph as the projects view reads it (kit#237, docs/design/features.md). */
 export interface Tagged {
@@ -80,6 +81,16 @@ export function epicHref(app: string, id: string): string {
 export function ofLayers(t: Tagged, layers: string[]): Tagged {
   if (!layers.length) return t
   return { features: t.features, behaviours: t.behaviours.filter((b) => layers.includes(b.layer)) }
+}
+
+/**
+ * BEH-KIND-1: the layers of every behaviour beneath a feature, each once, in the board's
+ * order (ui, ux, technical), so a feature reads its layers as tags like its parents do.
+ */
+export function layersUnder(t: Tagged, id: string): string[] {
+  const under = behavioursUnder(t, id)
+  const present = new Set(t.behaviours.filter((b) => under.has(b.id)).map((b) => b.layer))
+  return LAYERS.filter((l) => present.has(l))
 }
 
 /** The features worth a card under a filter: those with something beneath them. Unfiltered, all of them. */

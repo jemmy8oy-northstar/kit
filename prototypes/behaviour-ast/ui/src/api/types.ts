@@ -636,10 +636,23 @@ export interface AgentRun {
   stage?: string | null
 }
 
+/** A run a runner has taken and not yet reported (BEH-ORCH-17). */
+export interface RunClaim {
+  runId: string
+  /** ISO 8601 UTC: when a runner took it, the moment it began to run. */
+  claimedAt: string
+  /** ISO 8601 UTC: when its runner ends it for running too long; absent or null when its stage has no limit of its own. */
+  givesUpAt?: string | null
+  /** ISO 8601 UTC: when Kit counts its runner lost if it has still not reported (BEH-ORCH-14). */
+  lostAt: string
+}
+
 /** `GET /api/runs` (BEH-USERS-9): every run newest first, and what one run may spend. */
 export interface AgentRunList {
   capUsd: number
   runs: AgentRun[]
+  /** The runs a runner is on now (BEH-ORCH-17); absent from a Kit older than it. */
+  claims?: RunClaim[]
 }
 
 /** One work item of the pipeline (BEH-ORCH-9). */
@@ -654,6 +667,8 @@ export interface PipelineItem {
   pullRequest?: string | null
   /** Kit merged the pull request (BEH-ORCH-10). */
   merged?: boolean
+  /** Why a built pull request is not merged yet: merging is off, or what it still waits for (BEH-ORCH-10). */
+  mergeNote?: string | null
   /** The bundle's Flag line, without "Flag: ". */
   flag?: string | null
   /** agreed, revised or escalated; null when it was not reviewed. */

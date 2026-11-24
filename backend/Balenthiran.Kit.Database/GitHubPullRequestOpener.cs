@@ -26,7 +26,7 @@ public sealed partial class GitHubPullRequestOpener(
     HttpClient http,
     IGitHubTokenSource tokens,
     string? repository,
-    Uri? api = null) : IPullRequestOpener, IPullRequestMerger, IPendingEditsReader
+    Uri? api = null) : IPullRequestOpener, IPullRequestMerger, IMergeTrain, IPendingEditsReader
 {
     private static readonly Uri DefaultApi = new("https://api.github.com/");
 
@@ -262,7 +262,7 @@ public sealed partial class GitHubPullRequestOpener(
         var runs = await SendAsync(HttpMethod.Get, new Uri(root, $"actions/runs?head_sha={Uri.EscapeDataString(sha)}&per_page={PageSize}"), token, null, cancellationToken);
         if (runs.Status is 401 or 403 or 404)
         {
-            return Refuse($"Kit cannot read the checks of this pull request ({runs.Reason}), so it will not merge it unchecked");
+            return Refuse($"Kit cannot read Actions for this pull request ({runs.Reason}), so it will not merge it unchecked");
         }
 
         if (runs.Reason is not null)
@@ -278,9 +278,11 @@ public sealed partial class GitHubPullRequestOpener(
 
         // BEH-ORCH-12: a private repo's pull request into the base has no Actions run (CI runs only for main), so on the
         // merge job's path none is required; Kit's own test run stands in for it below. A run that exists still counts.
-        var kitTests = updateFirst && p.TryGetProperty("base", out var baseObj) && baseObj.ValueKind == JsonValueKind.Object
+        // A public repo's pull request with no Actions run at its head is tested by Kit too: kit went public with CI
+        // still running only for main (claude-code-bot#145), and waiting for a run that never starts merges nothing.
+        var kitTests = updateFirst && (list.GetArrayLength() == 0 || (p.TryGetProperty("base", out var baseObj) && baseObj.ValueKind == JsonValueKind.Object
             && baseObj.TryGetProperty("repo", out var baseRepo) && baseRepo.ValueKind == JsonValueKind.Object
-            && baseRepo.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == JsonValueKind.True;
+            && baseRepo.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == JsonValueKind.True));
         var waiting = !kitTests && list.GetArrayLength() == 0;
         var succeeded = false;
         foreach (var run in list.EnumerateArray())
@@ -378,6 +380,155 @@ public sealed partial class GitHubPullRequestOpener(
             409 => new PullRequestMerge { Waiting = true, Reason = update.Reason },
             _ => Unreadable(update.Status, update.Reason),
         };
+    }
+
+    /// <inheritdoc />
+    public async Task<TrainBuilt> BuildAsync(string repository, string baseBranch, string trainBranch, IReadOnlyList<string> pullRequestUrls, CancellationToken cancellationToken)
+    {
+        static TrainBuilt Failed(string reason) => new(null, null, [], [], Reason: reason);
+        if (await TrainTokenAsync(cancellationToken) is not { } token)
+        {
+            return Failed("no GitHub token, so Kit cannot build a merge train");
+        }
+
+        var root = new Uri(api ?? DefaultApi, $"repos/{repository}/");
+        var repo = await SendAsync(HttpMethod.Get, new Uri(api ?? DefaultApi, $"repos/{repository}"), token, null, cancellationToken);
+        if (repo.Reason is not null || repo.Json is not { ValueKind: JsonValueKind.Object } r)
+        {
+            return Failed(repo.Reason ?? $"GitHub answered {repo.Status} with JSON that is not a repository");
+        }
+
+        // A public repo rides only when no pull request has an Actions run at its head: kit went public with CI still
+        // running only for main (claude-code-bot#145), so Kit tests its pull requests, and one train saves a test each.
+        if (!r.TryGetProperty("private", out var p) || p.ValueKind != JsonValueKind.True)
+        {
+            foreach (var url in pullRequestUrls)
+            {
+                var page = PullPage().Match(url);
+                var pull = page.Success && page.Groups["repo"].Value == repository ? await SendAsync(HttpMethod.Get, new Uri(root, $"pulls/{page.Groups["number"].Value}"), token, null, cancellationToken) : default;
+                if (pull.Json is not { ValueKind: JsonValueKind.Object } pj
+                    || !pj.TryGetProperty("head", out var head) || head.ValueKind != JsonValueKind.Object
+                    || !head.TryGetProperty("sha", out var hs) || hs.ValueKind != JsonValueKind.String)
+                {
+                    return Failed($"whether {url} has its own checks could not be read");
+                }
+
+                var runs = await SendAsync(HttpMethod.Get, new Uri(root, $"actions/runs?head_sha={Uri.EscapeDataString(hs.GetString()!)}&per_page=1"), token, null, cancellationToken);
+                if (runs.Reason is not null || runs.Json is not { ValueKind: JsonValueKind.Object } rj
+                    || !rj.TryGetProperty("workflow_runs", out var list) || list.ValueKind != JsonValueKind.Array)
+                {
+                    return Failed($"whether {url} has its own checks could not be read");
+                }
+
+                if (list.GetArrayLength() > 0)
+                {
+                    return new TrainBuilt(null, null, [], [], NotPrivate: true);
+                }
+            }
+        }
+
+        if (await HeadAsync(root, baseBranch, token, cancellationToken) is not { } baseSha)
+        {
+            return Failed($"the head of {baseBranch} could not be read");
+        }
+
+        // The train branch is reset to the base whether or not it exists: a train is rebuilt from scratch every time.
+        var reset = await SendAsync(HttpMethod.Patch, new Uri(root, $"git/refs/heads/{Segments(trainBranch)}"), token, JsonSerializer.Serialize(new { sha = baseSha, force = true }), cancellationToken);
+        if (reset.Status == 422)
+        {
+            reset = await SendAsync(HttpMethod.Post, new Uri(root, "git/refs"), token, JsonSerializer.Serialize(new { @ref = $"refs/heads/{trainBranch}", sha = baseSha }), cancellationToken);
+        }
+
+        if (reset.Reason is not null)
+        {
+            return Failed($"the train branch could not be set: {reset.Reason}");
+        }
+
+        var sha = baseSha;
+        var riders = new List<(string, string)>();
+        var conflicted = new List<string>();
+        foreach (var url in pullRequestUrls)
+        {
+            var page = PullPage().Match(url);
+            // A pull request of another repo, or one that cannot be read, cannot ride: it is left out like a conflict.
+            var pull = page.Success && page.Groups["repo"].Value == repository ? await SendAsync(HttpMethod.Get, new Uri(root, $"pulls/{page.Groups["number"].Value}"), token, null, cancellationToken) : default;
+            if (pull.Json is not { ValueKind: JsonValueKind.Object } pj
+                || !pj.TryGetProperty("head", out var head) || head.ValueKind != JsonValueKind.Object
+                || !head.TryGetProperty("sha", out var hs) || hs.ValueKind != JsonValueKind.String)
+            {
+                conflicted.Add(url);
+                continue;
+            }
+
+            var headSha = hs.GetString()!;
+            var merged = await SendAsync(HttpMethod.Post, new Uri(root, "merges"), token, JsonSerializer.Serialize(new { @base = trainBranch, head = headSha, commit_message = $"kit: merge train takes {url}" }), cancellationToken);
+            // 409 is a conflict. Any other refusal leaves this one out too, so one bad pull request cannot stop every train.
+            if (merged.Reason is not null)
+            {
+                conflicted.Add(url);
+                continue;
+            }
+
+            // 201 is a new merge commit; 204 means the base already holds that head, so the train is unchanged.
+            if (merged.Json is { ValueKind: JsonValueKind.Object } m && m.TryGetProperty("sha", out var ms) && ms.ValueKind == JsonValueKind.String)
+            {
+                sha = ms.GetString()!;
+            }
+
+            riders.Add((url, headSha));
+        }
+
+        return new TrainBuilt(sha, baseSha, riders, conflicted);
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> MergeAtAsync(string pullRequestUrl, string headSha, CancellationToken cancellationToken)
+    {
+        var page = PullPage().Match(pullRequestUrl ?? string.Empty);
+        if (!page.Success)
+        {
+            return "its pull request address is not a GitHub pull request page";
+        }
+
+        if (await TrainTokenAsync(cancellationToken) is not { } token)
+        {
+            return "no GitHub token, so Kit cannot merge a pull request";
+        }
+
+        var root = new Uri(api ?? DefaultApi, $"repos/{page.Groups["repo"].Value}/");
+        var merged = await SendAsync(HttpMethod.Put, new Uri(root, $"pulls/{page.Groups["number"].Value}/merge"), token, JsonSerializer.Serialize(new { sha = headSha, merge_method = "merge" }), cancellationToken);
+        return merged.Reason;
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> HeadOfAsync(string repository, string branch, CancellationToken cancellationToken) =>
+        await TrainTokenAsync(cancellationToken) is { } token
+            ? await HeadAsync(new Uri(api ?? DefaultApi, $"repos/{repository}/"), branch, token, cancellationToken)
+            : null;
+
+    private async Task<string?> HeadAsync(Uri root, string branch, string token, CancellationToken cancellationToken)
+    {
+        var got = await SendAsync(HttpMethod.Get, new Uri(root, $"git/ref/heads/{Segments(branch)}"), token, null, cancellationToken);
+        return got.Json is { ValueKind: JsonValueKind.Object } g
+            && g.TryGetProperty("object", out var o) && o.ValueKind == JsonValueKind.Object
+            && o.TryGetProperty("sha", out var s) && s.ValueKind == JsonValueKind.String
+            && got.Reason is null
+                ? s.GetString()
+                : null;
+    }
+
+    // The token for a train call, or null with none: the type of a failure only, as elsewhere, never its text.
+    private async Task<string?> TrainTokenAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var token = await tokens.TokenAsync(cancellationToken);
+            return string.IsNullOrWhiteSpace(token) ? null : token;
+        }
+        catch (GitHubTokenException)
+        {
+            return null;
+        }
     }
 
     private const string ConflictReason = "it has a conflict with its base branch";

@@ -14,7 +14,7 @@ namespace Balenthiran.Kit.Tests;
 /// </summary>
 public sealed class ClaimerSidecarTests : IDisposable
 {
-    private readonly HttpListener _kit = new();
+    private readonly HttpListener _kit;
     private readonly string _kitUrl;
     private readonly List<(string Path, string? Pool, string? Key, string Body)> _seen = [];
     private readonly Queue<(int Status, string Body)> _claims = new();
@@ -25,10 +25,8 @@ public sealed class ClaimerSidecarTests : IDisposable
 
     public ClaimerSidecarTests()
     {
-        var port = FreePort();
+        (_kit, var port) = BoundListener();
         _kitUrl = $"http://127.0.0.1:{port}/kit";
-        _kit.Prefixes.Add($"http://127.0.0.1:{port}/");
-        _kit.Start();
         _ = Task.Run(async () =>
         {
             while (!_stop.IsCancellationRequested)
@@ -59,6 +57,10 @@ public sealed class ClaimerSidecarTests : IDisposable
         _claimer?.Dispose();
     }
 
+    /// <summary>
+    /// The port is free when asked and released before anything binds it, so a test running in parallel can take
+    /// it in between (kit CI on 2026-11-20: "Address already in use"). Whoever binds it must try another on a clash.
+    /// </summary>
     private static int FreePort()
     {
         var l = new TcpListener(IPAddress.Loopback, 0);
@@ -68,31 +70,53 @@ public sealed class ClaimerSidecarTests : IDisposable
         return p;
     }
 
+    private const int BindAttempts = 10;
+
+    private static (HttpListener Listener, int Port) BoundListener()
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            var port = FreePort();
+            var l = new HttpListener();
+            l.Prefixes.Add($"http://127.0.0.1:{port}/");
+            try { l.Start(); return (l, port); }
+            catch (HttpListenerException) when (attempt < BindAttempts) { l.Close(); }
+        }
+    }
+
     private static string ClaimJson(string id, string token) =>
         new EngineJsonSerialiser().Serialise(new PoolClaim(id, token, "o/r", "t", "", "sonnet", null));
 
+    /// <summary>
+    /// Waits for the claimer's own "listening" line, its only stdout. Answering a GET is not proof: on a port it
+    /// lost, the GET can reach another test's listener while the claimer dies with EADDRINUSE.
+    /// </summary>
     private void StartClaimer(string? env = null)
     {
-        var port = FreePort();
-        var psi = new ProcessStartInfo("node", [Path.Combine(RepoLayout.Root, "runner", "claimer.js")])
+        for (var attempt = 1; ; attempt++)
         {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        psi.Environment.Clear();
-        psi.Environment["PATH"] = Environment.GetEnvironmentVariable("PATH")!;
-        psi.Environment["KIT_URL"] = _kitUrl;
-        psi.Environment["KIT_RUNNER_POOL_TOKEN"] = "pool-secret";
-        psi.Environment["KIT_CLAIMER_PORT"] = port.ToString();
-        if (env is not null) psi.Environment["KIT_CLAIM_MAX_SECONDS"] = env;
-        _claimer = Process.Start(psi)!;
-        _claimerUrl = $"http://127.0.0.1:{port}";
-        var budget = Stopwatch.StartNew();
-        using var http = new HttpClient();
-        while (true)
-        {
-            try { http.GetAsync(_claimerUrl).GetAwaiter().GetResult(); return; }
-            catch (HttpRequestException) when (budget.Elapsed < TimeSpan.FromSeconds(10)) { Thread.Sleep(50); }
+            var port = FreePort();
+            var psi = new ProcessStartInfo("node", [Path.Combine(RepoLayout.Root, "runner", "claimer.js")])
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            psi.Environment.Clear();
+            psi.Environment["PATH"] = Environment.GetEnvironmentVariable("PATH")!;
+            psi.Environment["KIT_URL"] = _kitUrl;
+            psi.Environment["KIT_RUNNER_POOL_TOKEN"] = "pool-secret";
+            psi.Environment["KIT_CLAIMER_PORT"] = port.ToString();
+            if (env is not null) psi.Environment["KIT_CLAIM_MAX_SECONDS"] = env;
+            _claimer = Process.Start(psi)!;
+            _claimerUrl = $"http://127.0.0.1:{port}";
+            var line = _claimer.StandardOutput.ReadLineAsync();
+            if (line.Wait(TimeSpan.FromSeconds(10)) && line.Result?.StartsWith("kit-claimer: listening") == true) return;
+            if (!_claimer.HasExited) _claimer.Kill();
+            _claimer.WaitForExit();
+            var stderr = _claimer.StandardError.ReadToEnd();
+            _claimer.Dispose();
+            _claimer = null;
+            if (attempt == BindAttempts) throw new InvalidOperationException($"claimer never listened: {stderr}");
         }
     }
 
