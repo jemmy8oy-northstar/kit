@@ -4,17 +4,54 @@ import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import BoardViews from '../components/BoardViews'
 import { hueOf } from '../board'
-import { epicCards } from '../epics'
+import { epicCards, isOpenEpic, STATUS_STATES, ticketsByEpic, ticketStatus, type EpicCard, type TicketStatus } from '../epics'
 import { epicHref, featureHref } from '../features'
 import { loadRealProjects } from '../realProjects'
+import { loadTickets } from '../tickets'
 
-/** Every real project's epics, with what is built beneath the features in each. */
+/** An epic card with its ticket counts; `open` is the epic still has work beneath it (BEH-TICKET-8). */
+type Loaded = EpicCard & { status: TicketStatus; open: boolean }
+
+/**
+ * Every real project's epics, with what is built beneath the features in each (BEH-EPIC-4), and the state of the
+ * tickets that name each one (BEH-TICKET-8). A project's goal, its first open epic, leads that project's epics.
+ */
 async function loadEpics() {
   const { read, failed } = await loadRealProjects()
-  const cards = read.flatMap(({ app, project, detail }) =>
-    epicCards(app, project, detail.epics ?? [], detail.features ?? [], detail.behaviours),
+  const perProject = await Promise.all(
+    read.map(async ({ app, project, detail }) => {
+      const features = detail.features ?? []
+      const behaviours = detail.behaviours ?? []
+      const list = await loadTickets(app)
+      const byEpic = ticketsByEpic(list?.on ? list.tickets : [], features, behaviours)
+      const cards: Loaded[] = epicCards(app, project, detail.epics ?? [], features, behaviours).map((card) => ({
+        ...card,
+        status: ticketStatus(byEpic.get(card.epic.id) ?? []),
+        open: isOpenEpic(card),
+      }))
+      const goal = cards.findIndex((c) => c.open)
+      return goal > 0 ? [cards[goal], ...cards.slice(0, goal), ...cards.slice(goal + 1)] : cards
+    }),
   )
-  return { cards, failed }
+  return { cards: perProject.flat(), failed }
+}
+
+/** BEH-TICKET-8: an open epic's tickets by state, with the blocked ones beside them, not added to them. */
+function TicketStatusList({ epicId, status }: { epicId: string; status: TicketStatus }) {
+  const total = STATUS_STATES.reduce((n, s) => n + status.states[s], 0)
+  if (total === 0) return <p className="muted">No ticket names this epic yet.</p>
+  return (
+    <ul aria-label={`Tickets for ${epicId}`} className="ticket-status">
+      {STATUS_STATES.map((s) => (
+        <li key={s}>
+          <span>{s}</span> <span>{status.states[s]}</span>
+        </li>
+      ))}
+      <li>
+        <span>blocked</span> <span>{status.blocked}</span>
+      </li>
+    </ul>
+  )
 }
 
 /**
@@ -44,7 +81,7 @@ export default function Epics() {
             <div role="region" aria-label="Epics">
               {cards.length === 0 && <p className="muted">No project declares an epic yet.</p>}
               <ul className="cards">
-                {cards.map(({ app, project, epic, features, built, total }) => (
+                {cards.map(({ app, project, epic, features, built, total, status, open }) => (
                   <li key={`${app}/${epic.id}`}>
                     <Card className={`board-card hue-${hueOf(project)}`}>
                       <h3>
@@ -64,6 +101,7 @@ export default function Epics() {
                           ))}
                         </ul>
                       )}
+                      {open && <TicketStatusList epicId={epic.id} status={status} />}
                       <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
                     </Card>
                   </li>
