@@ -17,3 +17,14 @@ The owner says the runs page is a tremendous amount of text and wants it usable:
 Where the cards go: kit.beh is `kit:layer technical` and its header says no screen goes there. The builder moves BEH-UI-7, BEH-UI-8 and BEH-UI-9 to kit-ui.beh next to BEH-VIS-1 and BEH-VIS-2, word for word and still unreviewed. BEH-UI-7's own contract already says it sits in the server area only because the runs page spec was not in kit.beh. That spec is in kit-ui.beh, so moving it settles that contract too.
 Built so far: BEH-VIS-1 and BEH-VIS-2 are built as the route GET /api/runs/visibility, but there is no React page in ui/ yet. The cards and the details page are the first screen on that route. The details page is where VIS-1's stages and agents and VIS-2's stage costs and reviews go. BEH-ORCH-9 (kit-ui.beh, Runs Pipeline section) already shows per-stage run cost. Reuse it, do not repeat it.
 Next step toward the goal: a builder moves the three cards to kit-ui.beh and builds the run cards and details page on /api/runs/visibility.
+
+Test plan:
+- BEH-UI-7: the runs page lists recent runs by start time, newest at the top, and paging to older runs does not reverse that order
+- BEH-UI-7: the runs page shows each run as a card, not a text row, and the list is read from GET /api/runs/visibility, the route BEH-VIS-1 and BEH-VIS-2 already serve
+- BEH-UI-8: each card shows the run's state as a tag (running, passed, failed or blocked) matching the state the run record holds
+- BEH-UI-8: each card shows the run's total cost; while BEH-COST-1 has no record for a run, the card shows unknown, never zero
+- BEH-UI-8: a run with no recorded cost and a run with cost 0.00 recorded are shown differently, so unknown is never rendered as zero
+- BEH-UI-9: clicking a run card opens that run's details page for that run only, and the URL or route carries the run's id
+- BEH-UI-9: the details page shows the stages and agents from BEH-VIS-1 and the stage costs and reviews from BEH-VIS-2, and does not repeat the per-stage cost already shown by BEH-ORCH-9
+- BEH-UI-9: a run id that no longer exists shows a clear "run not found" message, not an empty page
+- BEH-UI-7, BEH-UI-8, BEH-UI-9: the card and details text sits in kit-ui.beh beside BEH-VIS-1 and BEH-VIS-2 with its contracts unchanged, and BEH-VIS-1 and BEH-VIS-2 are not edited in the PR
