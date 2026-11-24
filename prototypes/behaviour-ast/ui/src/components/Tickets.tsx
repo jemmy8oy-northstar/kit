@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { replyOnTicket } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import { loadTickets, MAX_REPLY, openTickets } from '../tickets'
+import { loadTickets, MAX_REPLY, openTickets, ticketColumns } from '../tickets'
 import ResourceView from './Resource'
 
 /** BEH-ORCH-16 slice 3: his answer to what blocked a ticket, which wakes the first agent on it. */
@@ -53,63 +53,74 @@ export default function Tickets({ app }: { app: string }) {
       {(list) => {
         if (!list || !list.on) return null
         const open = openTickets(list.tickets)
+        const columns = ticketColumns(list.tickets)
         return (
           <section aria-labelledby="board-tickets" className="tickets">
             <h2 id="board-tickets">
               Tickets <span className="board-count">{open.length}</span>
             </h2>
             {open.length === 0 && <p className="muted">No open tickets.</p>}
-            <ul className="cards">
-              {open.map((t) => (
-                <li key={t.slug} data-ticket={t.slug}>
-                  <Card className="board-card">
-                    <h3>
-                      {t.title} <span className="muted id">{t.slug}</span>
-                    </h3>
-                    {t.blockedBecause && <p data-testid="blocked-because">👤 {t.blockedBecause}</p>}
-                    <div className="badges">
-                      {t.blockedBecause && <Badge tone="warning">🚧 blocked</Badge>}
-                      <Badge tone="neutral">{t.state}</Badge>
-                      <Badge tone={t.priority === 1 ? 'danger' : 'neutral'}>P{t.priority}</Badge>
-                    </div>
-                    {t.cards.length > 0 && (
-                      <p>
-                        {t.cards.map((id, i) => (
-                          <span key={id}>
-                            {i > 0 && ', '}
-                            <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                    {t.pullRequest?.startsWith('https://') && (
-                      <p>
-                        <a href={t.pullRequest}>Pull request</a>
-                      </p>
-                    )}
-                    {t.comments.length > 0 && (
-                      <details open={!!t.blockedBecause}>
-                        <summary>
-                          {t.comments.length} comment{t.comments.length === 1 ? '' : 's'}
-                        </summary>
-                        <ol className="ticket-thread">
-                          {t.comments.map((c, i) => (
-                            <li key={i}>
-                              <strong>{c.author}</strong>{' '}
-                              <time className="muted" dateTime={c.at}>
-                                {c.at.slice(0, 16).replace('T', ' ')} UTC
-                              </time>
-                              <p>{c.body}</p>
-                            </li>
-                          ))}
-                        </ol>
-                      </details>
-                    )}
-                    {t.blockedBecause && <ReplyForm app={app} slug={t.slug} onSent={reload} />}
-                  </Card>
-                </li>
+            {/* BEH-UI-6: the state columns sit side by side in the spec board's .board row, each headed with its count. */}
+            <div className="board">
+              {columns.map((column) => (
+                <section key={column.state} aria-label={column.state} data-state={column.state} className="ticket-column">
+                  <h4>
+                    {column.state} <span className="board-count">{column.tickets.length}</span>
+                  </h4>
+                  <ul className="cards">
+                    {column.tickets.map((t) => (
+                      <li key={t.slug} data-ticket={t.slug}>
+                        <Card className="board-card">
+                          <h3>
+                            {t.title} <span className="muted id">{t.slug}</span>
+                          </h3>
+                          {t.blockedBecause && <p data-testid="blocked-because">👤 {t.blockedBecause}</p>}
+                          <div className="badges">
+                            {t.blockedBecause && <Badge tone="warning">🚧 blocked</Badge>}
+                            <Badge tone="neutral">{t.state}</Badge>
+                            <Badge tone={t.priority === 1 ? 'danger' : 'neutral'}>P{t.priority}</Badge>
+                          </div>
+                          {t.cards.length > 0 && (
+                            <p>
+                              {t.cards.map((id, i) => (
+                                <span key={id}>
+                                  {i > 0 && ', '}
+                                  <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
+                                </span>
+                              ))}
+                            </p>
+                          )}
+                          {t.pullRequest?.startsWith('https://') && (
+                            <p>
+                              <a href={t.pullRequest}>Pull request</a>
+                            </p>
+                          )}
+                          {t.comments.length > 0 && (
+                            <details open={!!t.blockedBecause}>
+                              <summary>
+                                {t.comments.length} comment{t.comments.length === 1 ? '' : 's'}
+                              </summary>
+                              <ol className="ticket-thread">
+                                {t.comments.map((c, i) => (
+                                  <li key={i}>
+                                    <strong>{c.author}</strong>{' '}
+                                    <time className="muted" dateTime={c.at}>
+                                      {c.at.slice(0, 16).replace('T', ' ')} UTC
+                                    </time>
+                                    <p>{c.body}</p>
+                                  </li>
+                                ))}
+                              </ol>
+                            </details>
+                          )}
+                          {t.blockedBecause && <ReplyForm app={app} slug={t.slug} onSent={reload} />}
+                        </Card>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
           </section>
         )
       }}

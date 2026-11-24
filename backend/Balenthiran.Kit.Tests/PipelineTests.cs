@@ -979,6 +979,11 @@ public class PipelineTests
     [InlineData("the build run failed (claude exit 1), 3 runs in a row", true)]
     [InlineData("the spec run wrote no test plan", false)]
     [InlineData("its pull request was not merged: conflict", false)]
+    [InlineData("the conflict-resolution run failed", true)]
+    [InlineData("its pull request was not merged: it has a conflict with its base branch", true)]
+    [InlineData("its pull request was not merged: it still conflicts with its base after an agent tried to resolve it", true)]
+    [InlineData("its pull request was not merged: its base kept moving and it conflicted again after 3 resolve runs", true)]
+    [InlineData("its pull request was not merged: ci did not succeed (failure)", false)]
     [InlineData("Decision for a person: which sort order", false)]
     public void BEH_ORCH_19_only_a_block_a_run_made_is_retryable(string because, bool retryable) =>
         Assert.Equal(retryable, Pipeline.Retryable(because));
@@ -1637,6 +1642,59 @@ public class PipelineTests
         Assert.True(Assert.Single(list.Items, i => i.Slug == "list-sorting").Merged);
         Assert.Contains("\"merged\":true", JsonSerializer.Serialize(list, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
     }
+
+    [Fact]
+    public async Task BEH_ORCH_10_with_merging_off_the_built_item_says_why_it_is_not_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Equal(("build", "done"), (item.Stage, item.Status));
+        Assert.Contains("KIT_PIPELINE_MERGE is off", item.MergeNote);
+        Assert.Null(item.StoppedBecause);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_a_built_item_still_waiting_says_what_it_waits_for_and_is_not_stopped()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Null(item.StoppedBecause);
+        Assert.Equal("waiting for its checks to pass, or for GitHub to say whether it can merge", item.MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_the_reason_a_look_is_waiting_is_the_one_shown()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true, Reason = "brought up to date with dev" };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal("brought up to date with dev", Assert.Single(Listed(rig), i => i.Slug == "list-sorting").MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_once_merged_the_waiting_note_is_gone()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.True(item.Merged);
+        Assert.Null(item.MergeNote);
+    }
+
+    private static IReadOnlyList<IPipelineItem> Listed(Rig rig) =>
+        Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Items;
 
     [Fact]
     public void BEH_ORCH_10_KIT_PIPELINE_MERGE_is_off_unless_it_says_on_and_a_typo_throws()
@@ -2906,6 +2964,44 @@ public class PipelineTests
         Assert.Empty(Jobs(new KitSettings("d", "r", null, "dist") with { PipelineJobPlan = true }));
     }
 
+    // ---- BEH-SCHED-1 (kit.beh): each pipeline stage runs on its own schedule ----------------------------
+    // A stage's wake is what starts it: a note for triage, its own job tick for build (BEH-ORCH-11). The
+    // conflict in kit.beh BEH-SCHED-1 (a slow build on the same project against one live run per project,
+    // BEH-ORCH-3) is not tested here: it is raised for review, and the reading built keeps one run per project.
+
+    [Fact]
+    public void BEH_SCHED_1_a_build_that_has_not_woken_does_not_run_while_triage_runs_on_its_own_wake()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Triage's wake is a note left in Kit: triage runs, and its bundle makes the spec stage the next run.
+        var spec = Triaged(rig);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "list-sorting").Status);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        // The build's wake has not fired, so the specced item waits as a planned ticket and no build runs.
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+
+        // Only its own wake starts the build.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_SCHED_1_an_idle_build_does_not_hold_back_triage_when_triage_wakes()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Build's wake fires with nothing waiting for it: it makes no model call.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Null(rig.Claim());
+
+        // Triage's wake, a note, runs triage at once, without another tick.
+        rig.Note("the list should sort by date");
+        Assert.Contains("You are the triage stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
     // ---- BEH-ORCH-11, slice 5: the build job -------------------------------------------------------------
 
     // Tickets in the store, as a restart finds them, for a pipeline with the build job on and two projects.
@@ -3499,6 +3595,89 @@ public class PipelineTests
         var item = ItemOf(rig, "a");
         Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
         Assert.Null(rig.Claim());
+    }
+
+    private static PullRequestMerge ConflictingAt(string head) => new() { Conflict = true, HeadSha = head, Reason = "it has a conflict with its base branch" };
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_at_a_new_head_after_a_resolve_run_that_worked_gets_another_run()
+    {
+        // claude-code-bot#151: the run resolved it (new head h1), then the base moved on again.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        rig.Merges.Answer = ConflictingAt("h1");
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (item.Stage, item.Status));
+        Assert.Contains("You are the conflict-resolution stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_at_the_same_head_after_a_resolve_run_stops_the_item_without_another_run()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_ticket_gets_at_most_three_resolve_runs_however_often_its_base_moves()
+    {
+        Assert.Equal(3, Pipeline.MaxResolveRuns);
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        for (var run = 0; run < Pipeline.MaxResolveRuns; run++)
+        {
+            rig.Merges.Answer = ConflictingAt($"h{run}");
+            await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+            EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        }
+
+        rig.Merges.Answer = ConflictingAt("h9");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: its base kept moving and it conflicted again after 3 resolve runs"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_built_ticket_blocked_by_a_conflict_comes_back_after_a_restart_and_gets_a_resolve_run()
+    {
+        // claude-code-bot#151: kit#868 and others were stopped for good, because a built ticket has no reply path.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1) with { BlockedBecause = "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it" });
+
+        Assert.Null(rig.Tickets.Read("demo").Single().BlockedBecause);
+        rig.Merges.Answer = ConflictingAt("h0");
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running), (ItemOf(rig, "a").Stage, ItemOf(rig, "a").Status));
+        Assert.Contains("You are the conflict-resolution stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_task_says_how_to_resolve_each_shared_kind_of_file()
+    {
+        var task = ResolveStage.BuildTask("demo", ContextBundle.Parse(Specced("a")).Bundle!, "dev");
+
+        Assert.Contains("git diff --name-only --diff-filter=U", task);
+        Assert.Contains(".kit/memory.md is a log of notes: keep every line from both sides", task);
+        Assert.Contains("A .beh spec: usually each side added its own behaviour blocks", task);
+        Assert.Contains("keep dev's id and give the branch's behaviour the next free one", task);
+        Assert.Contains("do not pick one: push nothing and say the run failed, naming that behaviour", task);
+        Assert.Contains("A .tests.json map: keep every key from both sides", task);
+        Assert.Contains("it must find nothing", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
     }
 
     [Fact]
@@ -4130,5 +4309,314 @@ public class PipelineTests
         Assert.Equal("m-test", Orchestrator.ModelFor(PipelineStage.Test, models with { Test = "m-test" }));
         Assert.Equal(StageTurnSettings.DefaultBuild, Orchestrator.TurnsFor(PipelineStage.Test, StageTurnSettings.Defaults));
         Assert.Equal(5, Orchestrator.TurnsFor(PipelineStage.Test, StageTurnSettings.Defaults with { Test = 5 }));
+    }
+
+    // ---- BEH-TICKET-1 to 4: a ticket is not a spec; triage turns loose input into a change and a ticket; blocked is a tag;
+    // technical design and implementation follow a ready ticket. The same rig as the BEH-ORCH cards above.
+
+    // A question for him an escalated review raises, with the default he gets if he stays silent (BEH-TICKET-3).
+    private const string Question = "which sort order does he want? Silence: sort by date, newest first";
+
+    private static string Escalated(string text, string question) => text.Replace("Cards:", $"Review: escalated — {question}\nCards:");
+
+    [Fact]
+    public void BEH_TICKET_1_a_ticket_on_the_board_shows_its_status_and_open_questions_and_no_spec_text()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        var list = Assert.IsType<TicketList>(rig.Router.Route("GET", "/api/projects/demo/tickets").Body);
+
+        var ticket = Assert.Single(list.Tickets);
+        Assert.Equal(("ready", "the spec run failed"), (ticket.State, ticket.BlockedBecause));
+        Assert.Equal(["Blocked: the spec run failed"], ticket.Comments.Select(c => c.Body));
+        Assert.Equal(new[] { "Slug", "Title", "State", "Priority", "Cards", "PullRequest", "BlockedBecause", "Comments" }, typeof(ITicketView).GetProperties().Select(p => p.Name));
+        var json = JsonSerializer.Serialize(list);
+        Assert.DoesNotContain("src/List.cs", json);
+        Assert.DoesNotContain("sort by date", json);
+    }
+
+    [Fact]
+    public void BEH_TICKET_1_the_spec_of_a_change_is_read_from_that_changes_feature_branch()
+    {
+        using var rig = new Rig();
+
+        var spec = Triaged(rig);
+
+        Assert.Contains("Check out branch kit/work/list-sorting from origin", spec.Task);
+        Assert.Contains("Read the cards under Cards in the spec at demo.beh", spec.Task);
+        Assert.Equal("kit/work/list-sorting", TriageStage.Branch(Ticket(rig).Slug));
+    }
+
+    [Fact]
+    public void BEH_TICKET_1_two_changes_give_two_tickets_each_on_its_own_feature_branch()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date and export");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") }, new { slug = "list-export", text = BundleText("list-export") });
+
+        var tickets = rig.Tickets.Read("demo");
+        Assert.Equal(["list-export", "list-sorting"], tickets.Select(t => t.Slug).OrderBy(s => s, StringComparer.Ordinal));
+        Assert.Equal(2, tickets.Select(t => TriageStage.Branch(t.Slug)).Distinct().Count());
+        Assert.Equal(["kit/work/list-export", "kit/work/list-sorting"], tickets.Select(t => TriageStage.Branch(t.Slug)).OrderBy(s => s, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_note_reaches_triage_and_makes_a_ticket_in_the_new_state()
+    {
+        using var rig = new Rig(contextJob: true);
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_comment_on_a_card_reaches_triage_and_makes_a_ticket_in_the_new_state()
+    {
+        using var rig = new Rig(contextJob: true);
+        rig.Note("sorting should be stable", behaviour: "BEH-A");
+
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("sorting should be stable", triage.Task);
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_chat_message_he_has_Kit_note_reaches_triage_as_a_note_and_makes_a_ticket_in_the_new_state()
+    {
+        // The Chat page saves what he asks it to note through the notes route, as a note: the server writes nothing for a chat turn.
+        using var rig = new Rig(contextJob: true);
+        rig.Note("the list should sort by date, as we discussed in chat");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_triage_makes_its_spec_change_on_a_feature_branch_and_never_on_the_default_branch()
+    {
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", "the list should sort by date")], []).Text;
+
+        Assert.Contains("on branch kit/work/<work-item-slug>", task);
+        Assert.Contains("not the default branch", task);
+        Assert.DoesNotContain("on the default branch", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_card_triage_removes_is_marked_to_be_deleted_with_its_reason_and_not_deleted_outright()
+    {
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", "drop the export")], []).Text;
+
+        Assert.Contains("Delete no card", task);
+        Assert.Contains("contract my assumption: delete this card, because <reason>", task);
+        Assert.Contains("Delete no card: when a note says one should go, add to it", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_a_ticket_with_an_open_question_for_him_is_blocked_and_stays_the_same_ticket()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Specced("list-sorting", "two cards may conflict"), Question) });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"));
+        Assert.Equal(("list-sorting", TicketState.Ready, Question), (ticket.Slug, ticket.State, ticket.BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_blocked_combines_with_new_and_setting_and_clearing_the_tag_leaves_the_state_new()
+    {
+        using var rig = new Rig(contextJob: true);
+        TriagedForContext(rig);
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+        rig.Finish(rig.Claim()!, status: "failed");
+        Assert.Equal((TicketState.New, "the context run failed"), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.New, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_blocked_combines_with_ready_and_setting_and_clearing_the_tag_leaves_the_state_ready()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        Assert.Equal((TicketState.Ready, "the spec run failed"), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_his_reply_is_recorded_on_the_ticket_and_the_ticket_moves_to_ready_once_no_question_is_open()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date, newest first" }));
+        Assert.Equal(["Blocked: the spec run failed", "sort by date, newest first"], rig.Tickets.Comments("demo", "list-sorting").Select(c => c.Body));
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+        Assert.NotNull(Ticket(rig).BlockedBecause);
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_3_if_he_stays_silent_on_a_blocked_ticket_triage_acts_on_the_default_written_on_it()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Specced("list-sorting", "two cards may conflict"), Question) });
+        Assert.Contains("Silence: sort by date, newest first", Ticket(rig).BlockedBecause);
+
+        // He says nothing. The next note makes triage run, and it is told the default on the blocked ticket.
+        rig.Note("the export should keep the sort order");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("## Blocked, no reply from him (act on the default written on each)\n- list-sorting [ready] Sort the list: sort by date, newest first\n", triage.Task);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+        Assert.Contains("end the note with \"Silence: <what you would do if he says nothing>\"", ReviewStage.BuildTask("demo", ContextBundle.Parse(BundleText("list-sorting", "unsure")).Bundle!));
+    }
+
+    [Fact]
+    public void BEH_TICKET_4_a_ready_ticket_goes_to_technical_design_then_to_implementation_in_that_order()
+    {
+        using var rig = new Rig();
+        var design = Triaged(rig);
+        Assert.Contains("You are the spec stage for project \"demo\"", design.Task);
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+
+        rig.FinishWith(design, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        var implement = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the build stage for project \"demo\"", implement.Task);
+        Assert.Equal(TicketState.Planned, Ticket(rig).State);
+
+        rig.FinishWith(implement, new { slug = "list-sorting", text = Built("list-sorting") });
+
+        Assert.Equal(TicketState.Built, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_TICKET_4_technical_design_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Specced("list-sorting", "two cards may conflict"), Question) });
+        Assert.Equal((TicketState.Ready, Question), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "newest first" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Equal((TicketState.Ready, (string?)null), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_TICKET_4_implementation_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open()
+    {
+        using var rig = new Rig();
+        var implement = Specced(rig);
+        rig.FinishWith(implement, new { slug = "list-sorting", text = Built("list-sorting", flag: "unsure which sort") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Escalated(Built("list-sorting", "unsure which sort"), Question) });
+        Assert.Equal((TicketState.Planned, Question), (Ticket(rig).State, Ticket(rig).BlockedBecause));
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "newest first" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Null(Ticket(rig).BlockedBecause);
+    }
+
+    // A bundle whose Cards item has no "- " (line 4), so ContextBundle.Parse refuses it.
+    private static string MalformedCards(string slug) =>
+        $"# Sort the list\nWork-item: {slug}\nCards:\nBEH-A\nNotes:\n- demo.notes.md#x\nFiles:\n- src/List.cs\nContext:\nsort by date\n";
+
+    // A triage stopped on a malformed bundle, then a later triage that rewrote it to the shape with the same Cards and Notes.
+    private static void RewriteMalformedBundle(Rig rig)
+    {
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+        rig.Note("and sort by name too");
+        rig.FinishWith(Assert.IsType<PoolClaim>(rig.Claim()), new { slug = "list-sorting", text = BundleText("list-sorting") });
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_a_bundle_that_fails_its_shape_check_is_listed_on_the_board_with_the_line_that_is_wrong_and_no_build_starts()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"), t => t.Slug == "list-sorting");
+        Assert.Equal("its bundle is malformed: line 4 is not a \"- item\" in Cards", ticket.BlockedBecause);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_a_well_formed_bundle_is_not_listed_as_malformed_and_its_build_run_starts_as_before()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        Assert.Null(Ticket(rig).BlockedBecause);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        Assert.Null(Ticket(rig).BlockedBecause);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_triage_rewrites_a_malformed_bundle_so_that_it_parses_keeps_its_cards_and_notes_and_puts_each_item_on_its_own_line()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+
+        rig.Note("and sort by name too");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("## Malformed bundles (rewrite each)", triage.Task);
+        Assert.Contains("- list-sorting [new] ", triage.Task);
+        Assert.Contains("its bundle is malformed: line 4 is not a \"- item\" in Cards", triage.Task);
+        Assert.Contains("Keep its Cards and Notes items unchanged", triage.Task);
+        Assert.Contains("every list item on its own \"- \" line", triage.Task);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (item.Stage, item.Status));
+        var bundle = rig.Pipeline.Bundle("demo", "list-sorting")!;
+        Assert.Equal(["BEH-A"], bundle.Cards);
+        Assert.Equal(["demo.notes.md#x"], bundle.Notes);
+        Assert.Contains("Cards:\n- BEH-A\nNotes:\n- demo.notes.md#x\n", bundle.Render());
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_after_triage_rewrites_a_malformed_bundle_the_fix_is_recorded_beside_the_ticket()
+    {
+        using var rig = new Rig();
+
+        RewriteMalformedBundle(rig);
+
+        var fix = Assert.Single(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.StartsWith("Fixed: triage rewrote the malformed bundle", StringComparison.Ordinal));
+        Assert.Equal("kit", fix.Author);
+        Assert.Contains("It was: its bundle is malformed: line 4 is not a \"- item\" in Cards", fix.Body);
+        Assert.Null(Ticket(rig).BlockedBecause);
     }
 }

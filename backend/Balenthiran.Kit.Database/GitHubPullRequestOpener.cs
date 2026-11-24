@@ -262,7 +262,7 @@ public sealed partial class GitHubPullRequestOpener(
         var runs = await SendAsync(HttpMethod.Get, new Uri(root, $"actions/runs?head_sha={Uri.EscapeDataString(sha)}&per_page={PageSize}"), token, null, cancellationToken);
         if (runs.Status is 401 or 403 or 404)
         {
-            return Refuse($"Kit cannot read the checks of this pull request ({runs.Reason}), so it will not merge it unchecked");
+            return Refuse($"Kit cannot read Actions for this pull request ({runs.Reason}), so it will not merge it unchecked");
         }
 
         if (runs.Reason is not null)
@@ -320,7 +320,7 @@ public sealed partial class GitHubPullRequestOpener(
 
         if (mergeable.ValueKind != JsonValueKind.True)
         {
-            return new PullRequestMerge { Conflict = true, Reason = ConflictReason };
+            return new PullRequestMerge { Conflict = true, HeadSha = sha, Reason = ConflictReason };
         }
 
         if (kitTests && testedSha != sha)
@@ -376,7 +376,7 @@ public sealed partial class GitHubPullRequestOpener(
         // 422: GitHub could not merge the base in by itself, which is a conflict. 409: the head moved, look again.
         return update.Status switch
         {
-            422 => new PullRequestMerge { Conflict = true, Reason = ConflictReason },
+            422 => new PullRequestMerge { Conflict = true, HeadSha = sha, Reason = ConflictReason },
             409 => new PullRequestMerge { Waiting = true, Reason = update.Reason },
             _ => Unreadable(update.Status, update.Reason),
         };

@@ -17,5 +17,25 @@
 ## Spec conflicts (BEH-CONFLICT-1 to 3)
 - The branch carried the conflict code and tests already (`ConflictModeTests.cs`, `ConflictsDirective.cs`, `agent.md` "When two specs conflict", Settings "When specs conflict"). A build of this item is verification, not new code, unless a test in the plan is missing.
 
+## Session cost (BEH-COST-1)
+
+- A run's dollar cost is the `total_cost_usd` of its `claude -p --output-format json` result. kit-run writes it to `KIT_COST_FILE`, pool.sh sends it as `costUsd` in the finished report, and the server records it in the `session_cost` table before it answers.
+- The list-price estimate the proxy stores (`AddUsage`) is a different number. Never store it as a session cost.
+
+## Tickets and the pipeline
+- The blocked tag is `BlockedBecause` on the ticket row. A question for him is an escalated review; its note may end with `Silence: <default>`, which triage acts on if he stays silent (BEH-TICKET-3).
+- `kit.beh` cards may not tag `in FEAT-*` for a feature that lives in `kit-ui.beh`; the parser refuses it (CommittedArtefactTests).
+- The board's Tickets section (pipeline tickets, BEH-ORCH-16) is `prototypes/behaviour-ast/ui/src/components/Tickets.tsx`, with ordering in `ui/src/tickets.ts`. Cards (behaviours) on the board are `ui/src/board.ts`. They are different things.
+- The UI test suite is `npm test` in `prototypes/behaviour-ast/ui` (vitest, 618 tests as of 2026-11-24). The C# backend tests need `dotnet`, which is not installed on the build runner, so they have not run here.
+- Ticket state columns (`Tickets.tsx`) sit in a `div.board` with the spec board's CSS. Their headings stay `h4`, not the spec board's `h2`: `Board.test.tsx` reads the Tickets total as the only `h2` and the card titles as `h3`, so an `h2` or `h3` heading there breaks the existing tests.
+- BEH-UI-6 (kit.beh) builds on tickets, not cards, and conflicts with the built BEH-ORCH-16 blocked-first ordering. It is under review; see its `review requested` line.
+- **The agents page was removed (BEH-AGENTPAGE-1, bundle scrap-agents-page, 2026-11-24).** FEAT-AGENTS and its card are gone from kit-ui.beh. The guard test `ui/src/test/agentsPageRemoved.test.ts` keeps the removal honest. The ticket-board card is still BEH-UI-6 in kit.beh; do not renumber it back.
+- **Malformed bundles (BEH-TICKET-5):** a malformed bundle stops its item with `TriageStage.MalformedPrefix` + the parser's line-named reason, and that reason is the ticket's blocked tag. Triage gets those tickets under "## Malformed bundles (rewrite each)" and reports the fix; the fix is a `kit` comment on the ticket. Nothing starts a triage for a malformed ticket by itself: a note or his reply on it does. The raw bad text is not stored, so the board shows the reason and line, not the bundle.
+- **Test counts here:** `dotnet test ./backend` prints no summary in this sandbox, so use `dotnet test backend/Balenthiran.Kit.Tests` for the count: 1640 passed on 2026-11-21 after BEH-TICKET-5.
+- **BEH-UI-7 (pipeline runs, kit.beh):** kit/work/pipeline-runs-recent-first took BEH-UI-5 before dev reserved it for the agents page, and dev's ticket card took BEH-UI-6. The runs card is BEH-UI-7 after the merge of dev on 2026-11-20 (its C# tests are BEH_UI_7_*).
+- **Runs cards and run details (BEH-UI-7, BEH-UI-8, BEH-UI-9, bundle runs-page-cards-and-details):** the three cards live in kit-ui.beh now, after BEH-VIS-2. kit-ui.beh cannot tag `in FEAT-SERVER` (that feature is in kit.beh), so the moved cards have no feature tag, as BEH-VIS-1 and BEH-VIS-2 have none. The cards read `recent` from GET /api/runs/visibility, which reads cost through NoStageCostRecord, so every card shows "cost unknown" until a session cost is read there.
+- **Mapped test titles must not contain an apostrophe:** `check` reads the title as written in source (`run\'s` never matches `run's`). Write "run state", not "run's state", in any test a `.tests.json` line maps.
+- **Only CommittedArtefactTests.cs may read `RepoLayout.Behaviours`** (ConformanceTests.Only_the_committed_artefact_checks_read_the_live_corpora). A corpus check in any other test file fails the suite.
+
 ## Pipeline routing (BEH-ROUTE-*)
 - A flag's level is read by `FlagLevels.Of`: low and medium go to the review-low model (sonnet by default), high or unreadable goes to opus. Medium's model is an assumption until the owner confirms it.

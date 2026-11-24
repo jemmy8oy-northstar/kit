@@ -980,6 +980,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_with_no_retries_a_lost_build_run_blocks_at_once_and_says_it_was_lost" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_after_a_restart_a_ticket_a_run_blocked_is_tried_again_and_one_waiting_on_a_person_is_not" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_only_a_block_a_run_made_is_retryable" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_built_ticket_blocked_by_a_conflict_comes_back_after_a_restart_and_gets_a_resolve_run" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_lost_test_run_leaves_the_ticket_built_and_the_next_merge_look_tests_it_again" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_test_run_lost_three_times_in_a_row_blocks_the_ticket_rather_than_testing_for_ever" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way" },
@@ -1139,7 +1140,12 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_a_second_conflict_after_a_resolve_run_stops_the_item_without_another_run" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_no_other_ticket_of_the_project_merges_while_its_resolve_run_is_in_flight" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_the_resolve_task_says_which_branch_to_merge_into_and_what_not_to_do" },
-    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_the_resolve_stage_runs_on_the_build_stages_model_and_turns_unless_set" }
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_the_resolve_stage_runs_on_the_build_stages_model_and_turns_unless_set" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_a_conflict_at_a_new_head_after_a_resolve_run_that_worked_gets_another_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_a_conflict_at_the_same_head_after_a_resolve_run_stops_the_item_without_another_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_a_ticket_gets_at_most_three_resolve_runs_however_often_its_base_moves" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_11_the_resolve_task_says_how_to_resolve_each_shared_kind_of_file" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_11_a_conflict_names_the_head_commit_it_was_found_at" }
   ],
   "BEH-ORCH-12": [
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_private_repos_pull_request_with_no_actions_run_asks_for_a_test_of_its_head" },
@@ -1168,6 +1174,32 @@
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_test_run_with_no_result_text_fails" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_run_of_another_stage_or_none_is_unchanged_and_still_pushes_what_it_left" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_The_pool_gives_a_run_its_stage_only_when_the_claim_has_one" }
+  ],
+  "BEH-UI-7": [
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_7_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_7_a_run_still_running_is_placed_by_its_start_not_at_the_bottom" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_7_the_runs_page_reads_its_cards_from_the_visibility_route_newest_start_first" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_7_the_recent_runs_are_newest_start_first_whatever_order_they_were_given_in" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "renders the runs in the order the API sends, with no client-side re-sort (BEH-UI-7)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-7 shows each recent run as a card read from GET /api/runs/visibility, not as a text row" }
+  ],
+  "BEH-UI-8": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_8_each_recent_run_carries_the_state_the_run_record_holds" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_8_with_no_cost_record_every_recent_run_costs_unknown" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_UI_8_a_run_with_no_recorded_cost_is_unknown_and_a_run_recorded_at_zero_is_zero" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_UI_8_the_visibility_route_gives_each_recent_run_its_tokens_its_failure_and_unknown_cost" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-8 shows each run state as a tag matching the state the run record holds" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-8 shows a run with no recorded cost as unknown, never as zero" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-8 shows a run recorded at cost 0.00 differently from a run with no recorded cost" }
+  ],
+  "BEH-UI-9": [
+    { "file": "backend/Balenthiran.Kit.Tests/CommittedArtefactTests.cs", "title": "BEH_UI_9_the_run_cards_and_details_are_declared_in_kit_ui_beh_beside_the_run_page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-UI-9 opens the details page for the run whose card was clicked, and no other run" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 shows the stages and their recorded costs, with unknown for a stage with no cost, and the reviews it requested (BEH-VIS-2)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 shows the agents running on the run work item and any review each flagged (BEH-VIS-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 does not repeat the cost by stage that BEH-ORCH-9 shows on the runs page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 says run not found for a run id that no longer exists, not an empty page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/RunDetails.test.tsx", "title": "BEH-UI-9 reads the run from GET /api/runs/visibility, the route the runs page cards read" }
   ],
   "BEH-VIS-1": [
     { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_running_run_lists_each_running_agent_with_its_current_stage" },

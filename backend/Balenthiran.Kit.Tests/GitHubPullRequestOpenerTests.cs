@@ -433,7 +433,7 @@ public class GitHubPullRequestOpenerTests
 
         Assert.False(r.Merged);
         Assert.False(r.Waiting);
-        Assert.StartsWith("Kit cannot read the checks of this pull request", r.Reason);
+        Assert.StartsWith("Kit cannot read Actions for this pull request", r.Reason);
         Assert.DoesNotContain(Token, r.Reason);
         Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
     }
@@ -510,6 +510,20 @@ public class GitHubPullRequestOpenerTests
         Assert.False(r.Merged);
         Assert.Equal("it has a conflict with its base branch", r.Reason);
         Assert.True(r.Conflict);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_conflict_names_the_head_commit_it_was_found_at()
+    {
+        // claude-code-bot#151: the merge job compares it with the head its last resolve run started from.
+        var update = new FakeGitHub(PullOnDev(), Compared(1), FakeGitHub.Json(HttpStatusCode.UnprocessableEntity, """{"message":"merge conflict between base and head"}"""));
+        var mergeable = new FakeGitHub(Pull("false"), Runs(Run("completed", "success")));
+
+        var onUpdate = await Opener(update).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+        var onMergeable = await Opener(mergeable).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.Equal((true, Head), (onUpdate.Conflict, onUpdate.HeadSha));
+        Assert.Equal((true, Head), (onMergeable.Conflict, onMergeable.HeadSha));
     }
 
     [Fact]

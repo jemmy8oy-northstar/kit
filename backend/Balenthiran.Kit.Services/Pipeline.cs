@@ -55,9 +55,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
 
-    // BEH-ORCH-11, slice 7b: tickets that have had their one conflict-resolution run. In memory only: the ticket row has
-    // no column for it, so a restart forgets it and a ticket may then get one more run.
-    private readonly HashSet<(string App, string Slug)> resolved = [];
+    // BEH-ORCH-11, slice 7b: per ticket, the head commit its last conflict-resolution run was started for and how many it has
+    // had. A conflict at that same head means the run changed nothing, so the ticket stops; a conflict at a new head means the
+    // base moved on after a run that worked, so it gets another, up to MaxResolveRuns (claude-code-bot#151). In memory only:
+    // the ticket row has no column for it, so a restart forgets it and a ticket may then get more runs.
+    private readonly Dictionary<(string App, string Slug), (string? Head, int Runs)> resolved = [];
+
+    /// <summary>BEH-ORCH-11: the most conflict-resolution runs one ticket gets, however often its base moves.</summary>
+    public const int MaxResolveRuns = 3;
 
     // BEH-ORCH-12: the head commit a Kit test run passed at, per ticket, which the merge look hands the merger; and the commit
     // a test run in flight was started for. In memory only, like resolved: a restart forgets them and a ticket may get one more test run.
@@ -126,7 +131,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // ticket comes back at the state it reached, so its review would not be what ran again. A genuinely red pull request is
     // tested once more per restart; a built ticket has no other way out of a block (a reply wakes only new, ready, planned).
     private static readonly System.Text.RegularExpressions.Regex RetryableBlock =
-        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost)");
+        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost"
+            // claude-code-bot#151: a conflict is dev moving under the branch, not a decision; its resolve run may now succeed.
+            + @"|the conflict-resolution run failed|its pull request was not merged: (it has a conflict with its base branch|it still conflicts with its base|its base kept moving))");
 
     /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
     public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);
@@ -1011,6 +1018,17 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         if (result is { Merged: false, Waiting: true })
         {
+            // BEH-ORCH-10: not stopped, but the Runs page should say what it still waits for, not look idle.
+            var note = result.Reason ?? WaitingNote;
+            lock (gate)
+            {
+                var waiting = items.IndexOf(item);
+                if (waiting >= 0 && items[waiting] == item && item.MergeNote != note)
+                {
+                    Set(waiting, item with { MergeNote = note });
+                }
+            }
+
             return;
         }
 
@@ -1022,13 +1040,25 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 return;
             }
 
-            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to one resolve run instead of stopping the item.
+            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to a resolve run instead of stopping the item:
+            // one per head commit, so a base that moved on after a run that worked is resolved again (claude-code-bot#151).
             if (updateFirst && result is { Merged: false, Conflict: true })
             {
-                if (resolved.Contains((item.Project, item.Slug)))
+                var key = (item.Project, item.Slug);
+                if (resolved.TryGetValue(key, out var last))
                 {
-                    Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
-                    return;
+                    // No head to compare (or the same one) means the last run left the branch as it was.
+                    if (result.HeadSha is null || result.HeadSha == last.Head)
+                    {
+                        Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
+                        return;
+                    }
+
+                    if (last.Runs >= MaxResolveRuns)
+                    {
+                        Set(index, Stop(item, $"its pull request was not merged: its base kept moving and it conflicted again after {last.Runs} resolve runs"));
+                        return;
+                    }
                 }
 
                 // A project with a run in flight is busy: the item stays built, the project is kept for it, and the next look asks again.
@@ -1038,10 +1068,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     return;
                 }
 
-                resolved.Add((item.Project, item.Slug));
+                resolved[key] = (result.HeadSha, (resolved.TryGetValue(key, out var had) ? had.Runs : 0) + 1);
                 try
                 {
-                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued }));
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued, MergeNote = null }));
                 }
                 catch (Exception e)
                 {
@@ -1065,7 +1095,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 testing[(item.Project, item.Slug)] = sha;
                 try
                 {
-                    Set(index, Begin(index, item with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued }));
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued, MergeNote = null }));
                 }
                 catch (Exception e)
                 {
@@ -1076,9 +1106,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             Set(index, result is { Merged: true }
-                ? item with { Merged = true }
+                ? item with { Merged = true, MergeNote = null }
                 : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
         }
+    }
+
+    /// <summary>What a look that is still waiting says when GitHub gave no reason (BEH-ORCH-10): checks running, none yet, or mergeability unknown.</summary>
+    private const string WaitingNote = "waiting for its checks to pass, or for GitHub to say whether it can merge";
+
+    /// <summary>
+    /// BEH-ORCH-10: why a built item is not merged yet, for the Runs page: null when it is not built or is merged. With
+    /// neither <c>KIT_PIPELINE_MERGE</c> nor the merge job on, the item is not looked at, so the note says so rather than
+    /// leaving it to look idle.
+    /// </summary>
+    public string? MergeNoteOf(WorkItem item)
+    {
+        if (!IsBuilt(item))
+        {
+            return null;
+        }
+
+        return merge || jobs?.Contains(PipelineStage.Merge) == true
+            ? item.MergeNote
+            : "not merged: KIT_PIPELINE_MERGE is off, so Kit does not look at this pull request";
     }
 
     /// <summary>
@@ -1107,7 +1157,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         if (parsed.Bundle is not { } bundle)
         {
-            return Stop(item, $"its bundle is malformed: {parsed.Error}");
+            return Stop(item, $"{TriageStage.MalformedPrefix}{parsed.Error}");
         }
 
         if (bundle.Slug != item.Slug)
@@ -1335,6 +1385,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     private bool Took(string app, ReportedBundle reported)
     {
         var triage = new WorkItem(app, reported.Slug, PipelineStage.Triage, WorkItemStatus.Running);
+        // BEH-TICKET-5: the item this report replaces, so a bundle that now parses can say what it was.
+        var before = items.Find(i => i.Project == app && i.Slug == reported.Slug);
         var parsed = reported.Text is null ? null : ContextBundle.Parse(reported.Text);
         ContextBundle? usable = null;
         WorkItem item;
@@ -1344,7 +1396,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
         else if (parsed.Bundle is not { } bundle)
         {
-            item = Stop(triage, $"its bundle is malformed: {parsed.Error}");
+            item = Stop(triage, $"{TriageStage.MalformedPrefix}{parsed.Error}");
         }
         else if (bundle.Slug != reported.Slug)
         {
@@ -1369,7 +1421,22 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             usable = bundle;
         }
 
-        return Record(app, reported.Slug, item, usable);
+        var recorded = Record(app, reported.Slug, item, usable);
+
+        // BEH-TICKET-5: a bundle triage rewrote from malformed is recorded beside its ticket, with what it was.
+        if (usable is not null && before?.StoppedBecause is { } was && was.StartsWith(TriageStage.MalformedPrefix, StringComparison.Ordinal))
+        {
+            try
+            {
+                ticketStore.Comment(new TicketComment(app, reported.Slug, KitAuthor, $"Fixed: triage rewrote the malformed bundle to its shape. It was: {was}", (clock ?? TimeProvider.System).GetUtcNow()));
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: commenting on the ticket {app} {reported.Slug} threw {e.GetType().Name}");
+            }
+        }
+
+        return recorded;
     }
 
     /// <summary>Puts <paramref name="item"/> in the list, replacing an earlier item of the same slug unless that is running. True when <paramref name="usable"/> is not null.</summary>
@@ -1503,7 +1570,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // update. Listed first (priority 0), so the list's cap can never drop the ticket the reply names.
             var replied = replies.Select(r => r.Slug).ToHashSet(StringComparer.Ordinal);
             var tickets = OpenTickets(item.Project).Select(t => replied.Contains(t.Slug) ? t with { BlockedBecause = null, Priority = 0 } : t).ToList();
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project), Silent(item.Project), Malformed(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -1608,6 +1675,46 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         catch (Exception e)
         {
             Console.Error.WriteLine($"kit: reading {app}'s ticket replies threw {e.GetType().Name}");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// BEH-TICKET-5: <paramref name="app"/>'s open tickets whose bundle failed its shape check, so triage rewrites each one.
+    /// A store that cannot be read gives none.
+    /// </summary>
+    private IReadOnlyList<PipelineTicket> Malformed(string app)
+    {
+        try
+        {
+            return ticketStore.Read(app)
+                .Where(TriageStage.IsMalformed)
+                .Where(t => t.State is TicketState.New or TicketState.Ready or TicketState.Planned)
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s malformed tickets for triage threw {e.GetType().Name}");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// BEH-TICKET-3: <paramref name="app"/>'s blocked tickets whose question carries a default and that have no comment from
+    /// him, so he has stayed silent on them and triage acts on the default. A store that cannot be read gives none.
+    /// </summary>
+    private IReadOnlyList<PipelineTicket> Silent(string app)
+    {
+        try
+        {
+            return ticketStore.Read(app)
+                .Where(t => TriageStage.DefaultOf(t.BlockedBecause) is not null && t.State is TicketState.New or TicketState.Ready or TicketState.Planned)
+                .Where(t => !ticketStore.Comments(app, t.Slug).Any(c => c.Author != KitAuthor))
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s silent tickets for triage threw {e.GetType().Name}");
             return [];
         }
     }
