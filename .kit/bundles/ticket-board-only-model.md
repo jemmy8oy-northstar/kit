@@ -1,6 +1,7 @@
 # Kit runs on a ticket board and an epic board only
 Work-item: ticket-board-only-model
 Flag: decommissioning the feature and spec boards changes how Kit shows work, and triage may edit only kit.beh, so the kit-ui.beh cards that draw those boards are named for deletion on BEH-TICKET-6 and not edited here; the owner should confirm that list (level: high)
+Review: escalated — the deletion list is incomplete and clashes with a kept card: BEH-STAGE-10 and BEH-STAGE-11 also place features on the retired feature board, BEH-BOARD-10 to 19 and 21 rank and badge the spec board's columns and are orphaned if BEH-BOARD-1 goes, and kept BEH-EPIC-4 is "a third option on the BEH-STAGE-8 switch" on page:KitStages, so it cannot stand once BEH-STAGE-8 is deleted; he must say which of these cards are deleted, which are rewritten onto tickets, and where the epic board lives. Silence: take the feature and spec boards out of the navbar only; mark the six named cards plus BEH-STAGE-10 and BEH-STAGE-11 as to be deleted, with the reason beside each (BEH-TICKET-2), without removing them; leave BEH-BOARD-10 to 21 untouched; and give BEH-EPIC-4 an unreviewed assumption that the epic board is its own page, not a switch option
 Cards:
 - BEH-TICKET-1
 - BEH-TICKET-6
@@ -20,3 +21,4 @@ BEH-TICKET-6 names the kit-ui.beh cards for deletion: BEH-STAGE-1, BEH-STAGE-7, 
 Kept: BEH-EPIC-4 (epic view) and BEH-NARR-1 (project goal from open epics), which are the epic board's cards. BEH-UI-6 (ticket columns) already matches the ticket board.
 Moving every project to the ticket model is a builder task across projects, not part of this spec edit.
 Next step toward the goal: owner confirms the kit-ui.beh deletion list; then a builder maps BEH-TICKET-6 to 8 to tests and removes the two retired boards.
+Review gaps (2026-11-24): BEH-STAGE-10 and 11 are feature-board placement cards missing from the list; BEH-BOARD-10 to 19 and 21 hang off the columns BEH-BOARD-1 draws; BEH-EPIC-4 depends on BEH-STAGE-8's switch and page:KitStages.
