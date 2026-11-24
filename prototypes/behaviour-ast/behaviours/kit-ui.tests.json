@@ -58,7 +58,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "is Done only with behaviours beneath it, every one done on the behaviour board (BEH-STAGE-12)" }
   ],
   "BEH-STAGE-8": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-BOARD-10": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "takes each project in turn within one priority, so equal scores never read as a block of one project (BEH-BOARD-10)" }
@@ -324,7 +324,7 @@
   "BEH-EPIC-4": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows a card per epic in every real project, coloured by project (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows an epic its tagged features, linked, and their behaviours built out of total at any depth (BEH-EPIC-4)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-EPIC-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows the epic its title, id and project, its behaviours built out of total, and its features linked (BEH-EPIC-8)" },

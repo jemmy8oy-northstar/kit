@@ -57,3 +57,10 @@
 - The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
 - Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.
 - The bundle called the Inbox assertion "in Project.test.tsx"; the main-navigation Inbox assertions were in `FeatureGate.test.tsx`.
+
+## Ticket board and epic board (BEH-TICKET-6 to 8, bundle ticket-board-only-model)
+- The gate reads test titles as literal strings. A title built from `it.each` or a template string is not found, so `check kit-ui` fails with "has no test titled ...". Give each mapped test a literal title.
+- When a test title is renamed, check `kit-ui.tests.json` for every card that maps to it. BEH-STAGE-8 and BEH-EPIC-4 share one title, and the gate names only the first missing one.
+- A ticket has no epic field. It names the epics of the features its specs sit in (`epicsOfTicket` in `ui/src/epics.ts`, the BEH-TICKET-7 contract), so an epic's ticket counts are derived in the page, not stored.
+- The feature board (`/stages`) and the spec board (`/board` behaviour list) are out of the navbar and the view switch; the routes still work by URL. The `/board` page still lists behaviour cards under the tickets until the owner answers the spec-board question on BEH-TICKET-6.
+- `ui/src/tickets.ts` and `ui/src/components/Tickets.tsx` do exist, under `prototypes/behaviour-ast/ui/src/`.

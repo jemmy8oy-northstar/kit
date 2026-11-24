@@ -427,6 +427,7 @@ behaviour BEH-TICKET-1 "A ticket is not a spec: tickets appear on the board, and
   when opens page:KitBoard
   then sees region:KitMain
   contract my assumption: a ticket represents one change to the spec and carries its status and its open questions; the spec itself lives on the feature branch of that change, not on the board
+  contract my assumption: the ticket board is the only board for work, and the features and specs of a ticket are read from the ticket, not from a feature or spec board
 
 behaviour BEH-TICKET-2 "A loose item (a note, a chat message, a comment, an approval or a rejection) goes to triage, which turns it into a spec change and a ticket in the new state"
   source defined kit.notes.md#2026-11-15-1520
@@ -537,3 +538,40 @@ behaviour BEH-TICKET-5 "A malformed bundle is named and can be resolved, not lef
   then sees region:KitMain
   contract my assumption: a bundle that fails its shape check is shown on the board with the line that is wrong, and no builder starts on it
   contract my assumption: triage rewrites a malformed bundle to the required shape, keeping its cards and notes, and records the fix beside the ticket
+
+behaviour BEH-TICKET-6 "Kit has two boards, the epic board and the ticket board, and no feature or spec board"
+  source defined kit.notes.md#2026-11-23-2255
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: the epic board is the goal view: each open epic with its status toward done, counted from its tickets
+  contract my assumption: the ticket board is the working view: every open ticket in its state column, ordered by priority, blocked tickets flagged
+  contract my assumption: the feature board and the spec board leave the navbar and the boards; the feature and spec pages stay, so a ticket's spec can still be read from its feature branch
+  contract my assumption: delete these kit-ui.beh cards, because the feature and spec boards are decommissioned and the ticket model replaces them: BEH-STAGE-1, BEH-STAGE-7, BEH-STAGE-8, BEH-STAGE-9, BEH-STAGE-12, BEH-BOARD-1; they live in kit-ui.beh, which this triage run does not edit, so a builder removes them only after the owner confirms this list
+  contract my assumption: delete these kit-ui.beh cards too, because they place features on the retired feature board: BEH-STAGE-10 and BEH-STAGE-11; they are not edited here, and a builder removes them only after the owner confirms this list
+  contract my assumption: BEH-BOARD-10 to BEH-BOARD-21 are left untouched, because they rank and badge the spec board's columns; their fate is decided after the owner confirms the list above
+  contract my assumption: BEH-EPIC-4 (kit-ui.beh) is the epic board's own page, not a third option on the BEH-STAGE-8 switch, because BEH-STAGE-8 is to be deleted
+
+behaviour BEH-TICKET-7 "A ticket names the epics it progresses toward, and may touch many features and specs"
+  source defined kit.notes.md#2026-11-23-2255
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: a ticket is the unit Kit shows granularly; it may touch any number of features and specs, and names one or more epics it progresses toward
+  contract my assumption: a ticket that names no epic shows on the ticket board only and counts toward no epic's status
+  contract my assumption: a ticket names the epics of the features its specs sit in, at any depth (the epics tagged on those features and on the features they are in, BEH-EPIC-2), so a ticket carries no epic line of its own; the ticket board lists the features and specs it touches
+
+behaviour BEH-TICKET-8 "Each open epic shows its status toward the goal, counted from its tickets, without opening features or specs"
+  source defined kit.notes.md#2026-11-23-2255
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: an epic's status is counted from the tickets that name it, in the states new, ready, planned, built, blocked and done
+  contract my assumption: the project's goal is its first open epic, as BEH-NARR-1 already says, and the epic board shows that goal first
+  contract my assumption: a blocked ticket is counted once, in the state it is in; the blocked count is shown beside the states and is not added to them, and a stopped ticket is counted in no state
