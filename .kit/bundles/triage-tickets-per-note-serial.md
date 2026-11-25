@@ -11,3 +11,9 @@ Files:
 - prototypes/behaviour-ast/behaviours/kit.tests.json
 Context:
 Two notes, same domain (triage). The first says kit can make several tickets from one note. The second says triage must run in serial so parallel triage runs cannot add duplicates or overlapping changes. BEH-TICKET-2 is the triage card; BEH-SCHED-1 is the stage-schedule card, and its existing review request about one run per project stays open and is not changed. Builder: write the tests first, map any new assertion in kit.tests.json, and do not edit other cards.
+
+Test plan:
+- BEH-TICKET-2: a note that asks for two separate changes gives two tickets, one per change, each on its own feature branch
+- BEH-TICKET-2: a note that asks for one change gives one ticket, not a split
+- BEH-TICKET-2: a second note waits while triage runs for the first, and its triage starts only after the first note's tickets are written
+- BEH-TICKET-2: a second note is triaged against the tickets the first note made, so it adds no duplicate ticket for a change already made
