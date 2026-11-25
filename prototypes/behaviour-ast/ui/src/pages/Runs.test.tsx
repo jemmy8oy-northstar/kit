@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Runs from './Runs'
 import RunDetails from './RunDetails'
@@ -319,6 +319,20 @@ describe('Runs', () => {
     renderRuns()
 
     expect(await screen.findByText('No work items since Kit last started.')).toBeInTheDocument()
+  })
+
+  it('BEH-ORCH-21 says the pipeline is paused for the usage limit and when it resumes, and nothing when it is not', async () => {
+    mockBoth({ capUsd: 5, runs: [] }, { on: true, items: [], paused: 'Paused: usage limit, resumes 13:00Z' })
+    renderRuns()
+
+    expect(await screen.findByText('Paused: usage limit, resumes 13:00Z')).toBeInTheDocument()
+    cleanup()
+
+    mockBoth({ capUsd: 5, runs: [] }, { on: true, items: [], paused: null })
+    renderRuns()
+
+    await screen.findByText('No work items since Kit last started.')
+    expect(screen.queryByText(/Paused: usage limit/)).not.toBeInTheDocument()
   })
 
   it('BEH-ORCH-17 shows each run still going: how long it has run and when it counts as lost, or how long it has waited', async () => {

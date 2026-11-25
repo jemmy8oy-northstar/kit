@@ -11,4 +11,7 @@ public sealed class PipelineItemList : IPipelineItemList
 
     [JsonPropertyOrder(2)]
     public required IReadOnlyList<IPipelineItem> Items { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? Paused { get; init; }
 }
