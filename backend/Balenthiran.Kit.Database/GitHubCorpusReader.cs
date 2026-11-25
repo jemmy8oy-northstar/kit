@@ -53,7 +53,16 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             return previous;
         }
 
-        var entries = Entries(await ReadBodyAsync(answer, source, cancellationToken), source);
+        var (entries, features) = Entries(await ReadBodyAsync(answer, source, cancellationToken), source);
+
+        // claude-code-bot#151: a feature tree is nested, which a contents listing does not show. The
+        // listing names the features folder's tree sha, so ONE more call lists everything under it, and
+        // only when the listing itself changed (a 304 above means nothing under it moved either).
+        if (features is not null)
+        {
+            entries.AddRange(await TreeEntriesAsync(root, source, features, token, mintFailed, cancellationToken));
+        }
+
         var files = new SortedDictionary<string, ISnapshotFile>(StringComparer.Ordinal);
         foreach (var (name, sha) in entries)
         {
@@ -245,8 +254,13 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
         }
     }
 
-    /// <summary>The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c>, <c>.notes.md</c>, <c>.schedule</c> and <c>.tests.json</c> files directly in it, nothing nested.</summary>
-    private static List<(string Name, string Sha)> Entries(JsonElement json, IProjectSource source)
+    /// <summary>
+    /// The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c>, <c>.notes.md</c>, <c>.schedule</c>
+    /// and <c>.tests.json</c> files directly in it, and the <c>features</c> folder's tree sha when it has one
+    /// (claude-code-bot#151). With a features folder, the tree project's own top-level files (<c>project.kit</c>,
+    /// <c>notes.md</c>, <c>schedule</c>, <c>bindings.json</c>) are corpus files too.
+    /// </summary>
+    private static (List<(string Name, string Sha)> Entries, string? Features) Entries(JsonElement json, IProjectSource source)
     {
         // A FILE at the path answers an object, not an array: the source names something that is
         // not a directory, which is a configuration error and not "no projects".
@@ -255,19 +269,76 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             throw new GitHubReadException($"{Key(source)}: GitHub did not answer a directory listing — is the path a directory?");
         }
 
+        string? features = null;
+        foreach (var e in json.EnumerateArray())
+        {
+            if (e.ValueKind == JsonValueKind.Object
+                && e.TryGetProperty("type", out var t) && t.GetString() == "dir"
+                && e.TryGetProperty("name", out var dn) && dn.GetString() == FeatureTree.FeaturesDir)
+            {
+                features = e.TryGetProperty("sha", out var ds) && ds.GetString() is { Length: > 0 } treeSha
+                    ? treeSha
+                    : throw new GitHubReadException($"{Key(source)}: GitHub listed {FeatureTree.FeaturesDir}/ with no sha, so Kit cannot read it");
+            }
+        }
+
         var entries = new List<(string, string)>();
         foreach (var e in json.EnumerateArray())
         {
             if (e.ValueKind != JsonValueKind.Object
                 || !e.TryGetProperty("type", out var type) || type.GetString() != "file"
                 || !e.TryGetProperty("name", out var n) || n.GetString() is not { } name
-                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal) || name.EndsWith(".notes.md", StringComparison.Ordinal) || name.EndsWith(".schedule", StringComparison.Ordinal) || name.EndsWith(".tests.json", StringComparison.Ordinal)))
+                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal) || name.EndsWith(".notes.md", StringComparison.Ordinal) || name.EndsWith(".schedule", StringComparison.Ordinal) || name.EndsWith(".tests.json", StringComparison.Ordinal)
+                    || (features is not null && name is FeatureTree.ProjectFile or FeatureTree.NotesFile or FeatureTree.ScheduleFile or FeatureTree.BindingsFile)))
             {
                 continue;
             }
 
             // A listed corpus with no sha cannot be fetched; skipping it would serve fewer projects
             // than exist, which reads as a deletion.
+            if (!e.TryGetProperty("sha", out var s) || s.GetString() is not { Length: > 0 } sha)
+            {
+                throw new GitHubReadException($"{Key(source)}: GitHub listed {name} with no sha, so Kit cannot fetch it");
+            }
+
+            entries.Add((name, sha));
+        }
+
+        return (entries, features);
+    }
+
+    /// <summary>
+    /// claude-code-bot#151: every tree file (<see cref="FeatureTree.IsTreeFile"/>) under the features folder, by
+    /// its path relative to the source's directory (<c>features/notes/note.kit</c>), from one recursive tree read.
+    /// </summary>
+    private async Task<List<(string Name, string Sha)>> TreeEntriesAsync(Uri root, IProjectSource source, string treeSha, string? token, string? mintFailed, CancellationToken cancellationToken)
+    {
+        var uri = new Uri(root, $"repos/{source.Owner}/{source.Repository}/git/trees/{treeSha}?recursive=1");
+        using var answer = await SendAsync(uri, token, null, "application/vnd.github+json", source, mintFailed, cancellationToken);
+        var json = await ReadBodyAsync(answer, source, cancellationToken);
+        if (json.ValueKind != JsonValueKind.Object || !json.TryGetProperty("tree", out var items) || items.ValueKind != JsonValueKind.Array)
+        {
+            throw new GitHubReadException($"{Key(source)}: GitHub's tree of {FeatureTree.FeaturesDir}/ was not in the shape Kit reads");
+        }
+
+        // A truncated tree is part of the spec: serving it would read as cards deleted.
+        if (json.TryGetProperty("truncated", out var cut) && cut.ValueKind == JsonValueKind.True)
+        {
+            throw new GitHubReadException($"{Key(source)}: GitHub truncated the tree of {FeatureTree.FeaturesDir}/, so Kit cannot read every file");
+        }
+
+        var entries = new List<(string, string)>();
+        foreach (var e in items.EnumerateArray())
+        {
+            if (e.ValueKind != JsonValueKind.Object
+                || !e.TryGetProperty("type", out var type) || type.GetString() != "blob"
+                || !e.TryGetProperty("path", out var p) || p.GetString() is not { } rel
+                || !FeatureTree.IsTreeFile($"{FeatureTree.FeaturesDir}/{rel}"))
+            {
+                continue;
+            }
+
+            var name = $"{FeatureTree.FeaturesDir}/{rel}";
             if (!e.TryGetProperty("sha", out var s) || s.GetString() is not { Length: > 0 } sha)
             {
                 throw new GitHubReadException($"{Key(source)}: GitHub listed {name} with no sha, so Kit cannot fetch it");
