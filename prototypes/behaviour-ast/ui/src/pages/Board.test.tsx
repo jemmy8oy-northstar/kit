@@ -218,7 +218,13 @@ describe('Board', () => {
 
     const section = within(await screen.findByRole('region', { name: /Tickets/ }))
     expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
-    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Move the spec move-spec', 'Sort the list sorting'])
+    // BEH-UI-6: the merged ticket is in the closed column, which does not add to the open count.
+    expect(within(section.getByRole('region', { name: 'closed' })).getByRole('heading', { level: 4 })).toHaveTextContent('closed 1')
+    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Move the spec move-spec',
+      'Sort the list sorting',
+      'Already merged gone',
+    ])
     expect(section.getByTestId('blocked-because')).toHaveTextContent('which title should the card keep?')
     expect(section.getByText('Blocked: which title should the card keep?')).toBeVisible()
     expect(section.getByRole('link', { name: 'A-2' })).toHaveAttribute('href', '/projects/alpha/behaviours/A-2')
@@ -248,7 +254,7 @@ describe('Board', () => {
     tickets = {}
   })
 
-  it('shows each open state as a labelled column, and no column for a state with none open (BEH-UI-6)', async () => {
+  it('shows each open state as a labelled column, then a closed column last for merged tickets, and no column for a state with none open (BEH-UI-6)', async () => {
     mockApi()
     tickets = {
       alpha: {
@@ -265,12 +271,17 @@ describe('Board', () => {
     const root = await screen.findByRole('region', { name: /Tickets/ })
     const section = within(root)
     const columns = Array.from(root.querySelectorAll('section.ticket-column'))
-    expect(columns.map((c) => c.getAttribute('data-state'))).toEqual(['new', 'ready'])
+    expect(columns.map((c) => c.getAttribute('data-state'))).toEqual(['new', 'ready', 'closed'])
     expect(section.getByRole('region', { name: 'new' })).toHaveAttribute('data-state', 'new')
     expect(section.getByRole('region', { name: 'ready' })).toHaveAttribute('data-state', 'ready')
+    // BEH-UI-6: the merged ticket is in the closed region, which is last and holds it.
+    const closed = section.getByRole('region', { name: 'closed' })
+    expect(closed).toHaveAttribute('data-state', 'closed')
+    expect(within(closed).getByRole('heading', { level: 3 })).toHaveTextContent('Merged one m1')
     expect(section.queryByRole('region', { name: 'planned' })).not.toBeInTheDocument()
     expect(section.queryByRole('region', { name: 'built' })).not.toBeInTheDocument()
-    expect(section.queryByRole('region', { name: 'merged' })).not.toBeInTheDocument()
+    // The Tickets total still counts only the open tickets: the merged one is not among them.
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
     tickets = {}
   })
 
@@ -1155,8 +1166,8 @@ describe('navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
   })
 
-  it('switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)', async () => {
-    window.history.pushState({}, '', '/stages')
+  it('switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)', async () => {
+    window.history.pushState({}, '', '/board')
     vi.stubGlobal(
       'fetch',
       vi.fn(async (path: string) => ({
@@ -1173,25 +1184,17 @@ describe('navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).queryByRole('link', { name: 'Stages' })).not.toBeInTheDocument()
     const views = screen.getByRole('navigation', { name: 'Board view' })
-    expect(within(views).getByRole('link', { name: 'Features' })).toHaveAttribute('aria-current', 'page')
-    fireEvent.click(within(views).getByRole('link', { name: 'Behaviours' }))
-    expect(await screen.findByRole('navigation', { name: 'Board view' })).toBeInTheDocument()
-    expect(within(screen.getByRole('navigation', { name: 'Board view' })).getByRole('link', { name: 'Behaviours' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(window.location.pathname).toBe('/board')
-
-    // BEH-EPIC-4: epics are a third view, above features, and the Board link stays current on it.
-    fireEvent.click(within(screen.getByRole('navigation', { name: 'Board view' })).getByRole('link', { name: 'Epics' }))
+    expect(within(views).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(within(views).getByRole('link', { name: 'Epics' }))
     expect(await screen.findByRole('region', { name: 'Epics' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/epics')
     expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
+    // BEH-TICKET-6: the feature and spec views are no longer switch options.
     expect(
       within(screen.getByRole('navigation', { name: 'Board view' }))
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Epics', 'Features', 'Behaviours'])
+    ).toEqual(['Epics', 'Tickets'])
   })
 
   it('links Ideas from every page, to the Ideas project (BEH-IDEA-1)', async () => {
@@ -1231,6 +1234,23 @@ describe('BEH-SPACE-3: each project has its own board, a tap from the global one
     expect(screen.getByTestId('search').textContent).toBe('')
     expect(screen.getByRole('heading', { level: 1, name: 'Board' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'See every project' })).not.toBeInTheDocument()
+    expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
+  })
+})
+
+describe('BEH-SPACE-5: the global board still shows every project', () => {
+  beforeEach(() => {
+    histories = {}
+    bells = {}
+  })
+
+  it('with no project picked, lists the cards of every project, not one', async () => {
+    mockApi()
+    renderBoard('/board')
+    await loaded()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Board' })).toBeInTheDocument()
+    expect(column('Done').getByText('A-DONE')).toBeInTheDocument()
     expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
   })
 })

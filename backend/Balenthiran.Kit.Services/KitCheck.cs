@@ -226,6 +226,22 @@ public sealed class KitCheck(
             return 2;
         }
 
+        // BEH-PARSE-5/6: the feature folders are read with the corpus, so a folder file that does not
+        // tag its parent refuses the gate the way a corpus that does not parse does.
+        var featureRoot = Join(repo, ".kit", "features");
+        if (disk.IsDirectory(featureRoot))
+        {
+            try
+            {
+                new FeatureFolderReader(disk, parser).Read(featureRoot);
+            }
+            catch (CorpusParseException e)
+            {
+                Err($"cannot look: {e.Message}");
+                return 2;
+            }
+        }
+
         if (behaviours.Count == 0)
         {
             Err($"cannot look: {app}.beh resolved to 0 behaviours");

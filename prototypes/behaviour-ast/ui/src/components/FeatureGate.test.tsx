@@ -87,13 +87,13 @@ describe('Settings lists the features (BEH-FLAGS-1)', () => {
 
 describe('A switched-off feature is gone for that group (BEH-FLAGS-2)', () => {
   it('BEH-FLAGS-2 leaves the navigation entry of a feature that is off for testers out of their bar', async () => {
-    vi.stubGlobal('fetch', server(ann, { group: 'testers', off: ['FEAT-INBOX', 'FEAT-PARSER'] }).fn)
+    vi.stubGlobal('fetch', server(ann, { group: 'testers', off: ['FEAT-HEALTH', 'FEAT-PARSER'] }).fn)
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(await within(nav).findByRole('link', { name: 'Health' })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: 'Activity' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Health' })).not.toBeInTheDocument()
     expect(within(nav).queryByRole('link', { name: 'Inbox' })).not.toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: 'Activity' })).toBeInTheDocument()
   })
 
   it('BEH-FLAGS-2 shows the same feature in his bar when it is on for him', async () => {
@@ -101,7 +101,7 @@ describe('A switched-off feature is gone for that group (BEH-FLAGS-2)', () => {
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(await within(nav).findByRole('link', { name: 'Inbox' })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: 'Health' })).toBeInTheDocument()
   })
 
   it('BEH-FLAGS-2 answers a direct visit to a switched-off page with a short message, not the page', async () => {
@@ -114,12 +114,12 @@ describe('A switched-off feature is gone for that group (BEH-FLAGS-2)', () => {
   })
 
   it('BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on', async () => {
-    window.history.pushState({}, '', '/epics')
-    vi.stubGlobal('fetch', server(ann, { group: 'testers', off: ['FEAT-BOARD', 'FEAT-EPICS'] }).fn)
+    window.history.pushState({}, '', '/board')
+    vi.stubGlobal('fetch', server(ann, { group: 'testers', off: ['FEAT-BOARD'] }).fn)
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Not available' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/stages')
+    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/epics')
   })
 
   it('BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard', async () => {
@@ -131,6 +131,6 @@ describe('A switched-off feature is gone for that group (BEH-FLAGS-2)', () => {
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(await within(nav).findByRole('link', { name: 'Inbox' })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: 'Health' })).toBeInTheDocument()
   })
 })

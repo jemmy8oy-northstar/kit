@@ -522,4 +522,13 @@ public class OrchestrationStageTests
         Assert.Contains("level: high", triage);
         Assert.True(triage.Length <= 8000);
     }
+
+    [Fact]
+    public void Triage_is_told_the_bundle_size_limit()
+    {
+        // claude-code-bot#152: a limit the agent cannot see is one it cannot keep.
+        var triage = TriageStage.BuildTask("kit", Notes, Cards).Text;
+        Assert.Contains("Keep every bundle under 10,000 characters", triage);
+        Assert.True(TriageStage.MaxBundleChars < 16000);
+    }
 }

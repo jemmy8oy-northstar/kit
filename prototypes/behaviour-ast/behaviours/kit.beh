@@ -176,6 +176,7 @@ behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error n
   contract and a feature id declared twice; silence on any of them leaves a behaviour drawn nowhere
   contract a tag is not a dependency: `in` names only FEAT- ids and `serves` only BEH- ids, so moving a
   contract card on a page can never change what Kit refuses to delete
+  contract my assumption: a `.kit` file or readme.md inside a feature folder that tags its parent with `in` is the child feature; BEH-PARSE-6 reads that parent tag, so the same refusals apply to folder children
 
 behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
   in FEAT-PARSER
@@ -198,6 +199,31 @@ behaviour BEH-PARSE-4 "A review request must say what to look at"
   then raises error:ReviewRequestWithoutWhat
   contract `review requested <what>` is the agent asking for his eyes on built work; like a denial, a bare one is refused
   contract it is explicit, so a later `source inferred` line does not reset it to unreviewed
+
+behaviour BEH-PARSE-5 "Features are folders under .kit/features, and a folder's readme describes its feature"
+  in FEAT-PARSER
+  source defined kit.notes.md#2026-11-24-2228Z
+  review unreviewed
+  priority 2
+  actor engineer
+  given corpus:FeatureFolders
+  when runs command:KitParse
+  then reports feature:FromFolders
+  contract my assumption: a folder under .kit/features is a feature; its subfolders are child features, its {name}.kit files are the specs it holds, and its readme.md describes it without being a spec
+  contract my assumption: a folder with neither a readme, a .kit file nor a child feature folder is not a feature and is skipped, so an empty folder never fails a build; a folder holding only child feature folders is a feature, since a feature folder holds child folders and/or .kit files
+  contract my assumption: the owner's 2026-11-24 23:07Z reply (kit.notes.md) does not want kit-ui.beh split per area or Pipeline.cs split per stage to stop merge conflicts; this folder layout is the way specs are organised instead, so that split is not built
+
+behaviour BEH-PARSE-6 "A kit or readme under a feature folder that does not tag its parent is an error naming its file"
+  in FEAT-PARSER
+  source defined kit.notes.md#2026-11-24-2228Z
+  review unreviewed
+  priority 2
+  actor engineer
+  given corpus:UntaggedChild
+  when runs command:KitParse
+  then raises error:MissingParentTag
+  contract my assumption: every child .kit file and readme.md under a feature folder carries an `in` line naming its parent folder's feature; a child may name further features too, and those extra tags are never refused
+  contract my assumption: the check runs with the other parse checks, so a missing parent tag fails the same build as a behaviour with no test (BEH-GATE-1)
 
 behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
   in FEAT-SERVER
@@ -308,7 +334,8 @@ behaviour BEH-UI-6 "A ticket keeps its state column and sits by priority, blocke
   contract my assumption: within one priority, a blocked ticket appears above the rest
   contract my assumption: "ticket" means the cards on the board, and their priority is the 1 to 5 of BEH-PARSE-3
   contract built on the pipeline's tickets (BEH-ORCH-16), not the cards: a card's columns are BEH-BOARD-18's, and a blocked tag beside unblocked tickets of one state exists only on a ticket. The third line above says cards; deny it to say which is true
-  contract my assumption: the columns are the ticket states that have open tickets, in the order new, ready, planned, built, stopped, and an unlisted state goes last; merged is off the board
+  contract my assumption: the columns are the ticket states that have open tickets, in the order new, ready, planned, built, stopped, and an unlisted state goes last; a merged and resolved ticket goes to a closed column shown after the open columns, and is not counted as open
+  contract my assumption: a ticket in state merged counts as merged and resolved, since a ticket has no separate resolved field
   contract my assumption: the ticket board shows its state columns on screen the same way the spec board shows its status columns, one visible column per state that has open tickets
   contract built (ui/src/tickets.ts ticketColumns, ui/src/components/Tickets.tsx): each state is a column of the Tickets section, ordered by priority 1 first and within one priority blocked first
   review requested conflict with BEH-ORCH-16 (built, slice 4), which lists every blocked ticket first across the whole Tickets section; this card builds priority first, blocked within one priority, per state column. Approve to keep this reading; deny to say which is true and I rebuild to it
@@ -425,6 +452,7 @@ behaviour BEH-TICKET-1 "A ticket is not a spec: tickets appear on the board, and
   when opens page:KitBoard
   then sees region:KitMain
   contract my assumption: a ticket represents one change to the spec and carries its status and its open questions; the spec itself lives on the feature branch of that change, not on the board
+  contract my assumption: the ticket board is the only board for work, and the features and specs of a ticket are read from the ticket, not from a feature or spec board
 
 behaviour BEH-TICKET-2 "A loose item (a note, a chat message, a comment, an approval or a rejection) goes to triage, which turns it into a spec change and a ticket in the new state"
   source defined kit.notes.md#2026-11-15-1520
@@ -535,3 +563,40 @@ behaviour BEH-TICKET-5 "A malformed bundle is named and can be resolved, not lef
   then sees region:KitMain
   contract my assumption: a bundle that fails its shape check is shown on the board with the line that is wrong, and no builder starts on it
   contract my assumption: triage rewrites a malformed bundle to the required shape, keeping its cards and notes, and records the fix beside the ticket
+
+behaviour BEH-TICKET-6 "Kit has two boards, the epic board and the ticket board, and no feature or spec board"
+  source defined kit.notes.md#2026-11-23-2255
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: the epic board is the goal view: each open epic with its status toward done, counted from its tickets
+  contract my assumption: the ticket board is the working view: every open ticket in its state column, ordered by priority, blocked tickets flagged
+  contract my assumption: the feature board and the spec board leave the navbar and the boards; the feature and spec pages stay, so a ticket's spec can still be read from its feature branch
+  contract my assumption: delete these kit-ui.beh cards, because the feature and spec boards are decommissioned and the ticket model replaces them: BEH-STAGE-1, BEH-STAGE-7, BEH-STAGE-8, BEH-STAGE-9, BEH-STAGE-12, BEH-BOARD-1; they live in kit-ui.beh, which this triage run does not edit, so a builder removes them only after the owner confirms this list
+  contract my assumption: delete these kit-ui.beh cards too, because they place features on the retired feature board: BEH-STAGE-10 and BEH-STAGE-11; they are not edited here, and a builder removes them only after the owner confirms this list
+  contract my assumption: BEH-BOARD-10 to BEH-BOARD-21 are left untouched, because they rank and badge the spec board's columns; their fate is decided after the owner confirms the list above
+  contract my assumption: BEH-EPIC-4 (kit-ui.beh) is the epic board's own page, not a third option on the BEH-STAGE-8 switch, because BEH-STAGE-8 is to be deleted
+
+behaviour BEH-TICKET-7 "A ticket names the epics it progresses toward, and may touch many features and specs"
+  source defined kit.notes.md#2026-11-23-2255
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: a ticket is the unit Kit shows granularly; it may touch any number of features and specs, and names one or more epics it progresses toward
+  contract my assumption: a ticket that names no epic shows on the ticket board only and counts toward no epic's status
+  contract my assumption: a ticket names the epics of the features its specs sit in, at any depth (the epics tagged on those features and on the features they are in, BEH-EPIC-2), so a ticket carries no epic line of its own; the ticket board lists the features and specs it touches
+
+behaviour BEH-TICKET-8 "Each open epic shows its status toward the goal, counted from its tickets, without opening features or specs"
+  source defined kit.notes.md#2026-11-23-2255
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: an epic's status is counted from the tickets that name it, in the states new, ready, planned, built, blocked and done
+  contract my assumption: the project's goal is its first open epic, as BEH-NARR-1 already says, and the epic board shows that goal first
+  contract my assumption: a blocked ticket is counted once, in the state it is in; the blocked count is shown beside the states and is not added to them, and a stopped ticket is counted in no state

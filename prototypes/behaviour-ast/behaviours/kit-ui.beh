@@ -405,6 +405,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   contract my assumption: the navbar is on every page, feature and behaviour pages included, not only the board and the project list (kit.notes.md#2026-10-11-1239: "a docker or navbar with two views")
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
+  contract to be deleted (BEH-TICKET-6): it draws the spec board, which goes with the ticket model (BEH-TICKET-6); BEH-BOARD-10 to 21 hang off its columns and stay untouched; not removed until the owner confirms the list
   in FEAT-BOARD
   source defined kit#237
   priority 5
@@ -970,6 +971,7 @@ feature FEAT-STAGES "Feature stages"
   stage development
 
 behaviour BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
+  contract to be deleted (BEH-TICKET-6): the feature board it draws goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 2
@@ -991,6 +993,7 @@ feature FEAT-STAGE-READING "The agent reads each feature's stage"
   stage ui
 
 behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only reads the stage board, and never drags a card"
+  contract to be deleted (BEH-TICKET-6): it is a rule of the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-0823
   source inferred kit.notes.md#2026-10-19-1616
@@ -1006,6 +1009,7 @@ behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only
   contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": each feature's column on the Stages page (problem, ux, logic, development, ui) is my judgement of how far along it is, written into the spec as its `stage` line. You never set or drag it; you read the board to see what is left. If a column looks wrong, leave a note on the feature and I move it
 
 behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
+  contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1018,6 +1022,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
 
 behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
+  contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1075,6 +1080,7 @@ behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
 # Was "only a feature with a stage line is on the board", my inference. His answer
 # on it (kit-ui.notes.md 2026-10-20 07:13Z) replaced it with a column.
 behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, so it can be found and staged"
+  contract to be deleted (BEH-TICKET-6): the Unstaged column is on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source inferred kit.notes.md#2026-10-19-0823
   source defined kit-ui.notes.md#2026-10-20-0713
@@ -1087,6 +1093,7 @@ behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, 
   contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is
 
 behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done column at the end of the feature board"
+  contract to be deleted (BEH-TICKET-6): the Done column is on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-31-1647
   review unreviewed
@@ -1102,6 +1109,7 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   contract built: the Done column after UI requirements, from the same columnOf the behaviour board uses
 
 behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one tap switches between them"
+  contract to be deleted (BEH-TICKET-6): the switch between feature and behaviour views goes with the feature and spec boards (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1619
@@ -1288,6 +1296,8 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract his answer (kit.notes.md#2026-10-23-0638): "let's have a username and password sign in for early access. And then you integrate your GitHub. Then maybe later for general release it's just a GitHub sign in"
   contract early access is invite-only because James creates each account himself; there is no open sign-up, no GitHub allowlist and no code word (he weighed both in kit.notes.md#2026-10-23-0635 and dropped them)
   contract a user can change the password James gave them
+  contract my assumption: the username and password choice is James's decision and reversible; his 06:38Z note ends "Can always change later if need be", so no other card may assume sign-in stays username and password for good
+  contract early access accounts are made only by the operator, for invited people; the card for that is BEH-USERS-14
   contract once signed in, the user connects their GitHub by installing Kit's GitHub App, which is what reads and writes their repos
   contract later, for general release, signing in with GitHub replaces the username and password; that is a separate behaviour, not this one
   contract my assumption: he creates each account inside Kit, signed in as himself, rather than with a command run in the cluster
@@ -1324,6 +1334,8 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
   contract live since kit#503 (2026-10-27 21:39Z): signed out, Kit's sign-in page now offers "Sign in with GitHub"
   contract his question (kit.notes.md#2026-10-31-0055), "Am I able to act as a test user myself by logging in with a different organisation or my personal account?": your personal account, yes; another organisation, no. Kit only records an install on the personal account of whoever authorises (an organisation's install is reachable by any member), and Kit's own install is on the organisation, so your personal account counts as a separate user. Make a test user in Settings, sign in as them in a private window, and connect your personal GitHub. One catch: a GitHub account links to one Kit user, so if you already connected your personal account to yourself in Settings (BEH-SETTINGS-3), the test user needs a second GitHub account
+  contract my assumption, for him to confirm: he tests as a test user by signing in through this card with a second GitHub account; the answer above stands, so another organisation's install is still not claimed
+  contract my assumption, for him to decide: whether to uninstall and reinstall the installed App to test OAuth (kit.notes.md#2026-10-28-0003, "it won't let me install it because it's already installed"); no code change here, and this card is the way to test OAuth without it
 behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their GitHub stops working"
   in FEAT-USER-SIGNUP
   source inferred kit-ui.beh#BEH-USERS-10
@@ -1336,6 +1348,21 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   then sees region:KitMain
   contract my proposal: once a test user signs in only with GitHub (BEH-USERS-10), reinstalling the App, or losing that GitHub account, leaves them no way in
   contract my assumption: in Settings, beside "Add a user", he names a user and gives them a new password; their GitHub link is cleared, so they sign in with that password and connect again
+  contract my assumption: the reinstall case (kit.notes.md#2026-10-28-0003) is the one this card resets; it stays paused, and his answer to that question decides whether it is needed for testing
+
+behaviour BEH-USERS-14 "Early access accounts are made by the operator for invited people only, with no sign-up page"
+  in FEAT-USER-SIGNUP
+  source defined kit.notes.md#2026-10-23-0638
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract my assumption: early access is invite-only; James makes each account himself inside Kit (BEH-USERS-1), so there is no open sign-up, no sign-up page and no code word to try
+  contract my assumption: the GitHub-account whitelist he asked about (kit.notes.md#2026-10-23-0635) is not built in early access; a GitHub account signs in only when James has made the user it belongs to (BEH-USERS-10)
+  contract my assumption: a stranger who opens Kit's sign-in page finds no way to create an account, and a sign-up request is answered as not found
+  contract my assumption, as built: a sign-up request from a stranger is answered 401 not-signed-in, not 404, because the sign-in gate answers before routing (BEH-GATE-H1), so it reveals no route; a signed-in user is answered 403 not-yours (BEH-USERS-8); neither creates an account
+  contract my assumption: this is the default; he can open self sign-up later, which would be a new card
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
@@ -1771,6 +1798,10 @@ behaviour BEH-ORCH-17 "Runs shows what each stage is working on now, how long it
   contract my assumption: built, slices 1 and 2. Which stages besides test should get a shorter limit is decided from what the Now section and Runs show they take
   contract his comment (claude-code-bot#145, 2026-11-19 20:29Z), on a screenshot of Now listing runs "waiting for a runner · 306h" and "running since before Kit last started": "Ok now I need some help digesting this"
   contract my assumption: slice 3, built. A restart no longer leaves runs going for ever. At the first claim after Kit starts, each run created before it started that is still queued is failed as "lost", because its token and task went with the restart and no runner can ever take it. Each one still running is given the lease from when Kit started (RunnerPool.Forgotten), because its runner may yet report, and is failed as "lost" when that runs out, like any lost run. Such a run still has no claim, so Now keeps saying "running since before Kit last started" until then
+  contract his note (prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-19 19:29Z): "Maybe we can reduce the time to determine that a test run hung, how long does a test run actually take atm"
+  contract my assumption: his question is answered by the measured 378 seconds above, warm. A cold run, with the package cache empty, is not measured; the builder times one on the runner and records the figure on this card before any limit changes
+  contract my assumption: slice 3. The test limit comes down from 30 minutes only to about three times the slower of the measured warm and cold times, rounded up to the minute, and the 10-minute lease margin stays, so a hung test run is counted lost that many minutes plus 10 after it starts. Until a cold run is timed it stays at 30 minutes
+  contract built: slice 3's mechanism. Orchestrator.TestWarmSeconds is 378 and Orchestrator.TestColdSeconds is null, so Orchestrator.TestSeconds is 1800. Once a cold figure is written there, the limit is three times the slower figure rounded up to the minute (warm alone would give 1140). A run is counted lost at its lost-at time, not after it (RunnerPool.Lost). No cold run has been timed on the runner yet, so the limit is still 30 minutes
 
 behaviour BEH-ORCH-18 "The merge job merges a private repo's built tickets as a train: one test run for several pull requests"
   in FEAT-AGENT-PIPELINE
@@ -2689,7 +2720,6 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   source defined kit-ui.notes.md#2026-11-06-1801
   review approved
   priority 5
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2697,6 +2727,13 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   contract it extends BEH-ARCH-1 and does not change it
   contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
   contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
+  contract built: stackDiagram.ts is plain code over the repo's files (RepoFile: path and text). Files are read in path order, so the same files give the same diagram whatever order they arrive in; no model or network is touched
+  contract built: the parts are declared in the repo: a `.kit/stack` file with `database <name> <engine>` and `external-api <name> <url>` lines, and any `Chart.yaml` is the Helm chart, named by its `name:` line (or its directory). Blank lines and # comments are skipped, and an unknown line declares nothing
+  contract my assumption: the `.kit/stack` file and its two keywords are my choice of where a repo declares its databases and external APIs; the owner has not named one, so it is to be confirmed or replaced
+  contract my assumption: a repo that declares none of the three draws no diagram and says so in words, rather than an empty picture
+  contract built: the Architecture tab draws the diagram under the decisions as a plain grouped list (Databases, External APIs, Helm chart), each with the file it came from. The layout is left open by the owner, so this is the simplest form that can be replaced
+  contract my assumption: the diagram is drawn only from what the repo declares; nothing from the spec (behaviours, features) is drawn
+  contract my assumption: the Architecture tab shows the diagram from the project's repoFiles, which the server does not serve yet; until it does, the tab shows the decisions alone, as before
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
@@ -3633,6 +3670,8 @@ behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, 
   contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
   contract built: a project's page has its own navigation, "This project": its chat (the Chat on that project), its board (the board filtered to it) and its notes, beside designing it with the spec agent; the main navigation keeps Projects, the Inbox and Settings
   contract my assumption: a project's configuration is, for now, the tabs its page already has (schedule, principles, architecture); its integrations and secrets join it with the integrations page (BEH-PROJCONF-1)
+  contract "Everything should be organised by project (repo). Just like in git. We should be able to view the boards, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: the 2026-11-23 note moves the Inbox and the runs into each project, so the "Inbox" in the built line above is the global Inbox only, and each project gets its own; the global level keeps Projects, the global Notifications and global Settings, and the project level holds its Chat, Inbox, board, runs and settings (BEH-SPACE-5)
 
 behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
   in FEAT-PROJECT-SPACES
@@ -3660,6 +3699,25 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
   contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
+
+behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and only the entry page, global notifications and global settings are kept above projects"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-23-2257
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "We should be able to view the boars, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: each project's page has its own Inbox (only items of that project), its runs (only that project's pipeline runs) and its settings (its configuration, BEH-SPACE-1), beside its Chat and board
+  contract my assumption: the global navigation keeps Projects, the global Notifications and the global Settings; global Settings holds what is not about one project, and project settings hold what is
+  contract my assumption: the global Inbox and the global board stay as an all-projects view for seeing everything (BEH-SPACE-3), and nothing is removed from them; this card adds the per-project views, it does not replace the global ones
+  contract my assumption: "isolated by repo, like GitHub" means a project's views never show another project's items, runs or config, and switching project is a navigation step, not a filter left on
+  contract my assumption: this card does not decide the pipeline or the data store; it changes what each page is scoped to
+  contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
+  contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
+  contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
 
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES

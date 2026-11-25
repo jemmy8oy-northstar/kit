@@ -151,7 +151,7 @@ public sealed class CorpusParser : ICorpusParser
                 if (!f.Success) throw new CorpusParseException($@"{at}: feature wants FEAT-<ID> ""<title>"", got: {line}");
                 if (features.Find(x => x.Id == f.Groups[1].Value) is { } dup)
                 {
-                    throw new CorpusParseException($"{at}: feature {dup.Id} is already declared at {dup.At}");
+                    throw new CorpusParseException("BadFeatureTag", $"{at}: feature {dup.Id} is already declared at {dup.At}");
                 }
 
                 feat = new Feature { Id = f.Groups[1].Value, Title = f.Groups[2].Value, At = at };
@@ -620,7 +620,7 @@ public sealed class CorpusParser : ICorpusParser
         var dangling = features.SelectMany(f => f.In).Concat(behaviours.SelectMany(b => b.In ?? []))
             .Where(t => !byId.ContainsKey(t.Id))
             .MinBy(t => int.Parse(t.At[(t.At.LastIndexOf(':') + 1)..], System.Globalization.CultureInfo.InvariantCulture));
-        if (dangling is not null) throw new CorpusParseException($"{dangling.At}: in names {dangling.Id}, which is not a feature in this file");
+        if (dangling is not null) throw new CorpusParseException("BadFeatureTag", $"{dangling.At}: in names {dangling.Id}, which is not a feature in this file");
 
         // Depth-first, three colours: a feature reached again while still on the path is
         // its own ancestor. Named at the `in` line that closes the loop — the line to delete.
@@ -633,7 +633,7 @@ public sealed class CorpusParser : ICorpusParser
             if (i >= 0)
             {
                 var loop = string.Join(" → ", path.Skip(i).Append(f.Id));
-                throw new CorpusParseException($"{via!.At}: {f.Id} is its own ancestor: {loop}");
+                throw new CorpusParseException("BadFeatureTag", $"{via!.At}: {f.Id} is its own ancestor: {loop}");
             }
 
             path.Add(f.Id);
