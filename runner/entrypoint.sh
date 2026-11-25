@@ -29,23 +29,122 @@
 # run, which James accepted on kit#708; Kit's per-run dollar cap does not apply to it, the
 # subscription's own limits and --max-turns do.
 # Tokens are never echoed; git gets the GitHub token through a credential helper reading env.
-#   KIT_FAILURE_FILE  optional  where to write "<step> exit <code>" when the run fails; only a fixed step word and a number
+#   KIT_FAILURE_FILE  optional  where to write "<step> exit <code>" when the run fails; only a fixed step word and a number,
+#                               or "limit exit <code> resets <YYYY-MM-DDTHH:MM:SSZ>" when claude ended on the subscription's
+#                               usage limit (BEH-ORCH-21), so Kit waits for the reset instead of counting a failure
 set -euo pipefail
 
 # The step the run is in, so a failure can say where it stopped. Only this word and the exit code are ever
-# written out: no stderr text, URL or token.
+# written out: no stderr text, URL or token. A usage-limit ending adds the reset time, which limit_reset printed itself.
 step=setup
+resets=""
 work=""
 helper=""
 finish() {
   local code=$?
   if [ "$code" -ne 0 ] && [ -n "${KIT_FAILURE_FILE:-}" ]; then
-    printf '%s exit %s\n' "$step" "$code" > "$KIT_FAILURE_FILE" 2>/dev/null || true
+    printf '%s exit %s%s\n' "$step" "$code" "$resets" > "$KIT_FAILURE_FILE" 2>/dev/null || true
   fi
   [ -z "$work" ] || rm -rf "$work"
   [ -z "$helper" ] || rm -rf "$helper"
 }
 trap finish EXIT
+
+# BEH-ORCH-21: scans <file> for a Claude usage-limit ending. Prints the reset time as YYYY-MM-DDTHH:MM:SSZ and returns 0
+# when it finds one; returns 1 otherwise. A limit with no time it can read gets a fallback sized to the limit it names.
+# Ported from claude-code-bot's deploy/scripts/parse-limit-reset.sh, which met each of these formats for real.
+# CALLER CONTRACT: only for a run that FAILED. A healthy run can discuss usage limits (an agent editing this very
+# function would); the failure is what says the limit talk is an ending, not a topic.
+limit_reset() {
+  local log="$1" epoch="" line="" month="" day="" clock="" zone="" year="" ts="" fallback=1800 at=""
+  # Broad on purpose: endings worded unlike every pattern so far looped as generic errors. Covers the classic pipe
+  # format plus 5-hour, weekly and session limits and credit wording.
+  grep -qiE "usage limit|limit will reset|(5-hour|weekly|session) limit|rate.?limit|out of credits|credit balance" "$log" || return 1
+
+  # 1: the classic API format "Claude AI usage limit reached|<epoch>".
+  epoch="$(grep -oE "usage limit reached\|[0-9]{10}" "$log" | tail -1 | grep -oE "[0-9]{10}")" || epoch=""
+  if [ -n "$epoch" ]; then at="@$epoch"; fi
+
+  # 2: a clock WITH a date, which is what a weekly limit emits ("resets Aug 19, 1pm (UTC)"). Tried before 3, because
+  # "Aug 19, 1pm" holds a bare clock, and 3 seeing it would resolve a days-away weekly reset to 1pm today.
+  if [ -z "$at" ]; then
+    line="$(grep -ioE "resets? [A-Z][a-z]{2,8}\.? [0-9]{1,2},?( at)? [0-9]{1,2}(:[0-9]{2})?[[:space:]]?(am|pm)( \([A-Za-z0-9_/+-]+\))?" "$log" | tail -1)" || line=""
+    if [ -n "$line" ]; then
+      # Field 1 of the match is "resets"/"reset" itself, so the month is field 2.
+      month="$(printf '%s' "$line" | grep -oiE "[A-Za-z]{3,9}" | sed -n 2p)" || month=""
+      day="$(printf '%s' "$line" | grep -oE "[0-9]{1,2},?( at)? [0-9]" | head -1 | grep -oE "^[0-9]{1,2}")" || day=""
+      clock="$(printf '%s' "$line" | grep -ioE "[0-9]{1,2}(:[0-9]{2})?[[:space:]]?(am|pm)" | tail -1 | tr -d ' ')" || clock=""
+      zone="$(printf '%s' "$line" | grep -oE "\([A-Za-z0-9_/+-]+\)" | tr -d '()')" || zone=""
+      if [ -n "$month" ] && [ -n "$day" ] && [ -n "$clock" ]; then
+        year="$(date -u +%Y)"
+        epoch="$(TZ="${zone:-UTC}" date -d "$month $day $year $clock" +%s 2>/dev/null)" || epoch=""
+        # A date long past is the calendar wrapping: a limit hit on 31 Dec resetting "Jan 2". A day of slack absorbs zone skew.
+        if [ -n "$epoch" ] && [ "$epoch" -lt "$(( $(date -u +%s) - 86400 ))" ]; then
+          epoch="$(TZ="${zone:-UTC}" date -d "$month $day $(( year + 1 )) $clock" +%s 2>/dev/null)" || epoch=""
+        fi
+        if [ -n "$epoch" ]; then at="@$epoch"; fi
+      fi
+    fi
+  fi
+
+  # 3: a clock alone, the current CLI format ("resets 1:50pm (UTC)", "resets 2:24pm"). The zone is the "(...)" token
+  # when there is one, else UTC. A time already more than 2 minutes past means tomorrow.
+  if [ -z "$at" ]; then
+    line="$(grep -ioE "resets? [0-9]{1,2}(:[0-9]{2})?[[:space:]]?(am|pm)( \([A-Za-z0-9_/+-]+\))?" "$log" | tail -1)" || line=""
+    if [ -n "$line" ]; then
+      clock="$(printf '%s' "$line" | grep -ioE "[0-9]{1,2}(:[0-9]{2})?[[:space:]]?(am|pm)" | head -1 | tr -d ' ')" || clock=""
+      zone="$(printf '%s' "$line" | grep -oE "\([A-Za-z0-9_/+-]+\)" | tr -d '()')" || zone=""
+      epoch="$(TZ="${zone:-UTC}" date -d "$clock" +%s 2>/dev/null)" || epoch=""
+      if [ -n "$epoch" ]; then
+        if [ "$epoch" -lt "$(( $(date -u +%s) - 120 ))" ]; then epoch=$(( epoch + 86400 )); fi
+        at="@$epoch"
+      fi
+    fi
+  fi
+
+  # 4: an ISO timestamp on a line that mentions a reset. It may lack seconds or a Z; the normalising below adds them,
+  # as Kit takes only the full form (the original script echoed "…T05:00Z" as it found it).
+  if [ -z "$at" ]; then
+    ts="$(grep -iE "reset" "$log" | grep -oE "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2})?Z?" | tail -1)" || ts=""
+    if [ -n "$ts" ]; then at="${ts%Z}Z"; fi
+  fi
+
+  # A limit with no time it can read. A blind wait is a guess, so it is at least a guess of the right order: 30 minutes
+  # suits a 5-hour window, but against a weekly limit it meant a dead run every half hour for two days.
+  if [ -z "$at" ]; then
+    if grep -qiE "weekly limit|limit.{0,20}\bweek\b" "$log"; then
+      fallback=21600 # 6h: a weekly window can be days out; probe, don't hammer
+    elif grep -qiE "out of credits|credit balance" "$log"; then
+      fallback=21600 # topping up is a person's act, not a rolling window
+    fi
+    at="@$(( $(date -u +%s) + fallback ))"
+  fi
+
+  date -u -d "$at" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d "@$(( $(date -u +%s) + fallback ))" +%Y-%m-%dT%H:%M:%SZ
+}
+
+# BEH-ORCH-21: called only once claude has failed. When its final message or its stderr is a usage-limit ending, the
+# failure becomes "limit exit <code> resets <time>". Never the text itself: only the time limit_reset printed goes out.
+limit_ended() {
+  local scan="$work/limit-scan.txt" at=""
+  node -e '
+    const fs = require("fs");
+    const [file, out] = process.argv.slice(1);
+    let raw = "";
+    try { raw = fs.readFileSync(file, "utf8"); } catch {}
+    let r;
+    try { r = JSON.parse(raw); } catch {}
+    // The final message when the output is claude JSON; the output itself when it is not.
+    const text = r !== null && typeof r === "object" ? (typeof r.result === "string" ? r.result : "") : raw;
+    fs.writeFileSync(out, text.slice(0, 65536) + "\n");
+  ' "$result" "$scan" 2>/dev/null || : > "$scan"
+  head -c 65536 "$work/claude.err" >> "$scan" 2>/dev/null || true
+  if at="$(limit_reset "$scan")"; then
+    step=limit
+    resets=" resets $at"
+    echo "kit-run[$KIT_RUN_ID]: claude hit the subscription's usage limit; it resets at $at" >&2
+  fi
+}
 
 missing=()
 for v in KIT_RUN_ID KIT_URL KIT_RUN_TOKEN KIT_REPO KIT_TASK; do
@@ -166,15 +265,25 @@ status=0
 # The same goes for a run that ended well: a server the agent left behind would otherwise outlive it.
 started=$SECONDS
 kill_after="${KIT_RUN_KILL_AFTER:-30}" # overridable only so a test can reach the SIGKILL path quickly
+# BEH-ORCH-21: the agent's stderr still reaches the log as it is written, and a copy is kept so a usage-limit ending
+# there can be read. tee is outside the agent's group, and ends once the last process holding its pipe has.
+exec 3> >(tee "$work/claude.err" >&2)
+tee_pid=$!
 timeout --kill-after="$kill_after" "$max_seconds" claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
   --permission-mode bypassPermissions \
-  --output-format json > "$result" &
+  --output-format json > "$result" 2>&3 &
 agent=$!
+exec 3>&-
 wait "$agent" || status=$?
 kill -KILL -- "-$agent" 2>/dev/null || true
+# Up to 5 seconds for tee to write the last of it, never longer: a process that escaped the group kill may hold its pipe.
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  kill -0 "$tee_pid" 2>/dev/null || break
+  sleep 0.5
+done
 # A failed run spent tokens too, so its usage is written before the exit status is acted on.
 # BEH-COST-1: the dollar cost the result reports (total_cost_usd) is written to KIT_COST_FILE the same way, and only that.
 node -e '
@@ -202,6 +311,7 @@ if [ "$status" -eq 124 ] || { [ "$status" -eq 137 ] && [ $((SECONDS - started)) 
 fi
 if [ "$status" -ne 0 ]; then
   echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
+  limit_ended
   exit "$status"
 fi
 
@@ -217,6 +327,8 @@ ended="$(node -e '
 if [ -n "$ended" ]; then
   step="$ended"
   echo "kit-run[$KIT_RUN_ID]: claude ended with an error result ($ended, max turns ${KIT_MAX_TURNS:-100})" >&2
+  # Running out of turns is never the usage limit; any other error result may be (BEH-ORCH-21).
+  if [ "$ended" = result ]; then limit_ended; fi
   exit 3
 fi
 
