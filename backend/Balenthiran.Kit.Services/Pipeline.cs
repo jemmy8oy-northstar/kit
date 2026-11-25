@@ -157,6 +157,28 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
     public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);
 
+    // BEH-ORCH-21: until when no run is handed to the pool, because a run ended on the subscription's usage limit, which is
+    // the whole account's. Null when not paused. Not a column of its own: the failed run's record carries the reset time,
+    // and Resume reads it back from there (RestorePause), so a restart during the pause keeps it.
+    private DateTimeOffset? pausedUntil;
+
+    // The one timer that ends the pause, with its generation, so a timer that fires after it was replaced does nothing.
+    private ITimer? pauseTimer;
+
+    private int pauseGeneration;
+
+    /// <summary>BEH-ORCH-21: the shortest pause, so a reset time already past cannot start a run that meets the limit at once.</summary>
+    public static readonly TimeSpan MinPause = TimeSpan.FromMinutes(1);
+
+    /// <summary>BEH-ORCH-21: the longest pause, past a weekly limit's window, so a misread date cannot stop the pipeline for good.</summary>
+    public static readonly TimeSpan MaxPause = TimeSpan.FromDays(8);
+
+    // BEH-ORCH-21: per ticket, how to take back what starting its resolve or fix run counted (resolved, fixes), should the
+    // run end on the usage limit: it did no work, so it must not use up the ticket's runs.
+    private readonly Dictionary<(string App, string Slug), Action> uncount = [];
+
+    private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
+
     private int count;
 
     /// <summary>BEH-ORCH-16: every ticket of <paramref name="project"/>, oldest first, each with its comments, oldest first.</summary>
@@ -204,6 +226,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// </summary>
     public void Resume()
     {
+        RestorePause();
         ResumeTickets();
 
         IReadOnlyList<string> recorded;
@@ -276,14 +299,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     continue;
                 }
 
-                var item = ticket.State switch
-                {
-                    TicketState.New when jobs?.Contains(PipelineStage.Context) == true => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Context, WorkItemStatus.Queued),
-                    TicketState.New or TicketState.Ready => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Spec, WorkItemStatus.Queued),
-                    TicketState.Planned => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Queued),
-                    TicketState.Built => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Done, PullRequest: ticket.PullRequest),
-                    _ => null,
-                };
+                var item = Unblocked(ticket);
                 if (item is null)
                 {
                     continue;
@@ -317,15 +333,203 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
                 // Written at once, so the board shows the ticket unblocked, with a comment saying why.
                 Add(item);
-                try
-                {
-                    ticketStore.Comment(new TicketComment(ticket.Project, ticket.Slug, KitAuthor, $"Trying again after a restart: the block was a run's, not a decision ({ticket.BlockedBecause})", (clock ?? TimeProvider.System).GetUtcNow()));
-                }
-                catch (Exception e)
-                {
-                    Console.Error.WriteLine($"kit: commenting on the ticket {ticket.Project} {ticket.Slug} threw {e.GetType().Name}");
-                }
+                SayTryingAgain(ticket, "after a restart");
             }
+        }
+    }
+
+    /// <summary>
+    /// The work item an open <paramref name="ticket"/> comes back as, unblocked: queued at the stage its state waits for, or
+    /// built. Null for a state no work item stands for. Called with the gate held.
+    /// </summary>
+    private WorkItem? Unblocked(PipelineTicket ticket) => ticket.State switch
+    {
+        TicketState.New when jobs?.Contains(PipelineStage.Context) == true => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Context, WorkItemStatus.Queued),
+        TicketState.New or TicketState.Ready => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Spec, WorkItemStatus.Queued),
+        TicketState.Planned => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Queued),
+        TicketState.Built => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Done, PullRequest: ticket.PullRequest),
+        _ => null,
+    };
+
+    /// <summary>BEH-ORCH-19: says on <paramref name="ticket"/>'s thread that its run-made block is being tried again, and <paramref name="when"/>.</summary>
+    private void SayTryingAgain(PipelineTicket ticket, string when)
+    {
+        try
+        {
+            ticketStore.Comment(new TicketComment(ticket.Project, ticket.Slug, KitAuthor, $"Trying again {when}: the block was a run's, not a decision ({ticket.BlockedBecause})", Now));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: commenting on the ticket {ticket.Project} {ticket.Slug} threw {e.GetType().Name}");
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-21: a run ended on the usage limit, which resets at <paramref name="reset"/>: no run is handed to the pool
+    /// until then (at least <see cref="MinPause"/>, at most <see cref="MaxPause"/> from now). A later reset extends the
+    /// pause; an earlier one leaves it as it is. Called with the gate held.
+    /// </summary>
+    private void Pause(DateTimeOffset reset)
+    {
+        var now = Now;
+        var until = reset < now + MinPause ? now + MinPause : reset > now + MaxPause ? now + MaxPause : reset;
+        if (pausedUntil is { } had && had >= until)
+        {
+            return;
+        }
+
+        pausedUntil = until;
+        Arm(until - now);
+        Console.Error.WriteLine($"kit: pipeline paused until {until.UtcDateTime:yyyy-MM-dd'T'HH:mm:ss'Z'}: the subscription's usage limit");
+    }
+
+    // (Re)sets the one timer that ends the pause after <paramref name="due"/>. Called with the gate held.
+    private void Arm(TimeSpan due)
+    {
+        pauseTimer?.Dispose();
+        var generation = ++pauseGeneration;
+        pauseTimer = (clock ?? TimeProvider.System).CreateTimer(_ => PauseDue(generation), null, due, Timeout.InfiniteTimeSpan);
+    }
+
+    /// <summary>
+    /// BEH-ORCH-21: whether runs are held back now. A pause whose time has come ends here, whichever caller sees it first
+    /// (the timer, a job's tick, a run's end), so a lost timer costs at most a tick. Called with the gate held.
+    /// </summary>
+    private bool Holding()
+    {
+        if (pausedUntil is not { } until)
+        {
+            return false;
+        }
+
+        if (Now < until)
+        {
+            return true;
+        }
+
+        pausedUntil = null;
+        pauseTimer?.Dispose();
+        pauseTimer = null;
+        Console.Error.WriteLine("kit: pipeline resumes: the usage limit has reset");
+        RearmRunBlocks();
+        return false;
+    }
+
+    /// <summary>The pause's timer: ends it and starts what waited. A timer that fired early is set again for the rest.</summary>
+    private void PauseDue(int generation)
+    {
+        try
+        {
+            lock (gate)
+            {
+                if (generation != pauseGeneration)
+                {
+                    return;
+                }
+
+                if (Holding())
+                {
+                    Arm(pausedUntil!.Value - Now);
+                    return;
+                }
+
+                StartReady();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: ending the pipeline's pause threw {e.GetType().Name}");
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-21: the pause has ended, so each held ticket a run blocked (<see cref="Retryable"/>) gets one more go, as at a
+    /// restart (<see cref="ResumeTickets"/>), with what this process counted for it forgotten as a restart forgets it. This
+    /// catches a ticket the limit blocked before its run could say so: one that ran out of retries on it, or was stopped
+    /// by a runner older than this card. Called with the gate held.
+    /// </summary>
+    private void RearmRunBlocks()
+    {
+        IReadOnlyList<PipelineTicket> open;
+        try
+        {
+            open = ticketStore.Open();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading the open tickets threw {e.GetType().Name}");
+            return;
+        }
+
+        foreach (var ticket in open.Where(t => Retryable(t.BlockedBecause)))
+        {
+            var index = items.FindIndex(i => i.Project == ticket.Project && i.Slug == ticket.Slug);
+            if (index < 0 || items[index] is not { Status: WorkItemStatus.Stopped, Merged: false } || Unblocked(ticket) is not { } item)
+            {
+                continue;
+            }
+
+            var key = (ticket.Project, ticket.Slug);
+            tries.Remove(key);
+            resolved.Remove(key);
+            failedAt.Remove(key);
+            fixes.Remove(key);
+            offTrain.Remove(key);
+            Set(index, item with { PullRequest = ticket.PullRequest });
+            SayTryingAgain(ticket, "now the usage limit has reset");
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-21: Kit has started. A run on record that ended on the usage limit and whose reset is still to come pauses
+    /// the pipeline again until then, so a restart during the pause does not spend a run on the limit to learn of it.
+    /// </summary>
+    private void RestorePause()
+    {
+        IReadOnlyList<IAgentRun> all;
+        try
+        {
+            all = runs.List();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: listing the runs to restore a pause threw {e.GetType().Name}");
+            return;
+        }
+
+        var now = Now;
+        var latest = all.Where(r => r.Status == AgentRunStatus.Failed)
+            .Select(r => UsageLimit.ResetOf(r.Failure))
+            .Where(at => at > now)
+            .Max();
+        if (latest is { } reset)
+        {
+            lock (gate)
+            {
+                Pause(reset);
+            }
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-21: what the pipeline's page says while runs are held back for the usage limit, as
+    /// "Paused: usage limit, resumes 13:00Z" (with the date when it is not today); null when they are not.
+    /// </summary>
+    public string? PausedNote()
+    {
+        lock (gate)
+        {
+            var now = Now;
+            if (pausedUntil is not { } until || until <= now)
+            {
+                return null;
+            }
+
+            var at = until.UtcDateTime;
+            var when = at.Date == now.UtcDateTime.Date
+                ? at.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)
+                : at.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+            return $"Paused: usage limit, resumes {when}Z";
         }
     }
 
@@ -558,8 +762,17 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null, string? failure = null)
     {
         (int Index, WorkItem Item, ContextBundle Bundle, string RepoAt)? built = null;
+
+        // BEH-ORCH-21: a run that ended on the usage limit did no work and says nothing about it. Runs wait for the reset,
+        // whoever started this one (the limit is the account's), and its work item waits to run the same step again.
+        var limited = succeeded ? null : UsageLimit.ResetOf(failure);
         lock (gate)
         {
+            if (limited is { } reset)
+            {
+                Pause(reset);
+            }
+
             if (!started.Remove(runId, out var run))
             {
                 return;
@@ -572,10 +785,21 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 // built item again, so the next merge look reads its pull request, waits for the checks on the new head
                 // and merges. The pull request is already open, so none is opened here.
                 // claude-code-bot#151: or a fix run of a red head, which ends the same way: built again, tested at its new head.
-                var wasFix = fixing.Remove((item.Project, item.Slug));
-                Set(run.Index, succeeded
-                    ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
-                    : Stop(item, wasFix ? "the fix run failed" : "the conflict-resolution run failed"));
+                var key = (item.Project, item.Slug);
+                var wasFix = fixing.Remove(key);
+                uncount.Remove(key, out var undo);
+                if (limited is not null)
+                {
+                    // BEH-ORCH-21: built again, with the run it was counted given back, so the look after the reset starts it again.
+                    undo?.Invoke();
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else
+                {
+                    Set(run.Index, succeeded
+                        ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
+                        : Stop(item, wasFix ? "the fix run failed" : "the conflict-resolution run failed"));
+                }
             }
             else if (item.Stage == PipelineStage.Test)
             {
@@ -595,8 +819,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     else
                     {
                         trains.Remove(entry.Key);
-                        // BEH-ORCH-19: a lost run said nothing about the riders, so they may ride the next train.
-                        if (failure != RunnerPool.LostFailure)
+                        // BEH-ORCH-19: a lost run said nothing about the riders, so they may ride the next train. Nor did
+                        // one that ended on the usage limit (BEH-ORCH-21).
+                        if (failure != RunnerPool.LostFailure && limited is null)
                         {
                             offTrain.UnionWith(ridden.Riders.Select(r => r.Key));
                         }
@@ -609,6 +834,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     tested[key] = sha;
                     tries.Remove(key);
                     failedAt.Remove(key);
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else if (limited is not null)
+                {
+                    // BEH-ORCH-21: no verdict, and no lost run counted: built again, and the merge look after the reset tests it.
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
                 }
                 else if (failure == RunnerPool.LostFailure)
