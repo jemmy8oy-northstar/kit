@@ -674,20 +674,32 @@ public class RunnerScriptTests
     }
 
     [Fact]
-    public void A_bundle_over_8000_bytes_is_withheld_as_null()
+    public void A_bundle_over_16000_bytes_is_withheld_as_null()
     {
         using var rig = new Rig();
-        var file = Bundles_(rig, ["mk big \"$(head -c 9000 /dev/zero | tr '\\0' a)\"", "mk small ok"], out var r);
+        var file = Bundles_(rig, ["mk big \"$(head -c 17000 /dev/zero | tr '\\0' a)\"", "mk small ok"], out var r);
 
         Assert.True(r.Status == 0, r.Stderr);
         Assert.Equal([("big", (string?)null), ("small", "ok")], rig.Bundles(file));
     }
 
     [Fact]
+    public void A_12000_byte_bundle_is_sent_whole()
+    {
+        // claude-code-bot#152: the backlog bundle reached 11.7KB and was withheld under the old 8000 cap.
+        using var rig = new Rig();
+        var file = Bundles_(rig, ["mk backlog \"$(head -c 12000 /dev/zero | tr '\\0' a)\""], out var r);
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var got = Assert.Single(rig.Bundles(file));
+        Assert.Equal(12000, got.Text?.Length);
+    }
+
+    [Fact]
     public void Bundles_past_48000_bytes_in_total_have_the_later_ones_withheld()
     {
         using var rig = new Rig();
-        // Each is ~7930 bytes as sent, under the 8000 each-limit; six fit in 48000, the seventh does not.
+        // Each is ~7930 bytes as sent, under the 16000 each-limit; six fit in 48000, the seventh does not.
         var setup = Enumerable.Range(1, 7).Select(i => $"mk b{i} \"$(head -c 7900 /dev/zero | tr '\\0' a)\"").ToArray();
         var file = Bundles_(rig, setup, out var r);
 
