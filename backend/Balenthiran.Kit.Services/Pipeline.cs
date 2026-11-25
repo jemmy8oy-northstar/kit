@@ -177,6 +177,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // run end on the usage limit: it did no work, so it must not use up the ticket's runs.
     private readonly Dictionary<(string App, string Slug), Action> uncount = [];
 
+    // Counts a resolve or fix run of <paramref name="key"/> in <paramref name="counts"/>, keeping how to take it back (uncount). Called with the gate held.
+    private void Count<T>(Dictionary<(string App, string Slug), T> counts, (string App, string Slug) key, T value)
+    {
+        var had = counts.TryGetValue(key, out var before);
+        counts[key] = value;
+        uncount[key] = had ? () => counts[key] = before! : () => counts.Remove(key);
+    }
+
     private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
 
     private int count;
@@ -869,6 +877,20 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     Set(run.Index, Stop(item, $"the project's tests failed at {(sha is null ? "its head commit" : sha.Length > 7 ? sha[..7] : sha)}"));
                 }
             }
+            else if (limited is not null)
+            {
+                // BEH-ORCH-21: no try is spent. A ticket waits to run the same stage again; a triage stops, and another is
+                // queued that reads the same notes, which this one never marked sorted.
+                if (item.Stage == PipelineStage.Triage)
+                {
+                    Set(run.Index, Stop(item, "the triage run met the usage limit"));
+                    QueueTriage(item.Project);
+                }
+                else
+                {
+                    Set(run.Index, item with { Status = WorkItemStatus.Queued });
+                }
+            }
             else if (item.Stage != PipelineStage.Triage)
             {
                 Set(run.Index, Ended(item, run.Given!, succeeded, reported, failure));
@@ -1008,6 +1030,15 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         if (jobs?.Contains(PipelineStage.Merge) != true)
         {
             return;
+        }
+
+        // BEH-ORCH-21: a look may start a test, resolve or fix run, so none is taken while the usage limit holds.
+        lock (gate)
+        {
+            if (Holding())
+            {
+                return;
+            }
         }
 
         var wants = new HashSet<string>(StringComparer.Ordinal);
@@ -1329,7 +1360,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     return;
                 }
 
-                resolved[key] = (result.HeadSha, (resolved.TryGetValue(key, out var had) ? had.Runs : 0) + 1);
+                Count(resolved, key, (result.HeadSha, (resolved.TryGetValue(key, out var had) ? had.Runs : 0) + 1));
                 try
                 {
                     Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued, MergeNote = null }));
@@ -1371,7 +1402,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                         return;
                     }
 
-                    fixes[key] = (sha, had + 1);
+                    Count(fixes, key, (sha, had + 1));
                     fixing.Add(key);
                     try
                     {
@@ -1541,6 +1572,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         lock (gate)
         {
+            // BEH-ORCH-21: nothing starts while the usage limit holds.
+            if (Holding())
+            {
+                return;
+            }
+
             // A project the merge job is waiting on for a test or resolve run starts nothing new (mergeWants).
             foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).Where(app => !mergeWants.Contains(app)).ToList())
             {
@@ -1774,6 +1811,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private void StartReady()
     {
+        // BEH-ORCH-21: nothing starts while the usage limit holds; the pause's end calls this again.
+        if (Holding())
+        {
+            return;
+        }
+
         // An item that ends at once (a triage with nothing to read, or one that cannot start) frees its project, so
         // look again. A queued triage goes first: its new notes may update a bundle that would otherwise be specced
         // or built twice. Then a build, so an item is finished before another is specced, even when a later triage
