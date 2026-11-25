@@ -1,5 +1,7 @@
+using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.Database;
 using Balenthiran.Kit.Services;
 
 namespace Balenthiran.Kit.Tests;
@@ -130,6 +132,74 @@ public class FeatureTreeTests
         Assert.Contains(problems, p => p.StartsWith("features/pipeline/triage/README.md:") && p.Contains("in FEAT-PIPELINE"));
         Assert.Contains(problems, p => p.StartsWith("features/pipeline/triage/orch.kit:1:") && p.Contains("in FEAT-TRIAGE"));
         Assert.Empty(FeatureTree.Problems(Tree, _parser.ParseCorpus(FeatureTree.Compose(Tree), "kit")));
+    }
+
+    private static Dictionary<string, string> GateTree() => new()
+    {
+        ["repo/.kit/project.kit"] = "# kit:project app\n",
+        ["repo/.kit/features/pipeline/README.md"] = "# Pipeline\n",
+        ["repo/.kit/features/pipeline/triage/README.md"] = "# Triage\nin FEAT-PIPELINE\n",
+        ["repo/.kit/features/pipeline/triage/orch.kit"] = "behaviour BEH-ORCH-1 \"t\"\n  in FEAT-TRIAGE\n  when opens page:Home\n",
+        ["repo/.kit/features/pipeline/triage/orch.tests.json"] = "{\"_c\": \"x\", \"BEH-ORCH-1\": [{\"file\": \"a.spec.ts\", \"title\": \"one\"}]}",
+        ["repo/.kit/features/pipeline/stage.kit"] = "behaviour BEH-STAGE-1 \"s\"\n  in FEAT-PIPELINE\n  when opens page:Home\n",
+        ["repo/.kit/features/pipeline/stage.tests.json"] = "{\"BEH-STAGE-1\": [{\"file\": \"a.spec.ts\", \"title\": \"two\"}]}",
+        ["repo/a.spec.ts"] = "test('one', () => {});\ntest('two', () => {});\n",
+    };
+
+    [Fact]
+    public void BEH_PARSE_5_the_check_reads_a_feature_tree_as_one_project_with_every_tests_map_in_it()
+    {
+        var run = Gate(GateTree());
+
+        Assert.True(run.ExitCode == 0, run.Stderr);
+        Assert.Contains("2/2", run.Stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BEH_PARSE_6_a_card_or_README_that_does_not_tag_its_folder_fails_the_check_naming_its_file()
+    {
+        var files = GateTree();
+        files["repo/.kit/features/pipeline/triage/README.md"] = "# Triage\n";
+        files["repo/.kit/features/pipeline/stage.kit"] = "behaviour BEH-STAGE-1 \"s\"\n  when opens page:Home\n";
+
+        var run = Gate(files);
+
+        Assert.NotEqual(0, run.ExitCode);
+        Assert.Contains("features/pipeline/triage/README.md", run.Stderr, StringComparison.Ordinal);
+        Assert.Contains("features/pipeline/stage.kit:1: BEH-STAGE-1", run.Stderr, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BEH_PARSE_6_a_behaviour_mapped_in_two_tests_files_is_refused()
+    {
+        var files = GateTree();
+        files["repo/.kit/features/pipeline/stage.tests.json"] = "{\"BEH-STAGE-1\": [], \"BEH-ORCH-1\": []}";
+
+        var run = Gate(files);
+
+        Assert.Equal(2, run.ExitCode);
+        Assert.Contains("BEH-ORCH-1 is mapped in two tests files", run.Stderr, StringComparison.Ordinal);
+    }
+
+    private static ICommandRun Gate(Dictionary<string, string> files)
+    {
+        var root = Directory.CreateTempSubdirectory("kit-gate-tree-").FullName;
+        try
+        {
+            foreach (var (rel, text) in files)
+            {
+                var path = Path.Combine(root, rel);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, text);
+            }
+
+            return new KitCheck(new CorpusParser(), new BehaviourResolver(), new TestTitleReader(), new CheckFileSystem(root))
+                .Run(["app", "--repo", "repo", "--dir", "repo/.kit"]);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

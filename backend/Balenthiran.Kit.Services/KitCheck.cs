@@ -68,6 +68,33 @@ public sealed class KitCheck(
     private static bool LooksLikeAFlag(string s) => s.Length > 1 && s[0] == '-';
 
     // Node's `path.join`: join with `/`, then normalise — `.` dropped, `..` folded, `//` collapsed.
+    // Every file under a feature-tree corpus dir, as (path relative to it, '/'-separated, text), in name order.
+    private List<(string Path, string Text)> TreeFiles(string root)
+    {
+        var found = new List<(string Path, string Text)>();
+        void Walk(string abs, string rel)
+        {
+            foreach (var (name, isDir) in disk.Entries(abs))
+            {
+                var childRel = rel.Length == 0 ? name : rel + "/" + name;
+                if (isDir)
+                {
+                    if (childRel == FeatureTree.FeaturesDir || childRel.StartsWith(FeatureTree.FeaturesDir + "/", StringComparison.Ordinal))
+                    {
+                        Walk(Join(abs, name), childRel);
+                    }
+                }
+                else
+                {
+                    found.Add((childRel, disk.ReadText(Join(abs, name))));
+                }
+            }
+        }
+
+        Walk(root, "");
+        return found;
+    }
+
     private static string Join(params string[] parts)
     {
         var joined = string.Join('/', parts.Where(p => p.Length > 0));
@@ -208,8 +235,12 @@ public sealed class KitCheck(
             return 2;
         }
 
-        var behPath = Join(dir, $"{app}.beh");
-        if (!disk.Exists(behPath))
+        // BEH-PARSE-5/6 (claude-code-bot#151): a --dir holding a features/ tree is the project, read as one
+        // corpus (FeatureTree.Compose), and every tests.json in it is the project's mapping. Otherwise the
+        // corpus is <app>.beh beside <app>.tests.json, as before.
+        var tree = disk.IsDirectory(Join(dir, FeatureTree.FeaturesDir)) ? TreeFiles(dir) : null;
+        var behPath = tree is null ? Join(dir, $"{app}.beh") : dir;
+        if (tree is null && !disk.Exists(behPath))
         {
             Err($"cannot look: no corpus {behPath}");
             return 2;
@@ -218,7 +249,23 @@ public sealed class KitCheck(
         IReadOnlyList<IBehaviour> behaviours;
         try
         {
-            behaviours = resolver.Resolve(parser.Parse(disk.ReadText(behPath), $"{app}.beh")).Behaviours;
+            if (tree is null)
+            {
+                behaviours = resolver.Resolve(parser.Parse(disk.ReadText(behPath), $"{app}.beh")).Behaviours;
+            }
+            else
+            {
+                var corpus = parser.ParseCorpus(FeatureTree.Compose(tree), app);
+                var problems = FeatureTree.Problems(tree, corpus);
+                if (problems.Count > 0)
+                {
+                    foreach (var p in problems) Err(p);
+                    Err($"cannot look: {problems.Count} feature-tree problem(s): every nested README and every card must tag its folder's feature");
+                    return 2;
+                }
+
+                behaviours = resolver.Resolve(corpus.Behaviours).Behaviours;
+            }
         }
         catch (CorpusParseException e)
         {
@@ -226,25 +273,9 @@ public sealed class KitCheck(
             return 2;
         }
 
-        // BEH-PARSE-5/6: the feature folders are read with the corpus, so a folder file that does not
-        // tag its parent refuses the gate the way a corpus that does not parse does.
-        var featureRoot = Join(repo, ".kit", "features");
-        if (disk.IsDirectory(featureRoot))
-        {
-            try
-            {
-                new FeatureFolderReader(disk, parser).Read(featureRoot);
-            }
-            catch (CorpusParseException e)
-            {
-                Err($"cannot look: {e.Message}");
-                return 2;
-            }
-        }
-
         if (behaviours.Count == 0)
         {
-            Err($"cannot look: {app}.beh resolved to 0 behaviours");
+            Err($"cannot look: {(tree is null ? $"{app}.beh" : dir)} resolved to 0 behaviours");
             return 2;
         }
 
@@ -295,25 +326,54 @@ public sealed class KitCheck(
             // The same `dir`, deliberately: a mapping left behind would read one repo's
             // behaviours against another's claims about its tests, and both files exist.
             var mapPath = Join(dir, $"{app}.tests.json");
-            if (!disk.Exists(mapPath))
+            var mapFiles = tree is null
+                ? [mapPath]
+                : tree.Where(f => f.Path.EndsWith(".tests.json", StringComparison.Ordinal)).Select(f => Join(dir, f.Path)).ToList();
+            if (mapFiles.Count == 0 || (tree is null && !disk.Exists(mapPath)))
             {
-                Err($"cannot look: no mapping {mapPath} (--via mapping)");
+                Err($"cannot look: no mapping {(tree is null ? mapPath : $"*.tests.json under {dir}")} (--via mapping)");
                 return 2;
             }
 
-            JsonObject map;
-            try
+            // One file is read whole, as before. A tree's files are merged: comment keys dropped, and a
+            // behaviour mapped in two files refused, since the second would silently replace the first.
+            JsonObject? map = null;
+            foreach (var file in mapFiles)
             {
-                map = JsonNode.Parse(disk.ReadText(mapPath)) as JsonObject
-                    ?? throw new JsonException("not an object");
-            }
-            catch (JsonException)
-            {
-                Err($"cannot look: {mapPath} is not a JSON object");
-                return 2;
+                try
+                {
+                    var one = JsonNode.Parse(disk.ReadText(file)) as JsonObject
+                        ?? throw new JsonException("not an object");
+                    if (tree is null)
+                    {
+                        map = one;
+                        continue;
+                    }
+
+                    map ??= [];
+                    foreach (var (key, value) in one.ToList())
+                    {
+                        if (key.StartsWith('_')) continue;
+                        if (map.ContainsKey(key) && key != CoverageCounter.LastImprovedByKey)
+                        {
+                            Err($"cannot look: {key} is mapped in two tests files, the second is {file}");
+                            return 2;
+                        }
+
+                        one.Remove(key);
+                        map[key] = value;
+                    }
+                }
+                catch (JsonException)
+                {
+                    Err($"cannot look: {file} is not a JSON object");
+                    return 2;
+                }
             }
 
-            var mapped = counts.Count(behaviours, map, titles, mapPath);
+            if (tree is not null) mapPath = dir;
+
+            var mapped = counts.Count(behaviours, map!, titles, mapPath);
             if (mapped.Refusal is not null)
             {
                 Err($"cannot look: {mapped.Refusal}");
