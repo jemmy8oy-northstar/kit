@@ -177,6 +177,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // run end on the usage limit: it did no work, so it must not use up the ticket's runs.
     private readonly Dictionary<(string App, string Slug), Action> uncount = [];
 
+    // BEH-ORCH-21: per ticket (a project's triage counts as one), its usage-limit endings in a row. In memory only, like tries.
+    private readonly Dictionary<(string App, string Slug), int> limitEnds = [];
+
+    /// <summary>BEH-ORCH-21: the usage-limit endings in a row a ticket may have for free; the next is an ordinary failure, so one whose own work only looks like the limit cannot run for ever.</summary>
+    public const int MaxLimitEnds = 3;
+
     // Counts a resolve or fix run of <paramref name="key"/> in <paramref name="counts"/>, keeping how to take it back (uncount). Called with the gate held.
     private void Count<T>(Dictionary<(string App, string Slug), T> counts, (string App, string Slug) key, T value)
     {
@@ -479,6 +485,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
             var key = (ticket.Project, ticket.Slug);
             tries.Remove(key);
+            limitEnds.Remove(key);
             resolved.Remove(key);
             failedAt.Remove(key);
             fixes.Remove(key);
@@ -776,6 +783,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var limited = succeeded ? null : UsageLimit.ResetOf(failure);
         lock (gate)
         {
+            if (started.TryGetValue(runId, out var whose))
+            {
+                var of = items[whose.Index];
+                var key = (of.Project, of.Stage == PipelineStage.Triage ? "triage" : of.Slug);
+                var ends = limited is null ? 0 : limitEnds.GetValueOrDefault(key) + 1;
+                if (ends > MaxLimitEnds)
+                {
+                    // Neither a pause nor a free run: it spends a try through the ordinary path, and the count starts again.
+                    Console.Error.WriteLine($"kit: {of.Project} {of.Slug} met the usage limit {ends} runs in a row; counted as a failure");
+                    limited = null;
+                    ends = 0;
+                }
+
+                if (ends == 0)
+                {
+                    limitEnds.Remove(key);
+                }
+                else
+                {
+                    limitEnds[key] = ends;
+                }
+            }
+
             if (limited is { } reset)
             {
                 Pause(reset);

@@ -4017,6 +4017,31 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_21_a_ticket_that_meets_the_limit_more_than_three_times_in_a_row_spends_a_try_and_does_not_pause()
+    {
+        // A run whose own failure only reads like the limit must not run for ever, free, every half hour.
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = Specced(rig);
+        string LimitIn1h() => $"limit exit 1 resets {clock.GetUtcNow().AddHours(1).UtcDateTime:yyyy-MM-dd'T'HH:mm:ss'Z'}";
+
+        for (var ended = 1; ended <= Pipeline.MaxLimitEnds; ended++)
+        {
+            EndRunFailed(rig, build, LimitIn1h());
+            Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "list-sorting").Status);
+            clock.Advance(TimeSpan.FromHours(1));
+            build = Assert.IsType<PoolClaim>(rig.Claim());
+        }
+
+        var last = LimitIn1h();
+        EndRunFailed(rig, build, last);
+
+        // No retries in this rig, so the ordinary path blocks it at once.
+        Assert.Equal((WorkItemStatus.Stopped, $"the build run failed ({last})"), (ItemOf(rig, "list-sorting").Status, ItemOf(rig, "list-sorting").StoppedBecause));
+        Assert.Null(rig.Pipeline!.PausedNote());
+    }
+
+    [Fact]
     public void BEH_ORCH_21_a_triage_that_meets_the_usage_limit_reads_the_same_notes_after_the_reset()
     {
         var clock = new Ticking();
