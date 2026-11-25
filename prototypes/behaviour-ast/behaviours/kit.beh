@@ -177,7 +177,7 @@ behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error n
   contract and a feature id declared twice; silence on any of them leaves a behaviour drawn nowhere
   contract a tag is not a dependency: `in` names only FEAT- ids and `serves` only BEH- ids, so moving a
   contract card on a page can never change what Kit refuses to delete
-  contract my assumption: a `.kit` file or readme.md inside a feature folder that tags its parent with `in` is the child feature; BEH-PARSE-6 reads that parent tag, so the same refusals apply to folder children
+  contract my assumption: a feature tree is read as one corpus (BEH-PARSE-5), so these three refusals hold across all of its files, and each names the file and line it found
 
 behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
   in FEAT-PARSER
@@ -210,8 +210,12 @@ behaviour BEH-PARSE-5 "Features are folders under .kit/features, and a folder's 
   given corpus:FeatureFolders
   when runs command:KitParse
   then reports feature:FromFolders
-  contract my assumption: a folder under .kit/features is a feature; its subfolders are child features, its {name}.kit files are the specs it holds, and its readme.md describes it without being a spec
-  contract my assumption: a folder with neither a readme, a .kit file nor a child feature folder is not a feature and is skipped, so an empty folder never fails a build; a folder holding only child feature folders is a feature, since a feature folder holds child folders and/or .kit files
+  contract my assumption: a folder under .kit/features is a feature; its subfolders are child features, its {name}.kit files are the specs it holds, and its README.md (any case) describes it without being a spec
+  contract my assumption (claude-code-bot#151, docs/design/feature-tree.md): a folder's feature id is FEAT- and its name upper-cased (features/notes/ is FEAT-NOTES), so every existing `in FEAT-X` tag stays valid when a corpus moves into the tree
+  contract my assumption: the README's first `#` heading is the feature's title, and a line that is only `in FEAT-X` or `stage x` is one of its fields; a folder with no README is still a feature, titled by its name
+  contract my assumption: a folder with no README and no .kit file anywhere under it is not a feature and is skipped, so an empty folder never fails a build; a folder holding only child feature folders is a feature
+  contract my assumption: the whole tree (project.kit, then each folder's feature and its .kit files) is ONE project's corpus: one project per repo, ids unique across every file, each file's `# kit:layer` holding for that file only, and an edit written back to the file of the card it changed
+  contract my assumption: `kit check <app> --dir <repo>/.kit` reads the tree when it has a .kit file under features/, and merges every `*.tests.json` in it into one map; with no tree it reads <app>.beh exactly as before
   contract my assumption: the owner's 2026-11-24 23:07Z reply (kit.notes.md) does not want kit-ui.beh split per area or Pipeline.cs split per stage to stop merge conflicts; this folder layout is the way specs are organised instead, so that split is not built
 
 behaviour BEH-PARSE-6 "A kit or readme under a feature folder that does not tag its parent is an error naming its file"
@@ -223,8 +227,8 @@ behaviour BEH-PARSE-6 "A kit or readme under a feature folder that does not tag 
   given corpus:UntaggedChild
   when runs command:KitParse
   then raises error:MissingParentTag
-  contract my assumption: every child .kit file and readme.md under a feature folder carries an `in` line naming its parent folder's feature; a child may name further features too, and those extra tags are never refused
-  contract my assumption: the check runs with the other parse checks, so a missing parent tag fails the same build as a behaviour with no test (BEH-GATE-1)
+  contract my assumption: every card in a .kit file is tagged `in` its folder's feature, and a nested folder's README carries `in FEAT-<PARENT>`; either may name further features too, and those extra tags are never refused
+  contract my assumption: the check runs with the other parse checks, so a missing parent tag fails the same build as a behaviour with no test (BEH-GATE-1), and names every file and line that is missing one
 
 behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
   in FEAT-SERVER

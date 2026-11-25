@@ -613,6 +613,37 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Equal(settings.RepoRoot, settings.CorpusRoot);
     }
 
+    /// <summary>claude-code-bot#151: a source holding a feature tree is one app, and an edit to a card commits that card's file alone.</summary>
+    [Fact]
+    public async Task A_feature_tree_is_one_app_and_an_edit_commits_only_the_file_of_the_card_it_changed()
+    {
+        var tree = ProjectSource.Parse("o/tree@dev:.kit")!;
+        var writer = new Writer();
+        var d = new GitHubCorpusDirectory(clone, [Kit, tree], new Scripted(
+            Snap(Kit, ("alpha.beh", "a1", "x")),
+            Snap(tree,
+                ("project.kit", "p1", "# kit:project tree\n"),
+                ("features/notes/README.md", "r1", "# Notes\n"),
+                ("features/notes/note.kit", "n1", "behaviour BEH-NOTE-1 \"kept\"\n  in FEAT-NOTES\n  when opens page:Home\n"),
+                ("features/notes/note.tests.json", "t1", "{\"BEH-NOTE-1\": []}"),
+                ("features/pipeline/orch.kit", "o1", "behaviour BEH-ORCH-1 \"t\"\n  in FEAT-PIPELINE\n  when opens page:Home\n"))), writer);
+        await d.RefreshAsync();
+        var viewer = new Services.ProjectViewer(d, new Services.CorpusParser(), new Services.BehaviourResolver(), new Services.TestGenerator(), new Services.ProjectReporter());
+        var router = new Services.KitRouter(d, viewer, new Services.UiBundle(Path.Combine(root, "no-bundle")), null);
+
+        Assert.Equal(["alpha", "tree"], d.Corpora());
+        Assert.Equal(".kit", d.RelativePath("tree"));
+        Assert.Contains("BEH-NOTE-1", d.ReadTestsText("tree"), StringComparison.Ordinal);
+
+        var r = router.Route("POST", "/api/projects/tree/behaviours/BEH-NOTE-1/priority", body: System.Text.Json.JsonDocument.Parse("""{"priority":2}""").RootElement);
+
+        Assert.Equal(200, r.Status);
+        var put = Assert.Single(writer.Puts);
+        Assert.Equal((tree, "features/notes/note.kit", "n1"), (put.Source, put.File, put.Sha));
+        Assert.Equal("behaviour BEH-NOTE-1 \"kept\"\n  in FEAT-NOTES\n  priority 2\n  when opens page:Home\n", put.Text);
+        Assert.Contains("priority 2", d.ReadText("tree"), StringComparison.Ordinal);
+    }
+
     private static CorpusSnapshot Snap(IProjectSource source, params (string Name, string Sha, string Text)[] files) => new()
     {
         Source = source,
