@@ -246,12 +246,14 @@ step=bundles
 # BEH-ORCH-3: the bundles a triage pushed go back to Kit with the pool's finished report. A work branch counts only
 # when origin has exactly what the run has, i.e. it was pushed. Each bundle is sent whole or not at all (text null),
 # so the report stays inside Kit's 64KB body limit; Kit stops an item whose text is null and says why.
+# 16000 each (was 8000): two real bundles grew past 8000 and stopped their tickets (claude-code-bot#152). Triage's task
+# states TriageStage.MaxBundleChars, well under this, so the agent can stay inside it.
 if [ -n "${KIT_BUNDLES_FILE:-}" ]; then
   node -e '
     const { execFileSync } = require("child_process");
     const git = (...a) => execFileSync("git", a, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
     const tryGit = (...a) => { try { return git(...a); } catch { return null; } };
-    const [file, maxEach, maxAll, maxCount] = [process.argv[1], 8000, 48000, 50];
+    const [file, maxEach, maxAll, maxCount] = [process.argv[1], 16000, 48000, 50];
     const prefix = "refs/heads/kit/work/";
     const out = [];
     let room = maxAll;
