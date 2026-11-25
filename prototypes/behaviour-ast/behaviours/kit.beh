@@ -340,6 +340,21 @@ behaviour BEH-UI-6 "A ticket keeps its state column and sits by priority, blocke
   contract built (ui/src/tickets.ts ticketColumns, ui/src/components/Tickets.tsx): each state is a column of the Tickets section, ordered by priority 1 first and within one priority blocked first
   review requested conflict with BEH-ORCH-16 (built, slice 4), which lists every blocked ticket first across the whole Tickets section; this card builds priority first, blocked within one priority, per state column. Approve to keep this reading; deny to say which is true and I rebuild to it
 
+behaviour BEH-UI-7 "A project's home page shows what the pipeline is running, as dots coloured by stage on a timeline"
+  in FEAT-SERVER
+  priority 3
+  actor engineer
+  given pipeline:Running
+  when opens page:ProjectHome
+  then shows diagram:StageTimeline
+  contract my assumption: the diagram has one column per pipeline stage, in pipeline order, with time running left to right
+  contract my assumption: each work item actively being worked on is one dot, placed in the column of its current stage and coloured by that stage
+  contract my assumption: finished, merged and parked work is not shown; only work being worked on now
+  contract my assumption: it is shown on a project's home page, one project at a time
+  contract my assumption: the dots come from the same run and ticket data as BEH-UI-6, so the picture never disagrees with the board
+  contract my assumption: the nouns pipeline:Running and diagram:StageTimeline are not yet bound to a page or a locator; the builder binds them
+  review unreviewed
+
 # ── the corpus writer (writer.js) ───────────────────────────────────────────
 # Decision 2 in docs/design/ui.md lapsed 2026-09-08 and its default became the
 # decision: write the file, never touch git. These are the rules that decision
