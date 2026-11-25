@@ -149,7 +149,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         if (b.TryGetProperty("failure", out var f) && f.ValueKind != JsonValueKind.Null)
         {
             if (s.GetString() != AgentRunStatus.Failed || f.ValueKind != JsonValueKind.String
-                || f.GetString() is not { Length: <= 64 } text || !(FailurePattern.IsMatch(text) || UsageLimit.IsShaped(text)))
+                || f.GetString() is not { Length: <= 64 } text || !(FailurePattern.IsMatch(text) || UsageLimit.ResetOf(text) is not null))
             {
                 return Error(400, "bad-failure", "failure is only for a failed report, and is a step and an exit code, like \"clone exit 128\", or \"limit exit 1 resets 2026-11-25T13:00:00Z\"");
             }

@@ -12,9 +12,6 @@ public static class UsageLimit
 {
     private static readonly Regex Failure = new(@"^limit exit [0-9]{1,3} resets ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)$", RegexOptions.Compiled);
 
-    /// <summary>Whether <paramref name="failure"/> has the shape of a usage-limit failure, whatever its time.</summary>
-    public static bool IsShaped(string? failure) => failure is not null && Failure.IsMatch(failure);
-
     /// <summary>When the limit of a run that failed with <paramref name="failure"/> resets; null when it is no usage-limit failure, or its time is not a real one.</summary>
     public static DateTimeOffset? ResetOf(string? failure) =>
         failure is not null
