@@ -231,6 +231,66 @@ describe('Board', () => {
     tickets = {}
   })
 
+  it('draws each ticket inside the tickets region and no ticket inside a behaviour card (BEH-TICKET-1)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'sorting', title: 'Sort the list', state: 'ready', priority: 1, cards: ['A-1'], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'move-spec', title: 'Move the spec', state: 'new', priority: 3, cards: ['A-2'], pullRequest: null, blockedBecause: 'which title?', comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const region = await screen.findByRole('region', { name: /Tickets/ })
+    const nodes = [...region.querySelectorAll<HTMLElement>('[data-ticket]')]
+    expect(nodes.map((n) => n.dataset.ticket).sort()).toEqual(['move-spec', 'sorting'])
+    for (const node of nodes) {
+      // The ticket sits in the tickets region under its state column, and no behaviour is any ancestor of it.
+      expect(node.closest('section[aria-labelledby="board-tickets"]')).toBe(region)
+      expect(node.closest('[data-card]')).toBeNull()
+    }
+    // The behaviour cards are still on the board, and none of them holds a ticket.
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-card]')]
+    expect(cards.length).toBeGreaterThan(0)
+    for (const card of cards) expect(card.querySelector('[data-ticket]')).toBeNull()
+    tickets = {}
+  })
+
+  it('lists each open ticket once, in its state column, and flags each blocked one (BEH-TICKET-6)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'a', title: 'Alpha', state: 'ready', priority: 2, cards: [], pullRequest: null, blockedBecause: 'why?', comments: [] },
+          { slug: 'b', title: 'Bravo', state: 'ready', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'c', title: 'Charlie', state: 'built', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'd', title: 'Delta', state: 'merged', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 3')
+    const ready = within(section.getByRole('region', { name: 'ready' }))
+    // Blocked first within its priority, and each ticket appears once.
+    expect(ready.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Alpha a', 'Bravo b'])
+    expect(within(section.getByRole('region', { name: 'built' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Charlie c',
+    ])
+    expect(section.getAllByRole('heading', { level: 3 }).filter((h) => h.textContent === 'Delta d')).toHaveLength(1)
+    // The blocked ticket carries the blocked flag; the unblocked one does not.
+    const alpha = ready.getByRole('heading', { name: 'Alpha a' }).closest('.board-card') as HTMLElement
+    const bravo = ready.getByRole('heading', { name: 'Bravo b' }).closest('.board-card') as HTMLElement
+    expect(within(alpha).getByText('🚧 blocked')).toBeInTheDocument()
+    expect(within(bravo).queryByText('🚧 blocked')).not.toBeInTheDocument()
+    tickets = {}
+  })
+
   it('shows the open tickets in one column per state, each column by priority with blocked first within a priority (BEH-UI-6)', async () => {
     mockApi()
     tickets = {
