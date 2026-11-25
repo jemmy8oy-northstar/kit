@@ -124,6 +124,17 @@ public sealed class CorpusParser : ICorpusParser
             var line = Trim(lines[i]);
             var at = at0[i];
             var defaultLayer = segLayer[segOf[i]];
+
+            // A new file starts outside every block: a line at the top of one file must never become a
+            // step of the last card in the file before it.
+            if (i > 0 && segOf[i] != segOf[i - 1])
+            {
+                cur = null;
+                feat = null;
+                epic = null;
+                dec = null;
+            }
+
             if (line.Length == 0 || line.StartsWith('#')) continue;
 
             var m = BehaviourLine.Match(line);
@@ -690,7 +701,7 @@ public sealed class CorpusParser : ICorpusParser
         s.Length == 10 && DateOnly.TryParseExact(s, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _);
 
     /// <summary>The line that starts a file's text in a composed feature tree (claude-code-bot#151).</summary>
-    public const string FileMarker = "# kit:file ";
+    public const string FileMarker = Database.FeatureTree.FileMarker;
 
     /// <summary>
     /// Which segment each line is in, and each line's location. A line that is exactly
