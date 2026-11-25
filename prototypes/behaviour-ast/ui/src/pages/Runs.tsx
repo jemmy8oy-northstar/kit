@@ -123,6 +123,7 @@ function Pipeline({ runs, only }: { runs: AgentRun[]; only?: string }) {
   return (
     <>
       <h2>Pipeline</h2>
+      {resource.value.paused ? <p role="status">{resource.value.paused}</p> : null}
       {items.length === 0 ? (
         <p>No work items since Kit last started.</p>
       ) : (
