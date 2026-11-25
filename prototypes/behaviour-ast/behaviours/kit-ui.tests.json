@@ -895,10 +895,16 @@
   "BEH-SPACE-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
   ],
+  "BEH-SPACE-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-6 the project runs page carries the project tab bar, with that page current" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-6 the project inbox page carries the project tab bar, with that page current" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-6 the project settings page carries the project tab bar, with that page current" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "BEH-SPACE-6 hides the Runs tab from a signed-in account that is not the operator, and shows it to the operator" }
+  ],
   "BEH-SPACE-5": [
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 keeps Projects, Notifications and Settings in the main navigation, and not the Inbox or Runs" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has Its inbox, Its runs and Its settings beside its chat and board, each on its own project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has an Inbox, Runs and Settings tab beside its chat and board, each on its own project page" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "does not render the global Settings or Notifications on a project page" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lists only that project's cards, and another project's waiting card is not in it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "switching to another project shows that project's cards, with no filter from the last one left in the address" },

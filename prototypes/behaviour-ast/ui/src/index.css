@@ -520,6 +520,12 @@ pre {
   text-decoration: none;
 }
 
+/* BEH-SPACE-6: a project's page tabs, GitHub-style; never wrap, scroll sideways on a phone. */
+.project-nav {
+  flex-wrap: nowrap;
+  margin: var(--space-2) 0 var(--space-4);
+}
+
 .tabs [role='tab'][aria-selected='true'],
 .tabs a[aria-current='page'] {
   color: var(--color-text);
