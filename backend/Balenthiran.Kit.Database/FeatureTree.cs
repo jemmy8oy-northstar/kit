@@ -139,37 +139,6 @@ public static class FeatureTree
     }
 
     /// <summary>
-    /// The files an edited composed text stands for: (path, text) for <see cref="ProjectFile"/> and each
-    /// <c>.kit</c> file. README segments are derived from the README, so they are checked, not returned: an
-    /// edit to one is refused, because a feature is changed in its folder, not through Kit.
-    /// </summary>
-    /// <exception cref="CorpusParseException">Text before the first file line, or an edited README segment.</exception>
-    public static IReadOnlyList<(string Path, string Text)> Split(string text, IReadOnlyDictionary<string, string?>? readmes = null)
-    {
-        var output = new List<(string Path, string Text)>();
-        foreach (var (path, body) in Segments(text))
-        {
-            if (IsReadme(path))
-            {
-                if (readmes is not null)
-                {
-                    readmes.TryGetValue(path, out var readme);
-                    if (body != FeatureBlock(Dir(path), readme))
-                    {
-                        throw new CorpusParseException($"{path}: a feature is changed in its folder's README, not through Kit");
-                    }
-                }
-
-                continue;
-            }
-
-            output.Add((path, body));
-        }
-
-        return output;
-    }
-
-    /// <summary>
     /// What a write of <paramref name="text"/> (a <see cref="Compose"/> of <paramref name="current"/>, edited)
     /// changes: (path, new text) for each file whose text differs, and nothing for a file left alone. A card
     /// that was not in <paramref name="current"/> moves to its home (design rule 5): the folder of its first
@@ -276,15 +245,16 @@ public static class FeatureTree
             now.TryGetValue(path, out var stored);
 
             // Compose drops a BOM and gives a file with no final newline one, and a missing project file an
-            // empty segment; none of those is a change, and a BOM the file had is kept when it does change.
-            var bom = stored is not null && stored.StartsWith('﻿');
-            var was = bom ? stored![1..] : stored;
-            if (after == (was ?? string.Empty) || (was is not null && !was.EndsWith('\n') && after == was + "\n"))
+            // empty segment; a card appended after a file and moved to its home takes that file's trailing
+            // whitespace with it. None of those is a change, and a BOM the file had is kept when it does change.
+            var bom = stored is not null && stored.StartsWith('\uFEFF');
+            var was = bom ? stored![1..] : stored ?? string.Empty;
+            if (after.TrimEnd() == was.TrimEnd())
             {
                 continue;
             }
 
-            changes.Add((path, bom ? "﻿" + after : after));
+            changes.Add((path, bom ? "\uFEFF" + after : after));
         }
 
         return changes;
@@ -313,7 +283,7 @@ public static class FeatureTree
             JsonObject map;
             try
             {
-                if (JsonNode.Parse(text.TrimStart('﻿')) is not JsonObject o)
+                if (JsonNode.Parse(text.TrimStart('\uFEFF')) is not JsonObject o)
                 {
                     return text;
                 }
@@ -340,7 +310,7 @@ public static class FeatureTree
                         into.Add(item);
                     }
                 }
-                else if (key == LastImprovedBy && On(value).CompareTo(On(held)) > 0)
+                else if (key == LastImprovedBy && string.CompareOrdinal(On(value), On(held)) > 0)
                 {
                     merged[key] = value;
                 }
@@ -374,6 +344,19 @@ public static class FeatureTree
         }
 
         return problems;
+    }
+
+    /// <summary>
+    /// The tree parsed as one project, and gated: the parser's own refusals (an <c>in</c> naming no feature, a
+    /// feature that is its own ancestor, an id declared twice: BEH-PARSE-2), then <see cref="Problems"/> as
+    /// <c>MissingParentTag</c> (BEH-PARSE-6). What <c>kit check</c> reads.
+    /// </summary>
+    /// <exception cref="CorpusParseException">The first refusal, naming its file.</exception>
+    public static IParsedCorpus Parse(IReadOnlyList<(string Path, string Text)> files, ICorpusParser parser)
+    {
+        var corpus = parser.ParseCorpus(Compose(files), ProjectFile);
+        var problems = Problems(files, corpus);
+        return problems.Count == 0 ? corpus : throw new CorpusParseException("MissingParentTag", string.Join('\n', problems));
     }
 
     /// <summary>
@@ -526,7 +509,7 @@ public static class FeatureTree
 
     private static void Append(StringBuilder sb, string path, string text)
     {
-        if (text.Length > 0 && text[0] == '﻿') text = text[1..];
+        if (text.Length > 0 && text[0] == '\uFEFF') text = text[1..];
         sb.Append(FileMarker).Append(path).Append('\n').Append(text);
         if (text.Length > 0 && !text.EndsWith('\n')) sb.Append('\n');
     }

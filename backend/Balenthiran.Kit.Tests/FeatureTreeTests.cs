@@ -1,5 +1,6 @@
 using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.Database;
 using Balenthiran.Kit.Services;
 
 namespace Balenthiran.Kit.Tests;
@@ -72,14 +73,9 @@ public class FeatureTreeTests
     }
 
     [Fact]
-    public void Split_gives_back_each_kit_file_and_never_a_README()
+    public void An_unedited_tree_writes_nothing_back()
     {
-        var split = FeatureTree.Split(FeatureTree.Compose(Tree));
-
-        Assert.Equal(["project.kit", "features/notes/note.kit", "features/pipeline/triage/orch.kit"], split.Select(s => s.Path));
-        Assert.Equal(Tree.Single(t => t.Path == "features/pipeline/triage/orch.kit").Text, split.Single(s => s.Path.EndsWith("orch.kit")).Text);
-        // A file with no final newline comes back with one; nothing else changes.
-        Assert.Equal(Tree.Single(t => t.Path == "features/notes/note.kit").Text + "\n", split.Single(s => s.Path.EndsWith("note.kit")).Text);
+        Assert.Empty(FeatureTree.Changes(Tree, FeatureTree.Compose(Tree)));
     }
 
     [Fact]
@@ -87,21 +83,37 @@ public class FeatureTreeTests
     {
         var text = FeatureTree.Compose(Tree).Replace("\"A note is kept\"", "\"A note is kept forever\"");
 
-        var split = FeatureTree.Split(text);
-        var before = FeatureTree.Split(FeatureTree.Compose(Tree));
-        var changed = split.Where(s => before.Single(b => b.Path == s.Path).Text != s.Text).Select(s => s.Path);
-        Assert.Equal(["features/notes/note.kit"], changed);
+        var change = Assert.Single(FeatureTree.Changes(Tree, text));
+        Assert.Equal("features/notes/note.kit", change.Path);
+        // A file with no final newline gets one when it changes; nothing else about it moves.
+        Assert.Equal(Tree.Single(t => t.Path == change.Path).Text.Replace("kept", "kept forever") + "\n", change.Text);
+    }
+
+    [Fact]
+    public void A_new_card_goes_to_the_file_for_its_area_in_the_folder_of_its_feature()
+    {
+        var text = FeatureTree.Compose(Tree) + "\nbehaviour BEH-ORCH-2 \"Triage runs again\"\n  in FEAT-TRIAGE\n  when opens page:Home\n";
+
+        var change = Assert.Single(FeatureTree.Changes(Tree, text));
+        Assert.Equal("features/pipeline/triage/orch.kit", change.Path);
+        Assert.EndsWith("when opens page:Home\n\nbehaviour BEH-ORCH-2 \"Triage runs again\"\n  in FEAT-TRIAGE\n  when opens page:Home\n", change.Text);
+    }
+
+    [Fact]
+    public void A_new_card_with_no_feature_is_refused_rather_than_guessed_into_a_file()
+    {
+        var text = FeatureTree.Compose(Tree) + "\nbehaviour BEH-ORCH-2 \"Triage runs again\"\n  when opens page:Home\n";
+
+        Assert.Throws<NotWritableException>(() => FeatureTree.Changes(Tree, text));
     }
 
     [Fact]
     public void An_edit_to_a_README_segment_is_refused()
     {
-        var readmes = Tree.Where(t => t.Path.EndsWith("README.md")).ToDictionary(t => t.Path, t => (string?)t.Text);
         var text = FeatureTree.Compose(Tree).Replace("feature FEAT-NOTES \"Notes\"", "feature FEAT-NOTES \"Notebook\"");
 
-        var e = Assert.Throws<CorpusParseException>(() => FeatureTree.Split(text, readmes));
+        var e = Assert.Throws<NotWritableException>(() => FeatureTree.Changes(Tree, text));
         Assert.Contains("features/notes/README.md", e.Message);
-        Assert.Equal(3, FeatureTree.Split(FeatureTree.Compose(Tree), readmes).Count);
     }
 
     [Fact]
