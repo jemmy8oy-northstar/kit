@@ -1131,3 +1131,9 @@ kit is able to perform a dev -> main release (this can be toggled in the project
 <!-- from: note-button -->
 
 I have a vision when kit is organised by project where it can show a visual on the project home page of what is running in the pipeline atm, just a simple cluster dots coloured by stage in the stages across some timeline stile diagram showing what work is actively being worked on and in what stage
+
+## 2026-11-25 19:16Z
+
+<!-- from: note-button -->
+
+Please take inspiration from GitHub and restructure this site to closer match this navigation wise, nav bar, project tabs etc
