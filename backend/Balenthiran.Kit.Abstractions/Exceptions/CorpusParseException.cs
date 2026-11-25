@@ -18,10 +18,23 @@ public sealed class CorpusParseException : AppException
     {
     }
 
+    /// <summary>A refusal the spec names (BadFeatureTag, MissingParentTag), with its message.</summary>
+    public CorpusParseException(string refusal, string message)
+        : base(message)
+    {
+        Refusal = refusal;
+    }
+
     public CorpusParseException(string message, Exception innerException)
         : base(message, innerException)
     {
     }
+
+    /// <summary>
+    /// The refusal's name as the behaviour card gives it (BEH-PARSE-2 BadFeatureTag, BEH-PARSE-6
+    /// MissingParentTag); null for a refusal no card names.
+    /// </summary>
+    public string? Refusal { get; }
 
     public override string ErrorCode => "invalid_corpus";
 }

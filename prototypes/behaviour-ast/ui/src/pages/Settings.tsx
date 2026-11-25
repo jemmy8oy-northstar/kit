@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, fetchWake, requestWake, setConflictMode, setDepth, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
 import type { ConflictMode, DepthMode, IdleItem, SessionState, SwitchGroup } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
@@ -179,12 +179,44 @@ function OperatorGitHub({ session }: { session: SessionState }) {
   )
 }
 
+/** BEH-SPACE-5: a project's own row when it is scoped to one project; every project's row otherwise. */
+function ofProject<T extends { app: string }>(rows: T[], only?: string): T[] {
+  return only === undefined ? rows : rows.filter((r) => r.app === only)
+}
+
+/**
+ * BEH-SPACE-5: a project's own configuration, on the project's own settings page: its promotion, its
+ * conflict choice and its depth (BEH-SETTINGS-4, BEH-CONFLICT-2, BEH-ARCH-3). Only the operator sees them,
+ * as they were on the global page. The schedule, principles and architecture stay on the project's tabs.
+ */
+export function ProjectSettings() {
+  const { app = '' } = useParams()
+  const session = useSession()
+  const accounts = Boolean(session?.accounts && session.signedIn)
+  const operator = accounts && Boolean(session?.operator)
+  // Keyed on the project, so switching to another project's settings cannot keep this one's outcome line.
+  return (
+    <div key={app}>
+      <h1>Settings · {app}</h1>
+      {operator ? (
+        <>
+          <PromotionSetting only={app} />
+          <ConflictSetting only={app} />
+          <DepthSetting only={app} />
+        </>
+      ) : (
+        <p className="muted">Only the operator changes how this project runs.</p>
+      )}
+    </div>
+  )
+}
+
 /**
  * BEH-SETTINGS-4: which projects the agent may promote to main itself. Each switch is the
  * `# kit:promote self` line in that project's own corpus, so a change is a commit he can see.
  * One row per project (its primary file), ideas and trials left out. New projects start off.
  */
-function PromotionSetting() {
+function PromotionSetting({ only }: { only?: string }) {
   const { resource, reload } = useReloadableResource(async () => {
     const { projects } = await fetchProjects()
     return projects
@@ -218,7 +250,7 @@ function PromotionSetting() {
       <ResourceView resource={resource}>
         {(rows) => (
           <ul>
-            {rows.map((r) => (
+            {ofProject(rows, only).map((r) => (
               <li key={r.app}>
                 <label>
                   <input type="checkbox" checked={r.on} disabled={busy === r.app}
@@ -246,7 +278,7 @@ const CONFLICT_MODES: { mode: ConflictMode; label: string; said: string }[] = [
  * `# kit:conflicts` line in that project's own corpus, so a change is a commit he can see; building
  * anyway, the default, is no line. One row per project (its primary file), ideas and trials left out.
  */
-function ConflictSetting() {
+function ConflictSetting({ only }: { only?: string }) {
   const { resource, reload } = useReloadableResource(async () => {
     const { projects } = await fetchProjects()
     return projects
@@ -280,7 +312,7 @@ function ConflictSetting() {
       <ResourceView resource={resource}>
         {(rows) => (
           <div>
-            {rows.map((r) => (
+            {ofProject(rows, only).map((r) => (
               <p key={r.app}>
                 <label>
                   {r.app}{' '}
@@ -310,7 +342,7 @@ const DEPTH_MODES: { mode: DepthMode; label: string; said: string }[] = [
  * project's own corpus, so a change is a commit he can see; behaviours, the default, is no line. One row
  * per project (its primary file), ideas and trials left out.
  */
-function DepthSetting() {
+function DepthSetting({ only }: { only?: string }) {
   const { resource, reload } = useReloadableResource(async () => {
     const { projects } = await fetchProjects()
     return projects
@@ -344,7 +376,7 @@ function DepthSetting() {
       <ResourceView resource={resource}>
         {(rows) => (
           <div>
-            {rows.map((r) => (
+            {ofProject(rows, only).map((r) => (
               <p key={r.app}>
                 <label>
                   {r.app}{' '}
@@ -582,9 +614,6 @@ export default function Settings() {
           {session.operator ? <><OperatorGitHub session={session} /><AddUser /></> : <><ConnectGitHub session={session} />{session.gitHub ? null : <ChangePassword />}</>}
         </div>
       )}
-      {session?.operator && accounts ? <PromotionSetting /> : null}
-      {session?.operator && accounts ? <ConflictSetting /> : null}
-      {session?.operator && accounts ? <DepthSetting /> : null}
       {session?.operator && accounts ? <IdleSettingSection /> : null}
       {session?.operator && accounts ? <WakeSettingSection /> : null}
       {session?.operator && accounts ? <FeatureSwitchesSection /> : null}

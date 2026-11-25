@@ -55,3 +55,23 @@
 - **Runs cards and run details (BEH-UI-7, BEH-UI-8, BEH-UI-9, bundle runs-page-cards-and-details):** the three cards live in kit-ui.beh now, after BEH-VIS-2. kit-ui.beh cannot tag `in FEAT-SERVER` (that feature is in kit.beh), so the moved cards have no feature tag, as BEH-VIS-1 and BEH-VIS-2 have none. The cards read `recent` from GET /api/runs/visibility, which reads cost through NoStageCostRecord, so every card shows "cost unknown" until a session cost is read there.
 - **Mapped test titles must not contain an apostrophe:** `check` reads the title as written in source (`run\'s` never matches `run's`). Write "run state", not "run's state", in any test a `.tests.json` line maps.
 - **Only CommittedArtefactTests.cs may read `RepoLayout.Behaviours`** (ConformanceTests.Only_the_committed_artefact_checks_read_the_live_corpora). A corpus check in any other test file fails the suite.
+
+## Per-project views (BEH-SPACE-5, bundle per-project-views-and-settings)
+- The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
+- Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.
+- The bundle called the Inbox assertion "in Project.test.tsx"; the main-navigation Inbox assertions were in `FeatureGate.test.tsx`.
+
+## Feature folders under .kit/features (BEH-PARSE-5/6, bundle kit-feature-folder-layout)
+- The reader is `backend/Balenthiran.Kit.Services/FeatureFolderReader.cs` (types in `FolderTag.cs`, `FolderFeature.cs`, `FeatureFolders.cs`; StyleCop SA1402 means one type per file). `KitCheck` reads `<repo>/.kit/features` whenever it exists, whatever `--dir` says, and a refusal is exit 2 "cannot look", like a corpus that does not parse.
+- A folder's feature id is its name, and an `in` tag there is a bare folder name (`in Alpha`), not a `FEAT-` id. A line that is `in` and one token, on its own, in a folder's `.kit` or `readme.md` is a folder tag and is blanked before the spec text is parsed, so line numbers stay true.
+- Only a file in a feature nested under another feature needs `in <parent>`. A file directly in a top-level feature folder needs no tag.
+- `CorpusParseException` has a `Refusal` name (`BadFeatureTag`, `MissingParentTag`) for the cards to name. The three existing BEH-PARSE-2 refusals in `CorpusParser.cs` now carry `BadFeatureTag`.
+- **kit.beh BEH-PARSE-3 header lost its space** in fd373305 (`behaviour BEH-PARSE-3"A priority…`). A `behaviour` line needs whitespace before the quote, or `Every_committed_corpus_parses` fails the whole suite. Restored to main's text.
+- Behaviours inside folder `.kit` files are parsed but not yet counted by `kit check`, so a folder spec with no test does not fail the gate. That is not in any card yet.
+- UI job here: `npm ci && npm run lint && npm run build && npm test` in `prototypes/behaviour-ast/ui`, 648 passed on 2026-11-24.
+## Ticket board and epic board (BEH-TICKET-6 to 8, bundle ticket-board-only-model)
+- The gate reads test titles as literal strings. A title built from `it.each` or a template string is not found, so `check kit-ui` fails with "has no test titled ...". Give each mapped test a literal title.
+- When a test title is renamed, check `kit-ui.tests.json` for every card that maps to it. BEH-STAGE-8 and BEH-EPIC-4 share one title, and the gate names only the first missing one.
+- A ticket has no epic field. It names the epics of the features its specs sit in (`epicsOfTicket` in `ui/src/epics.ts`, the BEH-TICKET-7 contract), so an epic's ticket counts are derived in the page, not stored.
+- The feature board (`/stages`) and the spec board (`/board` behaviour list) are out of the navbar and the view switch; the routes still work by URL. The `/board` page still lists behaviour cards under the tickets until the owner answers the spec-board question on BEH-TICKET-6.
+- `ui/src/tickets.ts` and `ui/src/components/Tickets.tsx` do exist, under `prototypes/behaviour-ast/ui/src/`.

@@ -1,5 +1,5 @@
 import { ApiError, fetchTickets } from './api/client'
-import type { Ticket, TicketList } from './api/types'
+import type { Behaviour, Ticket, TicketList } from './api/types'
 
 /**
  * A project's tickets (BEH-ORCH-16 slice 4), or null for someone they are refused to, or a filter naming no project
@@ -17,7 +17,7 @@ export async function loadTickets(app: string): Promise<TicketList | null> {
 /** The longest reply on a ticket, as the server's MaxReply. */
 export const MAX_REPLY = 1000
 
-/** Blocked first, as they are waiting on him; then top priority first; merged ones are done, so off the list. */
+/** Blocked first, as they are waiting on him; then top priority first; merged ones are done, so off the list (and in the closed column). */
 export function openTickets(tickets: Ticket[]): Ticket[] {
   return tickets
     .filter((t) => t.state !== 'merged')
@@ -35,11 +35,15 @@ export interface TicketColumn {
   tickets: Ticket[]
 }
 
+/** The column a merged and resolved ticket goes to, after every open column (BEH-UI-6). */
+export const CLOSED_COLUMN = 'closed'
+
 /**
- * BEH-UI-6 (his 2026-11-18 note: each ticket keeps its state column): the open tickets grouped by state, columns in
- * {@link TICKET_STATES} order, and merged tickets off the board. Within a column a ticket sorts by priority, 1 first,
- * and within one priority a blocked ticket sits above the unblocked ones. A blocked ticket does not rise above a
- * higher priority. Equal keys keep the order the server sent, which is oldest first.
+ * BEH-UI-6 (his 2026-11-18 note: each ticket keeps its state column; his 2026-11-24 note: merged and resolved tickets
+ * go to a closed column): the open tickets grouped by state, columns in {@link TICKET_STATES} order, a state not
+ * listed after them, and then one {@link CLOSED_COLUMN} for the merged tickets, if there are any. Within a column a
+ * ticket sorts by priority, 1 first, and within one priority a blocked ticket sits above the unblocked ones. A blocked
+ * ticket does not rise above a higher priority. Equal keys keep the order the server sent, which is oldest first.
  */
 export function ticketColumns(tickets: Ticket[]): TicketColumn[] {
   const open = tickets.filter((t) => t.state !== 'merged')
@@ -47,13 +51,23 @@ export function ticketColumns(tickets: Ticket[]): TicketColumn[] {
     const i = TICKET_STATES.indexOf(state)
     return i === -1 ? TICKET_STATES.length : i
   }
-  const states = [...new Set(open.map((t) => t.state))].sort((a, b) => rank(a) - rank(b))
-  return states.map((state) => ({
-    state,
-    tickets: open
+  const byPriority = (of: Ticket[]) =>
+    of
       .map((t, i) => ({ t, i }))
-      .filter((x) => x.t.state === state)
       .sort((x, y) => x.t.priority - y.t.priority || Number(!!y.t.blockedBecause) - Number(!!x.t.blockedBecause) || x.i - y.i)
-      .map(({ t }) => t),
-  }))
+      .map(({ t }) => t)
+  const states = [...new Set(open.map((t) => t.state))].sort((a, b) => rank(a) - rank(b))
+  const columns: TicketColumn[] = states.map((state) => ({ state, tickets: byPriority(open.filter((t) => t.state === state)) }))
+  const merged = tickets.filter((t) => t.state === 'merged')
+  if (merged.length > 0) columns.push({ state: CLOSED_COLUMN, tickets: byPriority(merged) })
+  return columns
+}
+
+/**
+ * BEH-TICKET-7: the features a ticket touches, from the specs it names. A spec sits in the features its `in` lines
+ * name, so the features are those, once each, in the order the specs name them. A spec Kit cannot find is skipped.
+ */
+export function featuresOfTicket(ticket: Ticket, behaviours: Behaviour[]): string[] {
+  const named = new Set(ticket.cards)
+  return [...new Set(behaviours.filter((b) => named.has(b.id)).flatMap((b) => b.in))]
 }

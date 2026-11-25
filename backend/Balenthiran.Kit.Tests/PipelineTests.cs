@@ -321,26 +321,52 @@ public class PipelineTests
     }
 
     [Fact]
-    public void BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150()
+    public void BEH_ORCH_17_A_test_run_limit_is_three_times_the_slower_recorded_time_once_a_cold_run_is_recorded()
+    {
+        // BEH-ORCH-17: the warm suite took 378 seconds on 2026-11-19; the limit waits on a cold run timed on the runner.
+        // A changed recorded figure fails here, so the limit cannot drift from the card without someone noticing.
+        int? cold = Orchestrator.TestColdSeconds;
+        var expected = cold is { } c ? (3 * Math.Max(378, c) + 59) / 60 * 60 : 1800;
+        Assert.Equal(expected, Orchestrator.TestSeconds);
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_Only_a_test_run_has_a_time_limit_of_its_own()
+    {
+        Assert.Equal(Orchestrator.TestSeconds, Orchestrator.SecondsFor(PipelineStage.Test));
+        foreach (var stage in Enum.GetValues<PipelineStage>().Where(s => s != PipelineStage.Test))
+        {
+            Assert.Null(Orchestrator.SecondsFor(stage));
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_test_runs_lease_is_its_limit_plus_ten_minutes_and_a_run_with_no_limit_keeps_150()
+    {
+        Assert.Equal(TimeSpan.FromMinutes(10), RunnerPool.LeaseMargin);
+        Assert.Equal(TimeSpan.FromSeconds(Orchestrator.TestSeconds) + RunnerPool.LeaseMargin, RunnerPool.LeaseFor(Orchestrator.TestSeconds));
+        Assert.Equal(TimeSpan.FromMinutes(150), RunnerPool.LeaseFor(null));
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_test_run_gives_up_at_its_limit_and_is_counted_lost_ten_minutes_after_that_not_at_150()
     {
         // BEH-ORCH-17: kit#768's test run went 90 minutes without a word on 2026-11-19, on a suite that takes 6.
-        Assert.Equal(1800, Orchestrator.SecondsFor(PipelineStage.Test));
-        Assert.Null(Orchestrator.SecondsFor(PipelineStage.Build));
-
         var clock = new Ticking();
         using var rig = new Rig(clock: clock);
         var test = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "list-sorting", "test");
         rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
         var taken = Assert.IsType<PoolClaim>(rig.Claim());
-        Assert.Equal(1800, taken.MaxSeconds);
+        Assert.Equal(Orchestrator.TestSeconds, taken.MaxSeconds);
 
+        var limit = TimeSpan.FromSeconds(Orchestrator.TestSeconds);
         var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
-        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(30), claim.GivesUpAt);
-        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(40), claim.LostAt);
+        Assert.Equal(clock.GetUtcNow() + limit, claim.GivesUpAt);
+        Assert.Equal(clock.GetUtcNow() + limit + RunnerPool.LeaseMargin, claim.LostAt);
 
-        clock.Advance(TimeSpan.FromMinutes(39));
+        clock.Advance(limit + RunnerPool.LeaseMargin - TimeSpan.FromSeconds(1));
         Assert.Empty(rig.Pool.Lost());
-        clock.Advance(TimeSpan.FromMinutes(2));
+        clock.Advance(TimeSpan.FromSeconds(1));
         Assert.Equal(test.Id, Assert.Single(rig.Pool.Lost()));
     }
 
