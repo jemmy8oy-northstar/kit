@@ -59,7 +59,12 @@ because it already treats a project as one corpus.
 1. **Validate the tree:** kit#908. The reader plus the parent-tag gate. Not yet used by Kit.
 2. **Read the tree:** Kit loads a project from `.kit/features/` when it exists, else from the flat
    files as today. Writes go back to the card's own file. `kit check` reads the tree. Code only;
-   no spec moves.
+   no spec moves. *Built:* `FeatureTree` (Database) is the one reader, used by `CorpusDirectory`,
+   `GitHubCorpusDirectory` (one recursive tree read per changed listing) and
+   `kit check <app> --dir <repo>/.kit`. It replaced slice 1's `FeatureFolderReader`, whose
+   folder-name ids (`in Alpha`) could not be Kit features. A tree counts as one only when a `.kit`
+   file sits under `features/`, so a flat directory reads exactly as before. A new card goes to
+   `<folder of its first in>/<area>.kit`; one with no `in` is refused rather than guessed.
 3. **Move Kit's own spec:** a mechanical script moves `kit.beh`, `kit-ui.beh` and `kit-hosted.beh` into
    the tree, renumbers the three ids that clash across them (`BEH-SCHED-1`, `BEH-ADJ-1`,
    `BEH-GATE-H2`) and the duplicate `FEAT-SCHEDULE`, splits the tests maps, and moves the sidecars

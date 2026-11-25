@@ -488,7 +488,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         }
 
         tree.TryGetValue(FeatureTree.ProjectFile, out var project);
-        var app = FeatureTree.ProjectName(project?.Text.TrimStart('﻿'), snap.Source.Repository);
+        var app = FeatureTree.ProjectName(project?.Text.TrimStart('\ufeff'), snap.Source.Repository);
         tree.TryGetValue(FeatureTree.BindingsFile, out var bindings);
         tree.TryGetValue(FeatureTree.NotesFile, out var notes);
         tree.TryGetValue(FeatureTree.ScheduleFile, out var schedule);
