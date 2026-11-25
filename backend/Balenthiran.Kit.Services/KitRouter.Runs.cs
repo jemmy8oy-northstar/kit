@@ -76,7 +76,7 @@ public sealed partial class KitRouter
                 ReviewNote = bundle?.Review?.Note,
             };
         }).ToList();
-        return Json(200, new PipelineItemList { On = pipeline is not null, Items = items });
+        return Json(200, new PipelineItemList { On = pipeline is not null, Items = items, Paused = pipeline?.PausedNote() });
     }
 
     /// <summary>

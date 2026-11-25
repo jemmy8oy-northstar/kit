@@ -1019,6 +1019,25 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one" }
   ],
+  "BEH-ORCH-21": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_build_run_that_meets_the_usage_limit_spends_no_try_and_nothing_starts_until_the_reset" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_triage_that_meets_the_usage_limit_reads_the_same_notes_after_the_reset" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_fix_run_that_meets_the_usage_limit_is_not_counted_and_the_look_after_the_reset_starts_it_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_at_the_reset_a_ticket_a_run_blocked_gets_one_more_go" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_restart_during_the_pause_keeps_it_from_the_failed_runs_record" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_reset_already_past_still_pauses_a_minute_and_a_day_far_off_at_most_eight" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_21_A_failed_report_may_say_it_met_the_usage_limit_and_when_that_resets" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_21_Only_a_real_reset_time_makes_a_failure_a_usage_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_The_classic_limit_message_reports_its_epoch_as_the_reset" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_limit_on_stderr_with_an_ISO_time_is_read_and_given_seconds" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_clock_alone_is_the_next_time_that_clock_comes_round" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_weekly_limit_with_a_date_resets_on_that_date_not_today" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_limit_with_no_time_waits_half_an_hour" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_An_error_result_that_exited_0_on_the_limit_reports_it_at_its_exit_code" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_run_that_worked_while_talking_about_the_usage_limit_writes_no_failure" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_failure_that_is_not_the_limit_stays_the_claude_step" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-21 says the pipeline is paused for the usage limit and when it resumes, and nothing when it is not" }
+  ],
   "BEH-ORCH-14": [
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step" },

@@ -4003,6 +4003,7 @@ public class PipelineTests
         Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued, null), (item.Stage, item.Status, item.StoppedBecause));
         Assert.Null(Ticket(rig).BlockedBecause);
         Assert.Equal("Paused: usage limit, resumes 14:00Z", rig.Pipeline!.PausedNote());
+        Assert.Equal("Paused: usage limit, resumes 14:00Z", Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Paused);
         Assert.Null(rig.Claim());
 
         clock.Advance(TimeSpan.FromMinutes(119));
