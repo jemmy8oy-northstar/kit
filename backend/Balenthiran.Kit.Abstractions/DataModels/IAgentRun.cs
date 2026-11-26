@@ -138,4 +138,7 @@ public interface IPipelineItemList
     bool On { get; }
 
     IReadOnlyList<IPipelineItem> Items { get; }
+
+    /// <summary>BEH-ORCH-21: "Paused: usage limit, resumes 13:00Z" while no run starts for the usage limit; null otherwise.</summary>
+    string? Paused { get; }
 }

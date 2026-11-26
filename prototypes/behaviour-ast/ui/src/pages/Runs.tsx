@@ -113,15 +113,17 @@ function byStage(runs: AgentRun[]): { stage: string; runs: number; costUsd: numb
  * review, and its runs, one per stage, so which stage spent the money reads off the item. Items are kept in memory,
  * so they are the ones since Kit last started; the cost by stage below them is every run on record.
  */
-function Pipeline({ runs }: { runs: AgentRun[] }) {
+function Pipeline({ runs, only }: { runs: AgentRun[]; only?: string }) {
   const resource = useResource(fetchPipeline, [])
   if (resource.state === 'error') return <p className="muted">The pipeline could not be read: {resource.message}</p>
   if (resource.state !== 'ready' || !resource.value.on || !Array.isArray(resource.value.items)) return null
-  const items = resource.value.items
+  // BEH-SPACE-5: a project's page keeps that project's items; the global page keeps them all.
+  const items = only === undefined ? resource.value.items : resource.value.items.filter((i) => i.project === only)
   const stages = byStage(runs)
   return (
     <>
       <h2>Pipeline</h2>
+      {resource.value.paused ? <p role="status">{resource.value.paused}</p> : null}
       {items.length === 0 ? (
         <p>No work items since Kit last started.</p>
       ) : (
@@ -186,18 +188,20 @@ function RunCard({ run }: { run: RecentRun }) {
  * The recent runs as cards, newest first (BEH-UI-7), read from GET /api/runs/visibility. The server sends them in
  * that order and this keeps it.
  */
-function RunCards({ resource }: { resource: Resource<RunVisibility> }) {
+function RunCards({ resource, only }: { resource: Resource<RunVisibility>; only?: string }) {
   return (
     <ResourceView resource={resource}>
-      {({ recent }) =>
-        recent.length === 0 ? null : (
+      {({ recent }) => {
+        // BEH-SPACE-5: a project's cards are that project's runs, as its list above is.
+        const shown = only === undefined ? recent : recent.filter((r) => r.project === only)
+        return shown.length === 0 ? null : (
           <ol aria-label="Agent runs" className="cards">
-            {recent.map((r) => (
+            {shown.map((r) => (
               <RunCard key={r.id} run={r} />
             ))}
           </ol>
         )
-      }
+      }}
     </ResourceView>
   )
 }
@@ -206,20 +210,23 @@ function RunCards({ resource }: { resource: Resource<RunVisibility> }) {
  * Every agent run Kit has started, newest first (BEH-USERS-9, BEH-UI-7). Each one is a card (BEH-UI-8) that opens
  * its details page (BEH-UI-9). A failed run says which step of the runner failed.
  */
-export default function Runs() {
+export default function Runs({ only }: { only?: string } = {}) {
   const resource = useResource(fetchRuns, [])
   const cards = useResource(fetchRunVisibility, [])
 
   return (
     <>
-      <h1>Runs</h1>
+      <h1>{only === undefined ? 'Runs' : `Runs · ${only}`}</h1>
 
       <ResourceView resource={resource}>
-        {({ capUsd, runs, claims }) => (
+        {({ capUsd, runs: every, claims }) => {
+          // BEH-SPACE-5: a project's runs are the runs of that project; the global page shows every run (BEH-USERS-9).
+          const runs = only === undefined ? every : every.filter((r) => r.project === only)
+          return (
           <>
             <p className="muted">Each run is capped at ${capUsd}.</p>
             <Now runs={runs} claims={claims ?? []} now={Date.now()} />
-            <Pipeline runs={runs} />
+            <Pipeline runs={runs} only={only} />
             {runs.length === 0 ? (
               <p>No runs yet.</p>
             ) : (
@@ -237,9 +244,10 @@ export default function Runs() {
                 </>
               ) : null
             )}
-            {runs.length === 0 ? null : <RunCards resource={cards} />}
+            {runs.length === 0 ? null : <RunCards resource={cards} only={only} />}
           </>
-        )}
+          )
+        }}
       </ResourceView>
     </>
   )

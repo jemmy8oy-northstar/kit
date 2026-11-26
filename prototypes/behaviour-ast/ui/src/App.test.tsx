@@ -132,7 +132,213 @@ describe('BEH-NAV-1: every page carries the navbar', () => {
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Board' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Tickets' })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Projects' })).toBeInTheDocument()
+  })
+})
+
+/** The server for the navbar and board tests below: the session, the project list, and one project's detail. */
+function stubKitServer(detail: object = snipIt) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const notes = noNotes(url, init)
+      if (notes) return notes
+      const body = url.endsWith('/api/session')
+        ? { required: false, signedIn: true }
+        : url.endsWith('/api/projects')
+          ? projectsFixture
+          : url.endsWith('/api/projects/snip-it')
+            ? detail
+            : url.endsWith('/tickets')
+              ? { on: true, tickets: [] }
+              : null
+      return body
+        ? { ok: true, status: 200, statusText: 'OK', json: async () => body }
+        : { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-route' }) }
+    }),
+  )
+}
+
+describe('BEH-TICKET-6: the navbar and the boards show only the epic board and the ticket board', () => {
+  it('the global top bar links to the epic board and the ticket board, and neither the feature board nor the spec board is linked from it (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', '/board')
+    stubKitServer()
+    render(<App />)
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Epics' })).toHaveAttribute('href', '/epics')
+    expect(within(nav).getByRole('link', { name: 'Tickets' })).toHaveAttribute('href', '/board')
+    expect(within(nav).queryByRole('link', { name: 'Features' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Stages' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Board' })).not.toBeInTheDocument()
+  })
+
+  it('the board switch offers the epic board and the ticket board and no feature or spec view (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', '/board')
+    stubKitServer()
+    render(<App />)
+    const views = await screen.findByRole('navigation', { name: 'Board view' })
+    expect(within(views).getAllByRole('link').map((a) => a.textContent)).toEqual(['Epics', 'Tickets'])
+    expect(within(views).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('BEH-EPIC-4 is its own page: /epics opens the epic board, with no switch option standing for it (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', '/epics')
+    stubKitServer()
+    render(<App />)
+    expect(await screen.findByRole('region', { name: 'Epics' })).toBeInTheDocument()
+    const views = screen.getByRole('navigation', { name: 'Board view' })
+    expect(within(views).getByRole('link', { name: 'Epics' })).toHaveAttribute('aria-current', 'page')
+    expect(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Epics' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  it('a spec a ticket names still has its page, opened by its id (BEH-TICKET-6)', async () => {
+    const spec = snipIt.behaviours[0]
+    window.history.pushState({}, '', `/projects/snip-it/behaviours/${spec.id}`)
+    stubKitServer()
+    render(<App />)
+    expect(await screen.findByRole('heading', { level: 1, name: spec.title })).toBeInTheDocument()
+  })
+
+  it("a ticket's feature page still opens from its feature branch (BEH-TICKET-6)", async () => {
+    window.history.pushState({}, '', '/projects/snip-it/features/FEAT-APP')
+    stubKitServer({ ...snipIt, features: [{ id: 'FEAT-APP', title: 'The app feature', in: [], at: 'snip-it.beh:1' }] })
+    render(<App />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'The app feature' })).toBeInTheDocument()
+  })
+
+  it('the feature and spec pages stay reachable by their own URLs after the boards leave the top bar (BEH-TICKET-6)', async () => {
+    window.history.pushState({}, '', `/projects/snip-it/behaviours/${snipIt.behaviours[0].id}`)
+    stubKitServer()
+    render(<App />)
+    expect(await screen.findByRole('heading', { level: 1, name: snipIt.behaviours[0].title })).toBeInTheDocument()
+  })
+})
+
+describe('BEH-TICKET-1: the navbar and the board page show no feature board', () => {
+  it('the board page keeps its ticket view and the navbar has no Features link (BEH-TICKET-1)', async () => {
+    window.history.pushState({}, '', '/board?project=snip-it')
+    stubKitServer()
+    render(<App />)
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).queryByRole('link', { name: 'Features' })).not.toBeInTheDocument()
+    const views = screen.getByRole('navigation', { name: 'Board view' })
+    expect(within(views).queryByRole('link', { name: 'Features' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^Tickets/ })).toBeInTheDocument()
+  })
+})
+
+describe('BEH-SPACE-5: the main navigation keeps only the global places above projects', () => {
+  // The same stub as BEH-NAV-1: the project list and the session answer, and the flags cannot be read,
+  // so every entry is shown. What is asserted is which entries are in the bar, not whether they are on.
+  function stubAll() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const notes = noNotes(url, init)
+        if (notes) return notes
+        const body = url.endsWith('/api/session')
+          ? { required: false, signedIn: true }
+          : url.endsWith('/api/projects')
+            ? projectsFixture
+            : null
+        return body
+          ? { ok: true, status: 200, statusText: 'OK', json: async () => body }
+          : { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-route' }) }
+      }),
+    )
+  }
+
+  it('BEH-SPACE-5 keeps Projects and Settings in the main navigation, and not the Inbox or Runs', async () => {
+    window.history.pushState({}, '', '/')
+    stubAll()
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/')
+    expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings')
+    expect(within(nav).queryByRole('link', { name: 'Inbox' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: 'Runs' })).not.toBeInTheDocument()
+  })
+
+  it('BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation', async () => {
+    window.history.pushState({}, '', '/')
+    stubAll()
+    render(<App />)
+
+    expect(await screen.findByRole('link', { name: 'Inbox across every project' })).toHaveAttribute('href', '/inbox')
+  })
+
+  async function expectTabBar(page: string, current: string) {
+    window.history.pushState({}, '', `/projects/snip-it/${page}`)
+    stubAll()
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'This project' })
+    for (const name of ['Overview', 'Inbox', 'Runs', 'Notes', 'Settings']) {
+      expect(within(nav).getByRole('link', { name })).toBeInTheDocument()
+    }
+    expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/projects/snip-it')
+    expect(within(nav).getByRole('link', { name: 'Runs' })).toHaveAttribute('href', '/projects/snip-it/runs')
+    expect(within(nav).getByRole('link', { name: current })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current')
+  }
+
+  it('BEH-SPACE-6 the project runs page carries the project tab bar, with that page current', () => expectTabBar('runs', 'Runs'))
+  it('BEH-SPACE-6 the project inbox page carries the project tab bar, with that page current', () => expectTabBar('inbox', 'Inbox'))
+  it('BEH-SPACE-6 the project settings page carries the project tab bar, with that page current', () => expectTabBar('settings', 'Settings'))
+})
+
+describe('BEH-NAV-4: the global top bar holds only global links, and a project has its own tab row', () => {
+  it('the global top bar on the epic board page holds only the epic board, the ticket board, the projects list and Settings, with no project views in it (BEH-NAV-4)', async () => {
+    window.history.pushState({}, '', '/epics')
+    stubKitServer()
+    render(<App />)
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Epics', 'Tickets', 'Projects', 'Settings'])
+  })
+
+  it('opening a project shows its views as a tab row beneath the top bar, and the tab for the current page is marked active (BEH-NAV-4)', async () => {
+    window.history.pushState({}, '', '/projects/snip-it/inbox')
+    stubKitServer()
+    render(<App />)
+    const tabs = await screen.findByRole('navigation', { name: 'This project' })
+    expect(tabs.closest('header')).toBeNull()
+    expect(document.querySelector('header')!.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(tabs).getByRole('link', { name: 'Inbox' })).toHaveAttribute('aria-current', 'page')
+    expect(within(tabs).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('the tab row appears on every page under a project (spec, notes, chat, runs, health, settings), and every tab stays inside that project (BEH-NAV-4)', async () => {
+    const feature = { id: 'FEAT-APP', title: 'The app feature', in: [], at: 'snip-it.beh:1' }
+    const pages: [string, string][] = [
+      [`/projects/snip-it/features/${feature.id}`, 'Overview'],
+      ['/projects/snip-it?tab=notes', 'Notes'],
+      ['/chat?project=snip-it', 'Chat'],
+      ['/projects/snip-it/runs', 'Runs'],
+      ['/projects/snip-it/health', 'Health'],
+      ['/projects/snip-it/settings', 'Settings'],
+    ]
+    for (const [path, current] of pages) {
+      window.history.pushState({}, '', path)
+      stubKitServer({ ...snipIt, features: [feature] })
+      const { unmount } = render(<App />)
+      const tabs = await screen.findByRole('navigation', { name: 'This project' })
+      for (const link of within(tabs).getAllByRole('link')) expect(link.getAttribute('href'), path).toMatch(/snip-it/)
+      expect(within(tabs).getByRole('link', { name: current }), path).toHaveAttribute('aria-current', 'page')
+      unmount()
+    }
+  })
+
+  it('the project tab row changes only the layout: the project page keeps its heading, its tab row and its behaviours (BEH-NAV-4)', async () => {
+    window.history.pushState({}, '', '/projects/snip-it')
+    stubKitServer()
+    render(<App />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'This project' })).toBeInTheDocument()
+    expect((await screen.findAllByText(snipIt.behaviours[0].title)).length).toBeGreaterThan(0)
   })
 })

@@ -235,8 +235,8 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     }
 
     /// <summary>
-    /// BEH-ORCH-14: the runs this pool handed out longer ago than their lease (<see cref="LeaseFor"/>) that are still not over, oldest
-    /// first. Their runners are lost; the caller fails them, which frees their projects. A run handed out before a
+    /// BEH-ORCH-14: the runs this pool handed out at least their lease (<see cref="LeaseFor"/>) ago that are still not over, oldest
+    /// first. A run is counted lost at its lost-at time, not after it. Their runners are lost; the caller fails them, which frees their projects. A run handed out before a
     /// restart is not here: the restart already forgot it, and its project with it. Each is given out once, so two
     /// claims at the same moment cannot both fail it.
     /// </summary>
@@ -246,7 +246,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
         {
             var now = Now;
             var lost = handedOutAt
-                .Where(h => now - h.Value > LeaseFor(limitOf.GetValueOrDefault(h.Key)) && !OverOrGone(h.Key))
+                .Where(h => now - h.Value >= LeaseFor(limitOf.GetValueOrDefault(h.Key)) && !OverOrGone(h.Key))
                 .OrderBy(h => h.Value)
                 .Select(h => h.Key)
                 .ToList();

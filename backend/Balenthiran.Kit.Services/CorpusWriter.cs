@@ -607,10 +607,18 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     private static int HeaderAnchor(List<string> lines)
     {
         var anchor = -1;
+        var files = 0;
         for (var i = 0; i < lines.Count; i++)
         {
             var t = lines[i].Trim(CorpusParser.WsChars);
             if (t.Length > 0 && !t.StartsWith('#'))
+            {
+                break;
+            }
+
+            // claude-code-bot#151: in a composed feature tree the header is the first file's (project.kit),
+            // so a directive never lands in the file after it.
+            if (lines[i].StartsWith(CorpusParser.FileMarker, StringComparison.Ordinal) && ++files > 1)
             {
                 break;
             }
@@ -1128,7 +1136,8 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var end = start;
         for (var i = start + 1; i < lines.Length; i++)
         {
-            if (Header.IsMatch(lines[i]) || FeatureHeader.IsMatch(lines[i]))
+            // claude-code-bot#151: a block ends with its file in a composed feature tree.
+            if (Header.IsMatch(lines[i]) || FeatureHeader.IsMatch(lines[i]) || lines[i].StartsWith(CorpusParser.FileMarker, StringComparison.Ordinal))
             {
                 break;
             }
@@ -1169,7 +1178,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var end = start;
         for (var i = start + 1; i < lines.Length; i++)
         {
-            if (AnyHeader.IsMatch(lines[i]))
+            if (AnyHeader.IsMatch(lines[i]) || lines[i].StartsWith(CorpusParser.FileMarker, StringComparison.Ordinal))
             {
                 break;
             }

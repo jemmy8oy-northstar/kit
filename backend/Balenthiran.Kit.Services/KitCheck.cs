@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.Database;
 using Balenthiran.Kit.DataModels.Models;
 
 namespace Balenthiran.Kit.Services;
@@ -208,8 +209,13 @@ public sealed class KitCheck(
             return 2;
         }
 
-        var behPath = Join(dir, $"{app}.beh");
-        if (!disk.Exists(behPath))
+        // claude-code-bot#151: a --dir holding a feature tree (features/**/*.kit) is the project, read as one
+        // corpus, and its tests are every .tests.json beside its cards. A tree that does not tag its parents
+        // refuses the gate the way a corpus that does not parse does (BEH-PARSE-5/6). Otherwise <app>.beh.
+        var tree = FeatureTree.ReadFiles(disk, dir);
+        var isTree = FeatureTree.IsTree(tree.Select(f => f.Path));
+        var behPath = isTree ? Join(dir, FeatureTree.FeaturesDir) : Join(dir, $"{app}.beh");
+        if (!isTree && !disk.Exists(behPath))
         {
             Err($"cannot look: no corpus {behPath}");
             return 2;
@@ -218,7 +224,9 @@ public sealed class KitCheck(
         IReadOnlyList<IBehaviour> behaviours;
         try
         {
-            behaviours = resolver.Resolve(parser.Parse(disk.ReadText(behPath), $"{app}.beh")).Behaviours;
+            behaviours = isTree
+                ? resolver.Resolve(FeatureTree.Parse(tree, parser).Behaviours).Behaviours
+                : resolver.Resolve(parser.Parse(disk.ReadText(behPath), $"{app}.beh")).Behaviours;
         }
         catch (CorpusParseException e)
         {
@@ -228,7 +236,7 @@ public sealed class KitCheck(
 
         if (behaviours.Count == 0)
         {
-            Err($"cannot look: {app}.beh resolved to 0 behaviours");
+            Err($"cannot look: {(isTree ? behPath : app + ".beh")} resolved to 0 behaviours");
             return 2;
         }
 
@@ -278,8 +286,9 @@ public sealed class KitCheck(
         {
             // The same `dir`, deliberately: a mapping left behind would read one repo's
             // behaviours against another's claims about its tests, and both files exist.
-            var mapPath = Join(dir, $"{app}.tests.json");
-            if (!disk.Exists(mapPath))
+            var mapPath = isTree ? behPath : Join(dir, $"{app}.tests.json");
+            var mapText = isTree ? FeatureTree.MergeTests(tree) : disk.Exists(mapPath) ? disk.ReadText(mapPath) : null;
+            if (mapText is null)
             {
                 Err($"cannot look: no mapping {mapPath} (--via mapping)");
                 return 2;
@@ -288,7 +297,7 @@ public sealed class KitCheck(
             JsonObject map;
             try
             {
-                map = JsonNode.Parse(disk.ReadText(mapPath)) as JsonObject
+                map = JsonNode.Parse(mapText) as JsonObject
                     ?? throw new JsonException("not an object");
             }
             catch (JsonException)

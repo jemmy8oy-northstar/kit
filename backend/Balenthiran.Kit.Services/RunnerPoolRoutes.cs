@@ -144,13 +144,14 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         }
 
         // Only a failed report may say why, and only as a step and an exit code: nothing a run could write beyond that is kept.
+        // BEH-ORCH-21: or, for a run that ended on the usage limit, that and the time the limit resets.
         string? failure = null;
         if (b.TryGetProperty("failure", out var f) && f.ValueKind != JsonValueKind.Null)
         {
             if (s.GetString() != AgentRunStatus.Failed || f.ValueKind != JsonValueKind.String
-                || f.GetString() is not { Length: <= 40 } text || !FailurePattern.IsMatch(text))
+                || f.GetString() is not { Length: <= 64 } text || !(FailurePattern.IsMatch(text) || UsageLimit.ResetOf(text) is not null))
             {
-                return Error(400, "bad-failure", "failure is only for a failed report, and is a step and an exit code, like \"clone exit 128\"");
+                return Error(400, "bad-failure", "failure is only for a failed report, and is a step and an exit code, like \"clone exit 128\", or \"limit exit 1 resets 2026-11-25T13:00:00Z\"");
             }
 
             failure = text;

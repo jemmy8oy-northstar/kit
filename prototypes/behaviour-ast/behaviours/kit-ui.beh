@@ -405,6 +405,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   contract my assumption: the navbar is on every page, feature and behaviour pages included, not only the board and the project list (kit.notes.md#2026-10-11-1239: "a docker or navbar with two views")
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
+  contract to be deleted (BEH-TICKET-6): it draws the spec board, which goes with the ticket model (BEH-TICKET-6); BEH-BOARD-10 to 21 hang off its columns and stay untouched; not removed until the owner confirms the list
   in FEAT-BOARD
   source defined kit#237
   priority 5
@@ -477,6 +478,7 @@ behaviour BEH-BOARD-6 "Review requested comes first: built work the agent wants 
   contract it is how built-and-merged work asks for his eyes without blocking on them
 
 behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never on the board"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-NAV
   in FEAT-BOARD
   source defined kit#284
@@ -490,6 +492,7 @@ behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never
   contract it is off the board and the project list even with trials shown: an idea is not work until it graduates to its own <app>.beh
 
 behaviour BEH-PRIN-1 "Principles have their own page in the navbar: global ones first, then each project's own"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-NAV
   source defined kit#284
   priority 2
@@ -970,6 +973,7 @@ feature FEAT-STAGES "Feature stages"
   stage development
 
 behaviour BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
+  contract to be deleted (BEH-TICKET-6): the feature board it draws goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 2
@@ -991,6 +995,7 @@ feature FEAT-STAGE-READING "The agent reads each feature's stage"
   stage ui
 
 behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only reads the stage board, and never drags a card"
+  contract to be deleted (BEH-TICKET-6): it is a rule of the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-0823
   source inferred kit.notes.md#2026-10-19-1616
@@ -1006,6 +1011,7 @@ behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only
   contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": each feature's column on the Stages page (problem, ux, logic, development, ui) is my judgement of how far along it is, written into the spec as its `stage` line. You never set or drag it; you read the board to see what is left. If a column looks wrong, leave a note on the feature and I move it
 
 behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
+  contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1018,6 +1024,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
 
 behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
+  contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1075,6 +1082,7 @@ behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
 # Was "only a feature with a stage line is on the board", my inference. His answer
 # on it (kit-ui.notes.md 2026-10-20 07:13Z) replaced it with a column.
 behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, so it can be found and staged"
+  contract to be deleted (BEH-TICKET-6): the Unstaged column is on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source inferred kit.notes.md#2026-10-19-0823
   source defined kit-ui.notes.md#2026-10-20-0713
@@ -1087,6 +1095,7 @@ behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, 
   contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is
 
 behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done column at the end of the feature board"
+  contract to be deleted (BEH-TICKET-6): the Done column is on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-31-1647
   review unreviewed
@@ -1102,6 +1111,7 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   contract built: the Done column after UI requirements, from the same columnOf the behaviour board uses
 
 behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one tap switches between them"
+  contract to be deleted (BEH-TICKET-6): the switch between feature and behaviour views goes with the feature and spec boards (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1619
@@ -1172,6 +1182,7 @@ behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
   contract "or even just another abstraction level in the boards for epic. I feel like this makes the most sense": a third option on the BEH-STAGE-8 switch
   contract each epic shows its tagged items' progress, built out of total, as a feature in development does (BEH-STAGE-3)
   contract my assumption: the switch reads Epics, Features, Behaviours, top level first; an epic's card lists the features tagged into it, and its count is their behaviours at any depth, each counted once
+  contract my assumption: the epic view shows the features under each epic, not only its behaviours, as the 2026-11-24 22:43Z note asks ("epic view should show features under it - the features that relate to the epic"); features tag an epic through BEH-EPIC-2, so no new tag is needed
 
 behaviour BEH-EPIC-5 "A new epic's children start pending"
   in FEAT-EPICS
@@ -1239,6 +1250,7 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
   contract my assumption: an epic id with no epic block shows a page that names the missing epic, not an empty page
+  contract my assumption: the features listed under the epic are those tagged into it at any depth, as the 2026-11-24 22:43Z note asks ("epic view should show features under it - the features that relate to the epic"); a feature that tags an epic is listed here whether or not it has behaviours
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
@@ -1790,6 +1802,10 @@ behaviour BEH-ORCH-17 "Runs shows what each stage is working on now, how long it
   contract my assumption: built, slices 1 and 2. Which stages besides test should get a shorter limit is decided from what the Now section and Runs show they take
   contract his comment (claude-code-bot#145, 2026-11-19 20:29Z), on a screenshot of Now listing runs "waiting for a runner · 306h" and "running since before Kit last started": "Ok now I need some help digesting this"
   contract my assumption: slice 3, built. A restart no longer leaves runs going for ever. At the first claim after Kit starts, each run created before it started that is still queued is failed as "lost", because its token and task went with the restart and no runner can ever take it. Each one still running is given the lease from when Kit started (RunnerPool.Forgotten), because its runner may yet report, and is failed as "lost" when that runs out, like any lost run. Such a run still has no claim, so Now keeps saying "running since before Kit last started" until then
+  contract his note (prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-19 19:29Z): "Maybe we can reduce the time to determine that a test run hung, how long does a test run actually take atm"
+  contract my assumption: his question is answered by the measured 378 seconds above, warm. A cold run, with the package cache empty, is not measured; the builder times one on the runner and records the figure on this card before any limit changes
+  contract my assumption: slice 3. The test limit comes down from 30 minutes only to about three times the slower of the measured warm and cold times, rounded up to the minute, and the 10-minute lease margin stays, so a hung test run is counted lost that many minutes plus 10 after it starts. Until a cold run is timed it stays at 30 minutes
+  contract built: slice 3's mechanism. Orchestrator.TestWarmSeconds is 378 and Orchestrator.TestColdSeconds is null, so Orchestrator.TestSeconds is 1800. Once a cold figure is written there, the limit is three times the slower figure rounded up to the minute (warm alone would give 1140). A run is counted lost at its lost-at time, not after it (RunnerPool.Lost). No cold run has been timed on the runner yet, so the limit is still 30 minutes
 
 behaviour BEH-ORCH-18 "The merge job merges a private repo's built tickets as a train: one test run for several pull requests"
   in FEAT-AGENT-PIPELINE
@@ -1844,6 +1860,23 @@ behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
   contract my assumption: when a runner asks, it gets the oldest queued test run or merge (resolve) run whose project is free. Only when there is none does it get the oldest of the rest. One live run per project still holds. A test run is capped at 30 minutes, so a build waits at most that long per test
   contract my assumption: this is the half of his "reserve a slot for merge/triage" that holds however many runners there are. With one runner, a build already running is not stopped. Triage is not moved up, because nothing waits on it to merge
   contract built (RunnerPool.GoesFirst, RunnerPool.Take): two passes over the queue, stage "test" or "resolve" first
+
+behaviour BEH-ORCH-21 "A run that meets the usage limit pauses the pipeline until the limit resets, and costs its ticket nothing"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#151
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract measured 2026-11-25: twice in 24 hours the subscription's usage limit failed every run handed out. Each failure spent a ticket's retries (BEH-ORCH-19) and blocked it, and a blocked ticket came back only at a restart, so the pipeline stood still until the next release
+  contract my assumption: the runner reads claude's final message and stderr when claude fails. A usage-limit ending is reported as "limit exit <code> resets <YYYY-MM-DDTHH:MM:SSZ>", the time only and never the message. A limit with no readable time is given 30 minutes, or 6 hours for a weekly limit or credits
+  contract my assumption: the limit is the whole account's, so any run that meets it, of any ticket, pauses the whole pipeline until its reset: at least 1 minute, at most 8 days. No run starts while paused, from a note, a job's look or the merge job. A later reset extends the pause; an earlier one does not shorten it
+  contract my assumption: the run that met it spends no try. Its ticket waits to run the same stage again, a resolve or fix run is not counted, a test run leaves the ticket built, a train's riders keep their place, and a triage reads the same notes again
+  contract my assumption: a ticket gets at most 3 usage-limit endings in a row for free. The 4th counts as an ordinary failure, spending a try and pausing nothing, so a run whose own failure only reads like the limit cannot run for ever. Any other ending starts the count again
+  contract my assumption: when the pause ends, each ticket a run blocked (BEH-ORCH-19's retryable blocks) gets one more go, with a comment saying so, as at a restart. A restart during the pause keeps it, read back from the failed run's record
+  contract my assumption: Runs → Pipeline says "Paused: usage limit, resumes 13:00Z" (with the date when it is not today) while paused
+  contract built (UsageLimit, Pipeline.Pause, Pipeline.Holding, Pipeline.RearmRunBlocks, Pipeline.RestorePause, runner/entrypoint.sh limit_reset)
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -2162,6 +2195,7 @@ feature FEAT-ACTIVITY "Recent activity"
   stage ui
 
 behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest first"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-ACTIVITY
   in FEAT-NAV
   source defined kit.notes.md#2026-10-20-1221
@@ -2183,6 +2217,7 @@ feature FEAT-NOTIFICATIONS "Kit tells him what the agent is doing, and wakes it 
   stage ui
 
 behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest first"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-NOTIFICATIONS
   in FEAT-NAV
   source defined kit.notes.md#2026-10-24-1400
@@ -2294,7 +2329,7 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
   contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
 
-behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the board and Settings are global"
+behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the two boards, Projects and Settings are global"
   in FEAT-NAV
   layer ux
   source defined kit.notes.md#2026-11-15-1247
@@ -2306,7 +2341,7 @@ behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views
   then sees region:KitNav
   contract his note (kit.notes.md#2026-11-15-1247): "Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings."
   contract his note (kit.notes.md#2026-11-15-1300): splitting out the projects is his top priority, together with BEH-USERS-12
-  contract my assumption: the global header keeps Projects, the board and Settings. Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
+  contract my assumption: the global header keeps the epic board, the ticket board, Projects and Settings (BEH-NAV-4, kit.beh). Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
   contract my assumption: the global board still shows every project's cards, each labelled with its project, and a project's own board view is the same board filtered to it
 
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
@@ -3658,6 +3693,8 @@ behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, 
   contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
   contract built: a project's page has its own navigation, "This project": its chat (the Chat on that project), its board (the board filtered to it) and its notes, beside designing it with the spec agent; the main navigation keeps Projects, the Inbox and Settings
   contract my assumption: a project's configuration is, for now, the tabs its page already has (schedule, principles, architecture); its integrations and secrets join it with the integrations page (BEH-PROJCONF-1)
+  contract "Everything should be organised by project (repo). Just like in git. We should be able to view the boards, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: the 2026-11-23 note moves the Inbox and the runs into each project, so the "Inbox" in the built line above is the global Inbox only, and each project gets its own; the global level keeps Projects, the global Notifications and global Settings, and the project level holds its Chat, Inbox, board, runs and settings (BEH-SPACE-5)
 
 behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
   in FEAT-PROJECT-SPACES
@@ -3685,6 +3722,43 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
   contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
+
+behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and only the entry page, global notifications and global settings are kept above projects"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-23-2257
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "We should be able to view the boars, the inbox, the chat, the runs, settings etc all specific to an app one by one individually. There should obviously still be a settings page for global settings, a notifications page is still valuable at a global level but I think we should be moving towards isolated by repo just like github" (kit.notes.md#2026-11-23 22:57Z)
+  contract my assumption: each project's page has its own Inbox (only items of that project), its runs (only that project's pipeline runs) and its settings (its configuration, BEH-SPACE-1), beside its Chat and board
+  contract my assumption: the global navigation keeps Projects, the global Notifications and the global Settings; global Settings holds what is not about one project, and project settings hold what is
+  contract my assumption: the global Inbox and the global board stay as an all-projects view for seeing everything (BEH-SPACE-3), and nothing is removed from them; this card adds the per-project views, it does not replace the global ones
+  contract my assumption: "isolated by repo, like GitHub" means a project's views never show another project's items, runs or config, and switching project is a navigation step, not a filter left on
+  contract my assumption: this card does not decide the pipeline or the data store; it changes what each page is scoped to
+  contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
+  contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
+  contract superseded by BEH-NAV-4 (kit.beh): the top bar now holds only the epic board, the ticket board, Projects and Settings, so Ideas, Principles, Health, Activity and Chat have no link in it
+  contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
+
+behaviour BEH-SPACE-6 "A project's pages share one tab bar, as on GitHub, so its runs, inbox and settings are one tap from each other"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined claude-code-bot#151
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "I currently have no way to access it." (about a project's Runs page, claude-code-bot#151)
+  contract "Please take inspiration from GitHub and restructure this site to closer match this navigation wise, nav bar, project tabs etc" (claude-code-bot#151)
+  contract my assumption: one tab bar, headed by the project's name, sits at the top of a project's overview, runs, inbox and settings pages, so leaving the overview never strands him
+  contract my assumption: the tabs are Overview, Chat, Inbox, Board, Runs, Notes and Settings, each shown on the same conditions as the links they replace (Chat, Inbox and Board when their feature is on; Runs not for a signed-in account that is not the operator, BEH-USERS-9)
+  contract my assumption: the current tab is underlined and marked aria-current; the bar scrolls sideways on a phone rather than wrapping
+  contract my assumption: this slice does not restructure the global header; that is a later step of the same note
+  contract built (ProjectNav): a navigation "This project" of tabs at the top of the project, runs, inbox and settings pages
 
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES

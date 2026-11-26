@@ -1,10 +1,21 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
-import { replyOnTicket } from '../api/client'
-import { useReloadableResource } from '../hooks/useResource'
-import { loadTickets, MAX_REPLY, openTickets, ticketColumns } from '../tickets'
+import { ApiError, fetchProject, replyOnTicket } from '../api/client'
+import { useReloadableResource, useResource } from '../hooks/useResource'
+import { featuresOfTicket, loadTickets, MAX_REPLY, openTickets, ticketColumns } from '../tickets'
+import type { Behaviour } from '../api/types'
 import ResourceView from './Resource'
+
+/** The project's specs, for the features a ticket touches; none for someone the project is refused to. */
+async function loadSpecs(app: string): Promise<Behaviour[]> {
+  try {
+    return (await fetchProject(app)).behaviours ?? []
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 404)) return []
+    throw e
+  }
+}
 
 /** BEH-ORCH-16 slice 3: his answer to what blocked a ticket, which wakes the first agent on it. */
 function ReplyForm({ app, slug, onSent }: { app: string; slug: string; onSent: () => void }) {
@@ -48,6 +59,9 @@ function ReplyForm({ app, slug, onSent }: { app: string; slug: string; onSent: (
  */
 export default function Tickets({ app }: { app: string }) {
   const { resource, reload } = useReloadableResource(() => loadTickets(app), [app])
+  // BEH-TICKET-7: the features a ticket touches come from the project's specs, read once for the board.
+  const detail = useResource(() => loadSpecs(app), [app])
+  const behaviours = detail.state === 'ready' ? detail.value : []
   return (
     <ResourceView resource={resource}>
       {(list) => {
@@ -80,15 +94,25 @@ export default function Tickets({ app }: { app: string }) {
                             <Badge tone="neutral">{t.state}</Badge>
                             <Badge tone={t.priority === 1 ? 'danger' : 'neutral'}>P{t.priority}</Badge>
                           </div>
-                          {t.cards.length > 0 && (
-                            <p>
-                              {t.cards.map((id, i) => (
-                                <span key={id}>
-                                  {i > 0 && ', '}
+                          {featuresOfTicket(t, behaviours).length > 0 && (
+                      <p aria-label="Features touched">
+                        {featuresOfTicket(t, behaviours).map((id, i) => (
+                          <Fragment key={id}>
+                            {i > 0 && ', '}
+                            <span>{id}</span>
+                          </Fragment>
+                        ))}
+                      </p>
+                    )}
+                    {/* BEH-TICKET-1: the behaviours the ticket changes, as the ticket's own list. */}
+                    {t.cards.length > 0 && (
+                            <ul aria-label="Specs touched" className="ticket-specs">
+                              {t.cards.map((id) => (
+                                <li key={id}>
                                   <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
-                                </span>
+                                </li>
                               ))}
-                            </p>
+                            </ul>
                           )}
                           {t.pullRequest?.startsWith('https://') && (
                             <p>

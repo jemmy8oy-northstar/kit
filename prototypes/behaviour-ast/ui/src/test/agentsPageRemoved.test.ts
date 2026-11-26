@@ -36,10 +36,13 @@ describe('the agents page is removed (BEH-AGENTPAGE-1)', () => {
     expect(corpus).not.toMatch(/^feature FEAT-AGENTS\b/m)
   })
 
-  it('BEH-AGENTPAGE-1 the navbar still shows Runs (BEH-USERS-9), and the Runs page still reads GET /api/runs', () => {
+  it('BEH-AGENTPAGE-1 the main navbar has no Runs link (BEH-SPACE-5), each project links its own runs, and the Runs page still reads GET /api/runs', () => {
     const app = read(path.join(UI_SRC, 'App.tsx'))
-    expect(app).toMatch(/<NavLink to="\/runs">Runs<\/NavLink>/)
-    expect(app).toMatch(/<RunsNavLink \/>/)
+    expect(app).not.toMatch(/<NavLink to="\/runs">Runs<\/NavLink>/)
+    expect(app).not.toMatch(/<RunsNavLink \/>/)
+    const nav = read(path.join(UI_SRC, 'components', 'ProjectNav.tsx'))
+    expect(nav).toMatch(/\/runs`/)
+    expect(nav).toMatch(/label: 'Runs'/)
     const runs = read(path.join(UI_SRC, 'pages', 'Runs.tsx'))
     expect(runs).toMatch(/useResource\(fetchRuns/)
     const client = read(path.join(UI_SRC, 'api', 'client.ts'))
