@@ -96,7 +96,7 @@ public static class TriageStage
         sb.Append("Steps:\n");
         sb.Append("1. Read the new notes below and the existing cards. Open a file only when a note needs it; read as little as you can.\n");
         sb.Append("2. For each note decide which existing cards it touches, or that a new card is needed. Do not edit any note. A ticket listed under \"Blocked, no reply from him\" has no answer from him: act on the default written on it, and report its bundle under that ticket's slug.\n");
-        sb.Append("3. Group notes in the same domain into ONE work item. Give each work item a slug: lower-case words joined by hyphens, at most ")
+        sb.Append("3. Group notes in the same domain into ONE work item. A note that asks for two separate changes gets one work item for each change, so it gives one ticket for each. Give each work item a slug: lower-case words joined by hyphens, at most ")
             .Append(ContextBundle.MaxSlug).Append(" characters.\n");
         sb.Append("4. For each work item, on branch ").Append(Branch("<work-item-slug>"))
             .Append(" (if it already exists on origin, check it out; otherwise create it from the branch you started on, not the default branch), change only the spec and the bundle:\n");
