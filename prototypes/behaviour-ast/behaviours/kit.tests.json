@@ -1404,13 +1404,20 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_5_after_triage_rewrites_a_malformed_bundle_the_fix_is_recorded_beside_the_ticket" }
   ],
   "BEH-TICKET-6": [
-    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the navbar has one Board link and no feature or spec board in it (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the global top bar links to the epic board and the ticket board, and neither the feature board nor the spec board is linked from it (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the board switch offers the epic board and the ticket board and no feature or spec view (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-EPIC-4 is its own page: /epics opens the epic board, with no switch option standing for it (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "a ticket's feature page still opens from its feature branch (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the feature and spec pages stay reachable by their own URLs after the boards leave the top bar (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/test/ticketBoardSpec.test.ts", "title": "marks the eight cards BEH-TICKET-6 names as to be deleted, with a reason beside each, and removes none (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/test/ticketBoardSpec.test.ts", "title": "BEH-BOARD-10 to BEH-BOARD-21 carry no deletion mark and are still in the corpus (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/test/ticketBoardSpec.test.ts", "title": "BEH-EPIC-4 and BEH-NARR-1 are kept, unmarked (BEH-TICKET-6)" }
+  ],
+  "BEH-NAV-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the global top bar on the epic board page holds only the epic board, the ticket board, the projects list and Settings, with no project views in it (BEH-NAV-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "opening a project shows its views as a tab row beneath the top bar, and the tab for the current page is marked active (BEH-NAV-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the tab row appears on every page under a project (spec, notes, chat, runs, health, settings), and every tab stays inside that project (BEH-NAV-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the project tab row changes only the layout: the project page keeps its heading, its tab row and its behaviours (BEH-NAV-4)" }
   ],
   "BEH-TICKET-7": [
     { "file": "prototypes/behaviour-ast/ui/src/components/Tickets.test.tsx", "title": "still shows a ticket that names no epic, on the ticket board (BEH-TICKET-7)" },

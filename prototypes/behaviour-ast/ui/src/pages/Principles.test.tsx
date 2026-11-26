@@ -65,12 +65,13 @@ describe('Principles', () => {
     expect(fetch.mock.calls.map((c) => c[0] as string).some((p) => p.endsWith('/api/projects/ideas'))).toBe(false)
   })
 
-  it('links Principles from every page (BEH-PRIN-1)', async () => {
-    window.history.pushState({}, '', '/board')
+  it('Principles leaves the top bar, and its page still opens by its URL (BEH-PRIN-1, BEH-NAV-4)', async () => {
+    window.history.pushState({}, '', '/principles')
     mockApi([])
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Principles' })).toHaveAttribute('href', '/principles')
+    expect(within(nav).queryByRole('link', { name: 'Principles' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Principles' })).toBeInTheDocument()
   })
 })

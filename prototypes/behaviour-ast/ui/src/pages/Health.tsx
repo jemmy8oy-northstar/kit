@@ -42,7 +42,7 @@ function orderRows(rows: Row[]): Row[] {
  * BEH-HEALTH-1: the share of behaviours a test names, per project and in total.
  * A project with no reading says "not measured" and why, and stays out of the total.
  */
-export default function Health() {
+export default function Health({ only }: { only?: string } = {}) {
   const projects = useResource(fetchProjects, [])
 
   return (
@@ -53,7 +53,8 @@ export default function Health() {
       </p>
       <ResourceView resource={projects}>
         {({ projects: list }) => {
-          const rows = orderRows(list.filter((p) => !isIdea(p)).map(toRow))
+          // BEH-NAV-4: a project's own health page shows that project's row alone.
+          const rows = orderRows(list.filter((p) => !isIdea(p) && (!only || p.app === only)).map(toRow))
           return (
             <>
               <Total rows={rows} />

@@ -478,6 +478,7 @@ behaviour BEH-BOARD-6 "Review requested comes first: built work the agent wants 
   contract it is how built-and-merged work asks for his eyes without blocking on them
 
 behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never on the board"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-NAV
   in FEAT-BOARD
   source defined kit#284
@@ -491,6 +492,7 @@ behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never
   contract it is off the board and the project list even with trials shown: an idea is not work until it graduates to its own <app>.beh
 
 behaviour BEH-PRIN-1 "Principles have their own page in the navbar: global ones first, then each project's own"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-NAV
   source defined kit#284
   priority 2
@@ -2191,6 +2193,7 @@ feature FEAT-ACTIVITY "Recent activity"
   stage ui
 
 behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest first"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-ACTIVITY
   in FEAT-NAV
   source defined kit.notes.md#2026-10-20-1221
@@ -2212,6 +2215,7 @@ feature FEAT-NOTIFICATIONS "Kit tells him what the agent is doing, and wakes it 
   stage ui
 
 behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest first"
+  review requested conflict with BEH-NAV-4 (kit.beh): built as written, so the top bar holds only the epic board, the ticket board, Projects and Settings and this page keeps its URL with no link. Approve to keep this reading; deny to say the navbar keeps it, and I rebuild to that
   in FEAT-NOTIFICATIONS
   in FEAT-NAV
   source defined kit.notes.md#2026-10-24-1400
@@ -2323,7 +2327,7 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
   contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
 
-behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the board and Settings are global"
+behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the two boards, Projects and Settings are global"
   in FEAT-NAV
   layer ux
   source defined kit.notes.md#2026-11-15-1247
@@ -2335,7 +2339,7 @@ behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views
   then sees region:KitNav
   contract his note (kit.notes.md#2026-11-15-1247): "Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings."
   contract his note (kit.notes.md#2026-11-15-1300): splitting out the projects is his top priority, together with BEH-USERS-12
-  contract my assumption: the global header keeps Projects, the board and Settings. Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
+  contract my assumption: the global header keeps the epic board, the ticket board, Projects and Settings (BEH-NAV-4, kit.beh). Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
   contract my assumption: the global board still shows every project's cards, each labelled with its project, and a project's own board view is the same board filtered to it
 
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
@@ -3734,6 +3738,7 @@ behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and on
   contract my assumption: this card does not decide the pipeline or the data store; it changes what each page is scoped to
   contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
   contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
+  contract superseded by BEH-NAV-4 (kit.beh): the top bar now holds only the epic board, the ticket board, Projects and Settings, so Ideas, Principles, Health, Activity and Chat have no link in it
   contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
 
 behaviour BEH-SPACE-6 "A project's pages share one tab bar, as on GitHub, so its runs, inbox and settings are one tap from each other"
