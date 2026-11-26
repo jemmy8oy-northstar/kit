@@ -79,6 +79,25 @@ describe('the ticket board (BEH-TICKET-1)', () => {
     expect(builds.queryByTestId('blocked-because')).not.toBeInTheDocument()
   })
 
+  it('shows the behaviours a ticket changes as its own list, and a ticket that names none stays in its column, under no behaviour (BEH-TICKET-1)', async () => {
+    renderTickets(
+      [
+        ticket({ slug: 'two', title: 'Changes two', state: 'ready', cards: ['A-1', 'A-2'] }),
+        ticket({ slug: 'none', title: 'Changes none', state: 'ready', cards: [] }),
+      ],
+      { features: [feat('FEAT-ONE')], behaviours: [beh('A-1', ['FEAT-ONE']), beh('A-2', ['FEAT-ONE'])] },
+    )
+    const two = within((await screen.findByText('Changes two')).closest('.board-card') as HTMLElement)
+    const list = two.getByRole('list', { name: 'Specs touched' })
+    expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['A-1', 'A-2'])
+
+    // Removing its list (it names no behaviour) leaves the ticket in its column, not under a behaviour.
+    const none = screen.getByText('Changes none').closest('li') as HTMLElement
+    expect(none.closest('[data-card]')).toBeNull()
+    expect(none.closest('[data-state="ready"]')).not.toBeNull()
+    expect(within(none).queryByRole('list', { name: 'Specs touched' })).not.toBeInTheDocument()
+  })
+
   it('still shows a ticket that names no epic, on the ticket board (BEH-TICKET-7)', async () => {
     renderTickets([ticket({ slug: 'loose', title: 'Names no epic', cards: ['A-1'] })], {
       features: [feat('FEAT-ONE')],
