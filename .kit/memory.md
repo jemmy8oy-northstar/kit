@@ -74,3 +74,9 @@
 - A ticket has no epic field. It names the epics of the features its specs sit in (`epicsOfTicket` in `ui/src/epics.ts`, the BEH-TICKET-7 contract), so an epic's ticket counts are derived in the page, not stored.
 - The feature board (`/stages`) and the spec board (`/board` behaviour list) are out of the navbar and the view switch; the routes still work by URL. The `/board` page still lists behaviour cards under the tickets until the owner answers the spec-board question on BEH-TICKET-6.
 - `ui/src/tickets.ts` and `ui/src/components/Tickets.tsx` do exist, under `prototypes/behaviour-ast/ui/src/`.
+
+## Site navigation (BEH-NAV-4, bundle site-navigation-github-style)
+- The top bar is Epics, Tickets, Projects and Settings: `BoardLinks` in `ui/src/App.tsx`. Ideas, Principles, Health, Activity, Chat and Notifications have no top-bar link now and keep their URLs. BEH-IDEA-1, BEH-PRIN-1, BEH-ACTIVITY-1 and BEH-NOTIFY-1 carry a `review requested` conflict line against BEH-NAV-4; the built reading is BEH-NAV-4.
+- The project tab row is `ProjectNav`. Pages under a project wrap in `InProject` (App.tsx). Chat and the board take the row from their `?project=` query, and only when it names one project. The project overview, runs, inbox and settings render it themselves.
+- `kit.notes.md#2026-11-25-1916`, cited by BEH-NAV-4, is not in kit.notes.md. The card was built from its contracts as written.
+- Integration branch is `dev`, not `main`. A work branch cut from an older dev is missing the BEH-SPACE-6 tab row, so merge `origin/dev` before building on it.

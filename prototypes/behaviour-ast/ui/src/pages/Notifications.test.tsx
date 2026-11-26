@@ -110,12 +110,13 @@ describe('Notifications', () => {
     expect(screen.queryByRole('region', { name: 'Next wake' })).not.toBeInTheDocument()
   })
 
-  it('links Notifications from every page', async () => {
-    window.history.pushState({}, '', '/board')
+  it('Notifications leaves the top bar, and its page still opens by its URL (BEH-NAV-4)', async () => {
+    window.history.pushState({}, '', '/notifications')
     mockApi({ projects: [], entries: [], noHistory: [] })
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Notifications' })).toHaveAttribute('href', '/notifications')
+    expect(within(nav).queryByRole('link', { name: 'Notifications' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Notifications' })).toBeInTheDocument()
   })
 })
