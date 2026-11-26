@@ -195,6 +195,18 @@ public class OrchestrationStageTests
     }
 
     [Fact]
+    public void BEH_ORCH_16_The_triage_task_writes_a_new_card_as_pending_and_sends_a_note_to_the_card_already_sourced_from_it()
+    {
+        // claude-code-bot#151: kit#832 re-carded a 2026-11-15 note whose two pending cards already existed, without a
+        // pending line, so the gate failed for cards nothing built and its fix run was not allowed to say so.
+        var task = TriageStage.BuildTask("kit", Notes, Cards, specPath: "kit.beh").Text;
+
+        Assert.Contains("the lines \"review unreviewed\" and \"pending\"", task);
+        Assert.Contains("Reuse a card already sourced from the note.", task);
+        Assert.True(task.Length <= KitRouter.MaxTask, $"{task.Length} > {KitRouter.MaxTask}");
+    }
+
+    [Fact]
     public void BEH_ORCH_1_The_task_sends_a_note_that_asks_for_nothing_to_the_set_aside_item_with_a_flag()
     {
         var task = TriageStage.BuildTask("kit", Notes, Cards).Text;

@@ -39,7 +39,7 @@ public static class SpecStage
 
         // BEH-ORCH-16 slice 2: the triage already wrote the cards; this stage plans their tests. A bundle written before
         // that may still say "new:", so the old instruction stays for it.
-        sb.Append("3. Read the cards under Cards in the spec at ").Append(specPath).Append(": they are already written. Do not change them; if one is wrong for its notes, say so in a Flag line (step 6). Only when a Cards line still says \"new: <one line>\", add that card shaped like the cards around it, with a new id in the same area, the line \"review unreviewed\" and contract lines starting \"contract my assumption:\", and replace the line in ")
+        sb.Append("3. Read the cards under Cards in the spec at ").Append(specPath).Append(": they are already written. Do not change them; if one is wrong for its notes, say so in a Flag line (step 6). Only when a Cards line still says \"new: <one line>\", add that card shaped like the cards around it, with a new id in the same area, the lines \"review unreviewed\" and \"pending\" and contract lines starting \"contract my assumption:\", and replace the line in ")
             .Append(path).Append(" with its id.\n");
         sb.Append("4. In ").Append(path).Append(", at the end of Context add a line \"")
             .Append(TestPlanHeading).Append("\" and under it one \"- \" line per test: the card id, then what the test checks.\n");
