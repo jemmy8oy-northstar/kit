@@ -100,9 +100,9 @@ public static class TriageStage
         var sb = new StringBuilder();
         sb.Append("You are the triage stage for project \"").Append(project).Append("\". Your job is to turn notes into a spec change and collect context, not to write tests or code.\n\n");
         sb.Append("Steps:\n");
-        sb.Append("1. Read the new notes below and the existing cards. Open a file only when a note needs it; read as little as you can.\n");
+        sb.Append("1. Read the new notes below and the existing cards. Open a file only when a note needs it.\n");
         sb.Append("2. For each note decide which existing cards it touches, or that a new card is needed. Do not edit any note. A ticket listed under \"Blocked, no reply from him\" has no answer from him: act on the default written on it, and report its bundle under that ticket's slug.\n");
-        sb.Append("3. Group notes in the same domain into ONE work item. A note that asks for two separate changes gets one work item for each change, so it gives one ticket for each. Give each work item a slug: lower-case words joined by hyphens, at most ")
+        sb.Append("3. Group notes in the same domain into ONE work item. A note that asks for two separate changes gets one work item for each change. Give each work item a hyphenated, lower-case slug of at most ")
             .Append(ContextBundle.MaxSlug).Append(" characters.\n");
         sb.Append("4. For each work item, on branch ").Append(Branch("<work-item-slug>"))
             .Append(" (if it already exists on origin, check it out; otherwise create it from the branch you started on, not the default branch), change only the spec and the bundle:\n");
@@ -115,7 +115,7 @@ public static class TriageStage
         }
 
         sb.Append("5. Commit and push each branch to origin, then STOP. Do not start any other work and do not open a pull request.\n");
-        sb.Append("   Your turns are few: do each work item's checkout, spec edit, bundle write, commit and push in as few shell commands as you can, and push each before reading for the next. An unpushed change is lost.\n\n");
+        sb.Append("   Your turns are few: do each work item's checkout, spec edit, bundle write, commit and push in as few shell commands as you can; push each before reading on. An unpushed change is lost.\n\n");
         sb.Append("A bundle has exactly this shape (sections in this order, every list item on its own \"- \" line):\n\n```\n");
         sb.Append("# <short title>\nWork-item: <work-item-slug>\nCards:\n- <card id such as BEH-ORCH-1>\nNotes:\n- <source ref of each note it came from>\nFiles:\n- <repo path a builder will need>\nContext:\n<what a builder needs to know, so it need not search again>\n");
         sb.Append("```\n");
