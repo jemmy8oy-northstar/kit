@@ -587,6 +587,7 @@ behaviour BEH-TICKET-6 "Kit has two boards, the epic board and the ticket board,
   contract my assumption: delete these kit-ui.beh cards too, because they place features on the retired feature board: BEH-STAGE-10 and BEH-STAGE-11; they are not edited here, and a builder removes them only after the owner confirms this list
   contract my assumption: BEH-BOARD-10 to BEH-BOARD-21 are left untouched, because they rank and badge the spec board's columns; their fate is decided after the owner confirms the list above
   contract my assumption: BEH-EPIC-4 (kit-ui.beh) is the epic board's own page, not a third option on the BEH-STAGE-8 switch, because BEH-STAGE-8 is to be deleted
+  contract my assumption: the global top bar links to the epic board and the ticket board only, the feature and spec boards are not in it, and the layout is as BEH-NAV-4 says
 
 behaviour BEH-TICKET-7 "A ticket names the epics it progresses toward, and may touch many features and specs"
   source defined kit.notes.md#2026-11-23-2255
@@ -609,3 +610,17 @@ behaviour BEH-TICKET-8 "Each open epic shows its status toward the goal, counted
   contract my assumption: an epic's status is counted from the tickets that name it, in the states new, ready, planned, built, blocked and done
   contract my assumption: the project's goal is its first open epic, as BEH-NARR-1 already says, and the epic board shows that goal first
   contract my assumption: a blocked ticket is counted once, in the state it is in; the blocked count is shown beside the states and is not added to them, and a stopped ticket is counted in no state
+
+behaviour BEH-NAV-4 "The site follows GitHub's layout: a global top bar, and a row of tabs under each project for its own views"
+  source defined kit.notes.md#2026-11-25-1916
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: the top bar holds only global links (the epic board, the ticket board, the projects list and Settings), as GitHub's top bar holds only global places
+  contract my assumption: opening a project shows its views as a tab row beneath the top bar, as GitHub shows a repository's tabs, and the active tab is marked
+  contract my assumption: the tab row appears on every page under that project, so the project's views are reached without going back to the board
+  contract my assumption: this changes the layout only; no page's content or card changes, and BEH-NAV-1 to BEH-NAV-3 in kit-ui.beh are to be reconciled with this card by a builder after the owner confirms
+  contract built (ui/src/App.tsx, ui/src/components/ProjectNav.tsx, ui/src/components/BoardViews.tsx): the top bar holds Epics, Tickets, Projects and Settings; the project tab row (Overview, Chat, Inbox, Board, Runs, Health, Notes, Settings) sits above each page under a project, and the health page shows that project alone
+  review requested conflict with BEH-IDEA-1, BEH-PRIN-1, BEH-ACTIVITY-1 and BEH-NOTIFY-1 in kit-ui.beh, which put their pages in the navbar: built this card as written, so those four pages keep their URLs and have no link in the top bar. Approve to keep this reading; deny to say which of them stay in the top bar, and I rebuild to that

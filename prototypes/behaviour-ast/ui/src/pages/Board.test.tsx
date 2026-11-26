@@ -1222,11 +1222,11 @@ describe('navbar', () => {
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
   })
 
-  it('switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)', async () => {
+  it('switches between the epic board and the ticket board, with the top bar link for the page you are on current (BEH-STAGE-8, BEH-EPIC-4)', async () => {
     window.history.pushState({}, '', '/board')
     vi.stubGlobal(
       'fetch',
@@ -1241,14 +1241,14 @@ describe('navbar', () => {
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).queryByRole('link', { name: 'Stages' })).not.toBeInTheDocument()
     const views = screen.getByRole('navigation', { name: 'Board view' })
     expect(within(views).getByRole('link', { name: 'Tickets' })).toHaveAttribute('aria-current', 'page')
     fireEvent.click(within(views).getByRole('link', { name: 'Epics' }))
     expect(await screen.findByRole('region', { name: 'Epics' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/epics')
-    expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Epics' })).toHaveAttribute('aria-current', 'page')
     // BEH-TICKET-6: the feature and spec views are no longer switch options.
     expect(
       within(screen.getByRole('navigation', { name: 'Board view' }))
@@ -1257,7 +1257,7 @@ describe('navbar', () => {
     ).toEqual(['Epics', 'Tickets'])
   })
 
-  it('links Ideas from every page, to the Ideas project (BEH-IDEA-1)', async () => {
+  it('Ideas leaves the top bar, and the Ideas project still opens at its URL (BEH-IDEA-1, BEH-NAV-4)', async () => {
     window.history.pushState({}, '', '/board')
     vi.stubGlobal(
       'fetch',
@@ -1272,7 +1272,8 @@ describe('navbar', () => {
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Ideas' })).toHaveAttribute('href', '/projects/ideas')
+    expect(within(nav).queryByRole('link', { name: 'Ideas' })).not.toBeInTheDocument()
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Epics', 'Tickets', 'Projects', 'Settings'])
   })
 })
 

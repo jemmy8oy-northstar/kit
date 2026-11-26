@@ -58,7 +58,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "is Done only with behaviours beneath it, every one done on the behaviour board (BEH-STAGE-12)" }
   ],
   "BEH-STAGE-8": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with the top bar link for the page you are on current (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-BOARD-10": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "takes each project in turn within one priority, so equal scores never read as a block of one project (BEH-BOARD-10)" }
@@ -218,14 +218,14 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps every card when a history cannot be read, says so, and puts them after the dated ones" }
   ],
   "BEH-IDEA-1": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "links Ideas from every page, to the Ideas project (BEH-IDEA-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "Ideas leaves the top bar, and the Ideas project still opens at its URL (BEH-IDEA-1, BEH-NAV-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps the Ideas file off the board, even when trials are shown (BEH-IDEA-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "leaves the Ideas file off the project list: ideas are not projects yet (BEH-IDEA-1)" }
   ],
   "BEH-PRIN-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "lists global principles first, then each project with its own (BEH-PRIN-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "never reads the Ideas file for principles (BEH-PRIN-1)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "links Principles from every page (BEH-PRIN-1)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "Principles leaves the top bar, and its page still opens by its URL (BEH-PRIN-1, BEH-NAV-4)" }
   ],
   "BEH-BOARD-7": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)" }
@@ -326,7 +326,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows an epic its tagged features, linked, and their behaviours built out of total at any depth (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "lists a feature tagged three levels down, and not the untagged parents above it (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "lists a feature tagged into an epic with no behaviours, and reads 0 of 0 built (BEH-EPIC-4)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with the top bar link for the page you are on current (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-EPIC-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows the epic its title, id and project, its behaviours built out of total, and its features linked (BEH-EPIC-8)" },
@@ -647,7 +647,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 leaves the navigation entry of a feature that is off for testers out of their bar" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows the same feature in his bar when it is on for him" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 answers a direct visit to a switched-off page with a short message, not the page" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 hides a board view that is off and leaves the epic board in the top bar" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard" }
   ],
   "BEH-ARCH-3": [
@@ -906,7 +906,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "BEH-SPACE-6 hides the Runs tab from a signed-in account that is not the operator, and shows it to the operator" }
   ],
   "BEH-SPACE-5": [
-    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 keeps Projects, Notifications and Settings in the main navigation, and not the Inbox or Runs" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 keeps Projects and Settings in the main navigation, and not the Inbox or Runs" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has an Inbox, Runs and Settings tab beside its chat and board, each on its own project page" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "does not render the global Settings or Notifications on a project page" },
