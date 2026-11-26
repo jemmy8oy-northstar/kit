@@ -518,6 +518,7 @@ behaviour BEH-ROUTE-1 "A backlog item is found by a cheap check, and triage skip
   when runs command:KitTriage
   then reports triage:Skipped
   review unreviewed
+  pending
   contract my assumption: the check reads the item's own card and its backlog state only, with no model call, so finding it costs nothing
   contract my assumption: an item not yet in the backlog still goes through triage in full
   contract my assumption: triage stays on the hook, a note or a chat message, as he asked (kit.notes.md#2026-11-08 22:06Z); the check only decides whether a backlog item skips it
