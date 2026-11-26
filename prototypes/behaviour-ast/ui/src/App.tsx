@@ -16,6 +16,7 @@ import Inbox from './pages/Inbox'
 import Chat from './pages/Chat'
 import Notifications from './pages/Notifications'
 import Settings, { GitHubReturn, ProjectSettings } from './pages/Settings'
+import ProjectNav from './components/ProjectNav'
 import SignIn from './components/SignIn'
 import NoteFab from './components/NoteFab'
 import PullToRefresh from './components/PullToRefresh'
@@ -39,13 +40,23 @@ function FeatureNavLink({ feature }: { feature: string }) {
 /** BEH-SPACE-5: one project's inbox, the global Inbox filtered to that project; switching project remounts it. */
 function ProjectInbox() {
   const { app = '' } = useParams()
-  return <Inbox only={app} />
+  return (
+    <>
+      <ProjectNav app={app} />
+      <Inbox only={app} />
+    </>
+  )
 }
 
 /** BEH-SPACE-5: one project's runs, the runs and pipeline items of that project alone. */
 function ProjectRuns() {
   const { app = '' } = useParams()
-  return <Runs only={app} />
+  return (
+    <>
+      <ProjectNav app={app} />
+      <Runs only={app} />
+    </>
+  )
 }
 
 export default function App() {

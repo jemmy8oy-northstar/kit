@@ -392,6 +392,94 @@ public class RunnerScriptTests
         Assert.Equal("claude exit 3\n", File.ReadAllText(failure));
     }
 
+    // BEH-ORCH-21: a run that ended on the subscription's usage limit reports when it resets, and only that, so Kit
+    // waits for it instead of counting the run failed. claude's final message, or its stderr, says so.
+    private static string LimitFailure(string resultText, int claudeExit = 1, string? stderr = null)
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(System.Text.Json.JsonSerializer.Serialize(new { type = "result", is_error = true, result = resultText }), claudeExit);
+        if (stderr is not null)
+        {
+            File.WriteAllText(Path.Combine(rig.Rec, "claude.err"), stderr);
+            Executable(Path.Combine(rig.Bin, "claude"),
+                "#!/bin/sh",
+                "cat '" + Path.Combine(rig.Rec, "claude.json") + "'",
+                "cat '" + Path.Combine(rig.Rec, "claude.err") + "' >&2",
+                "exit " + claudeExit);
+        }
+
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+        rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+        return File.ReadAllText(failure);
+    }
+
+    private static DateTimeOffset ResetIn(string failure)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(failure, "^limit exit [0-9]+ resets ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)\n$");
+        Assert.True(m.Success, failure);
+        return UsageLimit.ResetOf(failure.TrimEnd('\n')) ?? throw new Xunit.Sdk.XunitException($"Kit would not read {failure}");
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_The_classic_limit_message_reports_its_epoch_as_the_reset()
+    {
+        Assert.Equal("limit exit 1 resets 2026-11-24T19:46:40Z\n", LimitFailure("Claude AI usage limit reached|1795549600"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_A_limit_on_stderr_with_an_ISO_time_is_read_and_given_seconds()
+    {
+        Assert.Equal("limit exit 1 resets 2026-11-25T13:00:00Z\n", LimitFailure("", stderr: "API Error: usage limit; limit will reset at 2026-11-25T13:00Z\n"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_A_clock_alone_is_the_next_time_that_clock_comes_round()
+    {
+        var at = ResetIn(LimitFailure("You've hit your session limit · resets 1:50pm (UTC)"));
+        Assert.Equal((13, 50), (at.UtcDateTime.Hour, at.UtcDateTime.Minute));
+        Assert.InRange(at - DateTimeOffset.UtcNow, TimeSpan.FromMinutes(-3), TimeSpan.FromHours(24));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_A_weekly_limit_with_a_date_resets_on_that_date_not_today()
+    {
+        var at = ResetIn(LimitFailure("You've hit your weekly limit · resets Aug 19, 1pm (UTC)"));
+        Assert.Equal((8, 19, 13, 0), (at.UtcDateTime.Month, at.UtcDateTime.Day, at.UtcDateTime.Hour, at.UtcDateTime.Minute));
+        Assert.True(at > DateTimeOffset.UtcNow.AddDays(-1));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_A_limit_with_no_time_waits_half_an_hour()
+    {
+        var at = ResetIn(LimitFailure("You've hit your session limit"));
+        Assert.InRange(at - DateTimeOffset.UtcNow, TimeSpan.FromMinutes(25), TimeSpan.FromMinutes(31));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_An_error_result_that_exited_0_on_the_limit_reports_it_at_its_exit_code()
+    {
+        Assert.Equal("limit exit 3 resets 2026-11-24T19:46:40Z\n", LimitFailure("Claude AI usage limit reached|1795549600", claudeExit: 0));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_A_run_that_worked_while_talking_about_the_usage_limit_writes_no_failure()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"Fixed limit_reset: usage limit reached|1795549600\"}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.False(File.Exists(failure));
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_A_failure_that_is_not_the_limit_stays_the_claude_step()
+    {
+        Assert.Equal("claude exit 1\n", LimitFailure("Error: the build broke"));
+    }
+
     // BEH-ORCH-1: no triage pushed a bundle after the 15-turn limit went live. Running out of turns can still exit 0.
     [Fact]
     public void BEH_ORCH_1_An_agent_that_ran_out_of_turns_but_exited_0_fails_the_run_at_the_turns_step()
@@ -674,20 +762,32 @@ public class RunnerScriptTests
     }
 
     [Fact]
-    public void A_bundle_over_8000_bytes_is_withheld_as_null()
+    public void A_bundle_over_16000_bytes_is_withheld_as_null()
     {
         using var rig = new Rig();
-        var file = Bundles_(rig, ["mk big \"$(head -c 9000 /dev/zero | tr '\\0' a)\"", "mk small ok"], out var r);
+        var file = Bundles_(rig, ["mk big \"$(head -c 17000 /dev/zero | tr '\\0' a)\"", "mk small ok"], out var r);
 
         Assert.True(r.Status == 0, r.Stderr);
         Assert.Equal([("big", (string?)null), ("small", "ok")], rig.Bundles(file));
     }
 
     [Fact]
+    public void A_12000_byte_bundle_is_sent_whole()
+    {
+        // claude-code-bot#152: the backlog bundle reached 11.7KB and was withheld under the old 8000 cap.
+        using var rig = new Rig();
+        var file = Bundles_(rig, ["mk backlog \"$(head -c 12000 /dev/zero | tr '\\0' a)\""], out var r);
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var got = Assert.Single(rig.Bundles(file));
+        Assert.Equal(12000, got.Text?.Length);
+    }
+
+    [Fact]
     public void Bundles_past_48000_bytes_in_total_have_the_later_ones_withheld()
     {
         using var rig = new Rig();
-        // Each is ~7930 bytes as sent, under the 8000 each-limit; six fit in 48000, the seventh does not.
+        // Each is ~7930 bytes as sent, under the 16000 each-limit; six fit in 48000, the seventh does not.
         var setup = Enumerable.Range(1, 7).Select(i => $"mk b{i} \"$(head -c 7900 /dev/zero | tr '\\0' a)\"").ToArray();
         var file = Bundles_(rig, setup, out var r);
 

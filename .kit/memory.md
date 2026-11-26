@@ -57,3 +57,17 @@
 - The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
 - Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.
 - The bundle called the Inbox assertion "in Project.test.tsx"; the main-navigation Inbox assertions were in `FeatureGate.test.tsx`.
+
+## Feature folders under .kit/features (BEH-PARSE-5/6, bundle kit-feature-folder-layout)
+- Superseded by claude-code-bot#151 slice 2 (docs/design/feature-tree.md). The one reader is `backend/Balenthiran.Kit.Database/FeatureTree.cs`: it composes `.kit/project.kit` and `.kit/features/**` into ONE corpus text (each file after a `# kit:file <path>` line, which the parser reads so every location names the real file and line), and `Changes` splits an edited text back into the files it changed. `CorpusDirectory`, `GitHubCorpusDirectory` and `kit check --dir <repo>/.kit` all use it; with no `.kit` file under `features/`, everything reads the flat `<app>.beh` exactly as before.
+- A folder's feature id is `FEAT-` plus its name upper-cased (`features/notes/` is `FEAT-NOTES`). A card's own `in FEAT-X` lines are its tags. Every card must be `in` its folder's feature; a nested folder's README must carry `in FEAT-<PARENT>` (`MissingParentTag`). A README's first `#` heading is the feature's title; its `in FEAT-X` / `stage x` lines are the feature's fields.
+- A new card is written to `<folder of its first in>/<area>.kit` (`BEH-NOTE-3` → `note.kit`); one with no `in` is refused, not guessed. Tests sit beside cards in `<name>.tests.json` and are merged into one map.
+- `CorpusParseException` has a `Refusal` name (`BadFeatureTag`, `MissingParentTag`) for the cards to name. The three existing BEH-PARSE-2 refusals in `CorpusParser.cs` carry `BadFeatureTag`.
+- **kit.beh BEH-PARSE-3 header lost its space** in fd373305 (`behaviour BEH-PARSE-3"A priority…`). A `behaviour` line needs whitespace before the quote, or `Every_committed_corpus_parses` fails the whole suite. Restored to main's text.
+- UI job here: `npm ci && npm run lint && npm run build && npm test` in `prototypes/behaviour-ast/ui`, 648 passed on 2026-11-24.
+## Ticket board and epic board (BEH-TICKET-6 to 8, bundle ticket-board-only-model)
+- The gate reads test titles as literal strings. A title built from `it.each` or a template string is not found, so `check kit-ui` fails with "has no test titled ...". Give each mapped test a literal title.
+- When a test title is renamed, check `kit-ui.tests.json` for every card that maps to it. BEH-STAGE-8 and BEH-EPIC-4 share one title, and the gate names only the first missing one.
+- A ticket has no epic field. It names the epics of the features its specs sit in (`epicsOfTicket` in `ui/src/epics.ts`, the BEH-TICKET-7 contract), so an epic's ticket counts are derived in the page, not stored.
+- The feature board (`/stages`) and the spec board (`/board` behaviour list) are out of the navbar and the view switch; the routes still work by URL. The `/board` page still lists behaviour cards under the tickets until the owner answers the spec-board question on BEH-TICKET-6.
+- `ui/src/tickets.ts` and `ui/src/components/Tickets.tsx` do exist, under `prototypes/behaviour-ast/ui/src/`.

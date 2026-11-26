@@ -59,6 +59,12 @@ public static class TriageStage
     public static bool IsMalformed(PipelineTicket ticket) =>
         ticket.StoppedBecause?.StartsWith(MalformedPrefix, StringComparison.Ordinal) == true;
 
+    /// <summary>
+    /// Most characters a bundle may have, as the task tells the agent. The runner withholds a bundle over 16000 JSON-escaped
+    /// bytes and Kit then stops its ticket (claude-code-bot#152), so this stays well under that, leaving room for escaping.
+    /// </summary>
+    public const int MaxBundleChars = 10000;
+
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
 
@@ -113,6 +119,8 @@ public static class TriageStage
         sb.Append("A bundle has exactly this shape (sections in this order, every list item on its own \"- \" line):\n\n```\n");
         sb.Append("# <short title>\nWork-item: <work-item-slug>\nCards:\n- <card id such as BEH-ORCH-1>\nNotes:\n- <source ref of each note it came from>\nFiles:\n- <repo path a builder will need>\nContext:\n<what a builder needs to know, so it need not search again>\n");
         sb.Append("```\n");
+        sb.Append("Keep every bundle under ").Append(MaxBundleChars.ToString("N0", System.Globalization.CultureInfo.InvariantCulture))
+            .Append(" characters: Kit cannot read a longer one and stops its ticket. When updating a bundle, shorten Context rather than letting it grow.\n");
         sb.Append("If you are unsure of your assessment, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. ").Append(FlagLevels.Guidance).Append(" Every note must appear in exactly one bundle.\n");
         sb.Append("A note that asks for nothing (a test, an empty or accidental note) goes in the work item \"").Append(SetAside)
             .Append("\" with a Flag line saying why and the one card line \"new: nothing to build\". It is not built and its spec is not edited: a person looks at it later.\n");

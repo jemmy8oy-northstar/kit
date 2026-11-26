@@ -58,7 +58,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "is Done only with behaviours beneath it, every one done on the behaviour board (BEH-STAGE-12)" }
   ],
   "BEH-STAGE-8": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-BOARD-10": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "takes each project in turn within one priority, so equal scores never read as a block of one project (BEH-BOARD-10)" }
@@ -324,7 +324,7 @@
   "BEH-EPIC-4": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows a card per epic in every real project, coloured by project (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows an epic its tagged features, linked, and their behaviours built out of total at any depth (BEH-EPIC-4)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-EPIC-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows the epic its title, id and project, its behaviours built out of total, and its features linked (BEH-EPIC-8)" },
@@ -895,10 +895,16 @@
   "BEH-SPACE-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
   ],
+  "BEH-SPACE-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-6 the project runs page carries the project tab bar, with that page current" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-6 the project inbox page carries the project tab bar, with that page current" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-6 the project settings page carries the project tab bar, with that page current" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "BEH-SPACE-6 hides the Runs tab from a signed-in account that is not the operator, and shows it to the operator" }
+  ],
   "BEH-SPACE-5": [
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 keeps Projects, Notifications and Settings in the main navigation, and not the Inbox or Runs" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-SPACE-5 reaches the all-projects Inbox from the entry page, not from the main navigation" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has Its inbox, Its runs and Its settings beside its chat and board, each on its own project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has an Inbox, Runs and Settings tab beside its chat and board, each on its own project page" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "does not render the global Settings or Notifications on a project page" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lists only that project's cards, and another project's waiting card is not in it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "switching to another project shows that project's cards, with no filter from the last one left in the address" },
@@ -1018,6 +1024,26 @@
   "BEH-ORCH-20": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one" }
+  ],
+  "BEH-ORCH-21": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_build_run_that_meets_the_usage_limit_spends_no_try_and_nothing_starts_until_the_reset" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_ticket_that_meets_the_limit_more_than_three_times_in_a_row_spends_a_try_and_does_not_pause" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_triage_that_meets_the_usage_limit_reads_the_same_notes_after_the_reset" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_fix_run_that_meets_the_usage_limit_is_not_counted_and_the_look_after_the_reset_starts_it_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_at_the_reset_a_ticket_a_run_blocked_gets_one_more_go" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_restart_during_the_pause_keeps_it_from_the_failed_runs_record" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_21_a_reset_already_past_still_pauses_a_minute_and_a_day_far_off_at_most_eight" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_21_A_failed_report_may_say_it_met_the_usage_limit_and_when_that_resets" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_21_Only_a_real_reset_time_makes_a_failure_a_usage_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_The_classic_limit_message_reports_its_epoch_as_the_reset" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_limit_on_stderr_with_an_ISO_time_is_read_and_given_seconds" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_clock_alone_is_the_next_time_that_clock_comes_round" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_weekly_limit_with_a_date_resets_on_that_date_not_today" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_limit_with_no_time_waits_half_an_hour" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_An_error_result_that_exited_0_on_the_limit_reports_it_at_its_exit_code" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_run_that_worked_while_talking_about_the_usage_limit_writes_no_failure" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_21_A_failure_that_is_not_the_limit_stays_the_claude_step" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-21 says the pipeline is paused for the usage limit and when it resumes, and nothing when it is not" }
   ],
   "BEH-ORCH-14": [
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },

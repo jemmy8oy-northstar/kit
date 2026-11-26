@@ -248,6 +248,18 @@
         ],
         "on": "2026-11-05"
       }
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_2_a_kit_or_readme_in_a_feature_folder_whose_in_names_no_feature_is_refused_naming_its_file_and_line"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_2_a_folder_child_whose_in_makes_its_feature_its_own_ancestor_is_refused_naming_its_line"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_2_a_feature_id_declared_by_two_folders_or_by_a_folder_and_a_kit_file_is_refused_naming_both"
     }
   ],
   "BEH-PARSE-3": [
@@ -355,6 +367,46 @@
         ],
         "on": "2026-11-05"
       }
+    }
+  ],
+  "BEH-PARSE-5": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_5_a_kit_and_a_readme_under_feature_folders_parse_to_features_reported_from_folders"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_5_a_readme_is_the_feature_description_and_is_never_parsed_as_a_spec"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_5_an_empty_folder_under_features_is_skipped_and_does_not_fail_the_parse"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_5_a_folder_holding_only_child_folders_is_a_feature_and_its_child_features_parse"
+    }
+  ],
+  "BEH-PARSE-6": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_6_a_kit_file_under_a_feature_folder_with_no_in_line_is_refused_naming_the_file"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_6_a_readme_under_a_feature_folder_with_no_in_line_is_refused_naming_the_file"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_6_a_kit_file_whose_only_in_names_a_feature_other_than_its_parent_is_refused_naming_the_file"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_6_a_child_that_tags_its_parent_and_another_feature_parses_and_the_extra_tag_is_display_only"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureFolderTests.cs",
+      "title": "BEH_PARSE_6_a_missing_parent_tag_fails_the_check_with_a_non_zero_exit_as_a_behaviour_with_no_test_does"
     }
   ],
   "BEH-IDEA-API-1": [
@@ -1322,7 +1374,11 @@
   "BEH-TICKET-1": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_a_ticket_on_the_board_shows_its_status_and_open_questions_and_no_spec_text" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_the_spec_of_a_change_is_read_from_that_changes_feature_branch" },
-    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_two_changes_give_two_tickets_each_on_its_own_feature_branch" }
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_two_changes_give_two_tickets_each_on_its_own_feature_branch" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tickets.test.tsx", "title": "shows each ticket with its status and its open question (BEH-TICKET-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the board page keeps its ticket view and the navbar has no Features link (BEH-TICKET-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "draws each ticket inside the tickets region and no ticket inside a behaviour card (BEH-TICKET-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tickets.test.tsx", "title": "shows the behaviours a ticket changes as its own list, and a ticket that names none stays in its column, under no behaviour (BEH-TICKET-1)" }
   ],
   "BEH-TICKET-2": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_2_a_note_reaches_triage_and_makes_a_ticket_in_the_new_state" },
@@ -1353,6 +1409,28 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_5_a_well_formed_bundle_is_not_listed_as_malformed_and_its_build_run_starts_as_before" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_5_triage_rewrites_a_malformed_bundle_so_that_it_parses_keeps_its_cards_and_notes_and_puts_each_item_on_its_own_line" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_5_after_triage_rewrites_a_malformed_bundle_the_fix_is_recorded_beside_the_ticket" }
+  ],
+  "BEH-TICKET-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the navbar has one Board link and no feature or spec board in it (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the board switch offers the epic board and the ticket board and no feature or spec view (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "BEH-EPIC-4 is its own page: /epics opens the epic board, with no switch option standing for it (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "a ticket's feature page still opens from its feature branch (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "a spec a ticket names still has its page, opened by its id (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lists each open ticket once, in its state column, and flags each blocked one (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/test/ticketBoardSpec.test.ts", "title": "marks the eight cards BEH-TICKET-6 names as to be deleted, with a reason beside each, and removes none (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/test/ticketBoardSpec.test.ts", "title": "BEH-BOARD-10 to BEH-BOARD-21 carry no deletion mark and are still in the corpus (BEH-TICKET-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/test/ticketBoardSpec.test.ts", "title": "BEH-EPIC-4 and BEH-NARR-1 are kept, unmarked (BEH-TICKET-6)" }
+  ],
+  "BEH-TICKET-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tickets.test.tsx", "title": "still shows a ticket that names no epic, on the ticket board (BEH-TICKET-7)" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tickets.test.tsx", "title": "lists every feature its specs sit in, and every spec it touches (BEH-TICKET-7)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "counts a ticket toward each epic it names, through the features its specs sit in (BEH-TICKET-7)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "counts a ticket that names no epic toward no epic (BEH-TICKET-7)" }
+  ],
+  "BEH-TICKET-8": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "counts each open epic’s tickets by state, a blocked ticket once in the state it is in (BEH-TICKET-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "computing the status opens no feature or spec page (BEH-TICKET-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows a project's first open epic first, as its goal (BEH-TICKET-8)" }
   ],
   "BEH-KEEP-1": [
     {
