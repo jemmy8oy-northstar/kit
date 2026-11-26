@@ -3,8 +3,6 @@ Work-item: spec-moves-to-project-kit-dir
 Flag: this changes where Kit keeps each project's spec and how it finds projects, so the owner should check it; BEH-USERS-2, BEH-USERS-3 and BEH-LIST-1 each say the .beh-anywhere fallback holds "until BEH-USERS-12 lands", which the Review line and Context's Fallback end rule both rule out, so those three cards need the owner's word before the fallback is dropped (level: high)
 Review: revised — the .beh-anywhere fallback must not end with BEH-USERS-12 alone, since BEH-USERS-3 still starts user repos at behaviours/<name>.beh; added that to Context and Test plan
 Cards:
-- BEH-PROJ-1
-- BEH-PROJ-2
 - BEH-USERS-12
 - BEH-USERS-2
 - BEH-LIST-1
@@ -15,7 +13,6 @@ Notes:
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-04 18:07Z
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-04 18:08Z
 Files:
-- prototypes/behaviour-ast/behaviours/kit.beh (new BEH-PROJ-1 and BEH-PROJ-2)
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md
 Context:
@@ -41,8 +38,8 @@ Built:
 - BEH-USERS-2: A_repo_with_neither_a_kit_dir_holding_a_beh_file_nor_any_beh_file_is_not_listed (UserProjectsTests.cs)
 - The four BEH-USERS-2 tests above passed on the code already on this branch: UserProjects.cs already lists any .beh on the default branch, which covers .kit/ and the fallback. No C# change was needed for detection, so these tests did not fail first.
 - Test plan items 4, 5 and 6 were not written again: existing tests cover them (GitHubCorpusDirectoryTests "A_project_moved_into_its_own_repos_kit_dir_is_read_from_there_not_twice", GitHubCorpusDirectoryTests "A_write_to_a_moved_project_goes_to_its_own_repo_not_the_clone", GitHubCorpusReaderTests "A_refused_put_says_whether_it_was_stale", Projects.test.tsx "reports a corpus that will not parse"). They pass in the runs below.
-- Fix: BEH-PROJ-1 and BEH-PROJ-2 moved from kit.beh to kit-ui.beh, beside BEH-LIST-1. They name FEAT-PROJECTS, which only kit-ui.beh defines, and CommittedArtefactTests "Every_committed_corpus_parses" failed on kit.beh:371 for that reason. Placement is a choice I made (level: low).
+- Fix (fix stage, 2026-11-26): the two cards this branch added in kit-ui.beh were deleted, because each repeats a card already in the spec, from the same note (kit.notes.md#2026-11-15-1247). BEH-PROJ-1 repeats BEH-ORCH-15 ("The pipeline is switched on and off per project, and starts off for every project except kit", pending). BEH-PROJ-2 repeats BEH-NAV-3 ("Projects are separate, like GitHub repos: a project's views sit under that project, and only the two boards, Projects and Settings are global", pending). The kit-ui gate failed on both as "no test names this behaviour". The existing cards stand, unchanged.
 - Backend, `dotnet test backend/Balenthiran.Kit.Tests` (.NET 10 SDK installed for this run, DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1): 1,997 tests ran, 1,994 passed, 3 failed. All three are this sandbox, not the change: ClaimerSidecarTests "A_claim_never_reported_is_reported_failed_when_the_pod_is_stopped" (no `kill` binary), ReportConformanceTests "Report_reproduces_Node_on_the_branches_the_goldens_miss" and "Globalization_is_ICU_so_locale_order_is_reachable" (ICU missing, so ordinal sort). They need a machine with ICU and `kill` to confirm.
 - UI, `npx vitest run` in prototypes/behaviour-ast/ui: 49 files, 561 tests, all passed.
 
-2026-11-16 update: notes of 2026-11-15 12:47Z (two) and 13:00Z add the per-project pipeline switch and the global board and settings (BEH-PROJ-1 and BEH-PROJ-2, new cards, now in kit-ui.beh beside BEH-LIST-1), and say notes move with the spec (BEH-USERS-12 gains that contract line in kit-ui.beh). Unsure whether BEH-PROJ-1 and -2 belong in kit.beh, which is the command-line layer, or in kit-ui.beh (level: low). The 12:47Z note names no existing card for the pipeline switch, so BEH-PROJ-1 is new rather than a change to an existing card (level: low).
+2026-11-16 update: notes of 2026-11-15 12:47Z (two) and 13:00Z add the per-project pipeline switch and the global board and settings, which are already carried by BEH-ORCH-15 and BEH-NAV-3 (pending), so no new cards were added for them. The notes say notes move with the spec: BEH-USERS-12 gains that contract line in kit-ui.beh.
