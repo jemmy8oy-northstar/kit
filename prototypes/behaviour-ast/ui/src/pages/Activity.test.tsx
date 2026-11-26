@@ -91,12 +91,13 @@ describe('Activity', () => {
     expect(screen.queryByRole('region', { name: 'No history here' })).not.toBeInTheDocument()
   })
 
-  it('links Activity from every page', async () => {
-    window.history.pushState({}, '', '/board')
+  it('Activity leaves the top bar, and its page still opens by its URL (BEH-NAV-4)', async () => {
+    window.history.pushState({}, '', '/activity')
     mockApi({ projects: [], entries: [], noHistory: [] })
     render(<App />)
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
-    expect(within(nav).getByRole('link', { name: 'Activity' })).toHaveAttribute('href', '/activity')
+    expect(within(nav).queryByRole('link', { name: 'Activity' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Activity' })).toBeInTheDocument()
   })
 })
