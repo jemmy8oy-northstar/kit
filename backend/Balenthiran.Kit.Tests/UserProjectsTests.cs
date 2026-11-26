@@ -42,6 +42,56 @@ public class UserProjectsTests
         Assert.All(gh.Sent, s => Assert.Equal("Bearer ghs_user", s.Authorization));
     }
 
+    /// <summary>BEH-USERS-2 (spec-moves-to-project-kit-dir): a repo whose default branch has a .kit/ holding a .beh file is a project, and its corpus is that file.</summary>
+    [Fact]
+    public async Task A_repo_whose_kit_dir_holds_a_beh_file_is_listed_as_a_project()
+    {
+        var gh = new Repos()
+            .Repo("ann-gh/snip-it", "main", ".kit/snip-it.beh", ".kit/snip-it.notes.md", "README.md");
+
+        var one = Assert.Single(await Reader(gh).ProjectsAsync(42));
+
+        Assert.Equal(("snip-it", "ann-gh/snip-it"), (one.Name, one.FullName));
+        Assert.Equal([".kit/snip-it.beh"], one.Corpus);
+    }
+
+    /// <summary>BEH-USERS-2 (spec-moves-to-project-kit-dir): with no .kit/, a .beh file anywhere on the default branch still makes a project, until BEH-USERS-12 lands.</summary>
+    [Fact]
+    public async Task A_repo_with_a_beh_file_outside_kit_dir_is_still_listed_until_BEH_USERS_12_lands()
+    {
+        var gh = new Repos()
+            .Repo("ann-gh/snip-it", "main", "behaviours/snip-it.beh", "docs/notes.md")
+            .Repo("ann-gh/deep", "main", "a/b/c/deep.beh");
+
+        var found = await Reader(gh).ProjectsAsync(42);
+
+        Assert.Equal(
+            [("ann-gh/deep", "a/b/c/deep.beh"), ("ann-gh/snip-it", "behaviours/snip-it.beh")],
+            found.OrderBy(p => p.FullName, StringComparer.Ordinal).Select(p => (p.FullName, Assert.Single(p.Corpus))));
+    }
+
+    /// <summary>BEH-USERS-2 (spec-moves-to-project-kit-dir): BEH-USERS-3's starter file, behaviours/&lt;name&gt;.beh with no .kit/, stays a listed project after BEH-USERS-12 lands.</summary>
+    [Fact]
+    public async Task A_repo_started_by_BEH_USERS_3_is_still_listed_after_BEH_USERS_12_lands()
+    {
+        var gh = new Repos().Repo("ann-gh/new-plan", "main", "behaviours/new-plan.beh");
+
+        var one = Assert.Single(await Reader(gh).ProjectsAsync(42));
+
+        Assert.Equal(["behaviours/new-plan.beh"], one.Corpus);
+    }
+
+    /// <summary>BEH-USERS-2 (spec-moves-to-project-kit-dir): a repo with neither a .kit/ nor any .beh file on its default branch is not a project.</summary>
+    [Fact]
+    public async Task A_repo_with_neither_a_kit_dir_holding_a_beh_file_nor_any_beh_file_is_not_listed()
+    {
+        var gh = new Repos()
+            .Repo("ann-gh/notes-only", "main", ".kit/notes.md", ".kit/bundles/x.md", "README.md")
+            .Repo("ann-gh/bare", "main", "README.md");
+
+        Assert.Empty(await Reader(gh).ProjectsAsync(42));
+    }
+
     [Fact]
     public async Task Every_page_of_the_installation_is_read()
     {
