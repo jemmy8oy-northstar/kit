@@ -3736,6 +3736,23 @@ behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and on
   contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
   contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
 
+behaviour BEH-SPACE-6 "A project's pages share one tab bar, as on GitHub, so its runs, inbox and settings are one tap from each other"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined claude-code-bot#151
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "I currently have no way to access it." (about a project's Runs page, claude-code-bot#151)
+  contract "Please take inspiration from GitHub and restructure this site to closer match this navigation wise, nav bar, project tabs etc" (claude-code-bot#151)
+  contract my assumption: one tab bar, headed by the project's name, sits at the top of a project's overview, runs, inbox and settings pages, so leaving the overview never strands him
+  contract my assumption: the tabs are Overview, Chat, Inbox, Board, Runs, Notes and Settings, each shown on the same conditions as the links they replace (Chat, Inbox and Board when their feature is on; Runs not for a signed-in account that is not the operator, BEH-USERS-9)
+  contract my assumption: the current tab is underlined and marked aria-current; the bar scrolls sideways on a phone rather than wrapping
+  contract my assumption: this slice does not restructure the global header; that is a later step of the same note
+  contract built (ProjectNav): a navigation "This project" of tabs at the top of the project, runs, inbox and settings pages
+
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES
   layer technical

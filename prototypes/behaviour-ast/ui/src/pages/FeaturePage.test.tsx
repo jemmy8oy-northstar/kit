@@ -331,6 +331,7 @@ describe('BEH-FEAT-5: a project of several files is one page', () => {
 
     expect(await screen.findByRole('heading', { name: 'kit', level: 1 })).toBeInTheDocument()
     expect(screen.getByText(cli.corpus)).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Board' })).toBeNull()
+    // Scoped to the Features list: the project tab bar (BEH-SPACE-6) has a "Board" tab of its own.
+    expect(within(screen.getByRole('region', { name: 'Features' })).queryByRole('link', { name: 'Board' })).toBeNull()
   })
 })

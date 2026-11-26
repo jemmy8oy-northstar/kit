@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Project from './Project'
 import { noNotes } from '../test/noNotes'
+import { SessionContext } from '../components/session'
+import type { SessionState } from '../api/types'
 import snipIt from '../test/fixtures/project-snip-it.json'
 import habits from '../test/fixtures/project-james-habits-app.json'
 
@@ -443,23 +445,52 @@ describe('BEH-SPACE-1: each project is its own space', () => {
     renderApp(snipIt, 'snip-it')
 
     const nav = await screen.findByRole('navigation', { name: 'This project' })
-    expect(within(nav).getByRole('link', { name: 'Its chat' })).toHaveAttribute('href', '/chat?project=snip-it')
-    expect(within(nav).getByRole('link', { name: 'Its board' })).toHaveAttribute('href', '/board?project=snip-it')
-    fireEvent.click(within(nav).getByRole('link', { name: 'Its notes' }))
+    expect(within(nav).getByRole('link', { name: 'Chat' })).toHaveAttribute('href', '/chat?project=snip-it')
+    expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/board?project=snip-it')
+    fireEvent.click(within(nav).getByRole('link', { name: 'Notes' }))
     expect(await screen.findByRole('tab', { name: /Notes/, selected: true })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Notes' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current')
   })
 })
 
 describe('BEH-SPACE-5: a project has its own inbox, runs and settings', () => {
-  it('has Its inbox, Its runs and Its settings beside its chat and board, each on its own project page', async () => {
+  it('has an Inbox, Runs and Settings tab beside its chat and board, each on its own project page', async () => {
     renderApp(snipIt, 'snip-it')
 
     const nav = await screen.findByRole('navigation', { name: 'This project' })
-    expect(within(nav).getByRole('link', { name: 'Its inbox' })).toHaveAttribute('href', '/projects/snip-it/inbox')
-    expect(within(nav).getByRole('link', { name: 'Its runs' })).toHaveAttribute('href', '/projects/snip-it/runs')
-    expect(within(nav).getByRole('link', { name: 'Its settings' })).toHaveAttribute('href', '/projects/snip-it/settings')
-    expect(within(nav).getByRole('link', { name: 'Its chat' })).toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: 'Its board' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Inbox' })).toHaveAttribute('href', '/projects/snip-it/inbox')
+    expect(within(nav).getByRole('link', { name: 'Runs' })).toHaveAttribute('href', '/projects/snip-it/runs')
+    expect(within(nav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/projects/snip-it/settings')
+    expect(within(nav).getByRole('link', { name: 'Chat' })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Board' })).toBeInTheDocument()
+  })
+
+  it('BEH-SPACE-6 hides the Runs tab from a signed-in account that is not the operator, and shows it to the operator', async () => {
+    const ann = { required: true, signedIn: true, accounts: true, user: 'ann' } as SessionState
+    const view = (session: SessionState) => (
+      <SessionContext.Provider value={session}>
+        <MemoryRouter initialEntries={['/projects/snip-it']}>
+          <Routes>
+            <Route path="/projects/:app" element={<Project />} />
+          </Routes>
+        </MemoryRouter>
+      </SessionContext.Provider>
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => noNotes(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => snipIt })),
+    )
+    const first = render(view(ann))
+    const nav = await screen.findByRole('navigation', { name: 'This project' })
+    expect(within(nav).queryByRole('link', { name: 'Runs' })).not.toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Settings' })).toBeInTheDocument()
+    first.unmount()
+
+    render(view({ ...ann, operator: true } as SessionState))
+    const operatorNav = await screen.findByRole('navigation', { name: 'This project' })
+    expect(within(operatorNav).getByRole('link', { name: 'Runs' })).toBeInTheDocument()
   })
 
   it('does not render the global Settings or Notifications on a project page', async () => {
@@ -478,7 +509,7 @@ describe('BEH-SPACE-3: a project links to its own board', () => {
   it('links to the board filtered to this project, and to designing it in the Chat', async () => {
     renderApp(snipIt, 'snip-it')
 
-    expect(await screen.findByRole('link', { name: 'Its board' })).toHaveAttribute('href', '/board?project=snip-it')
+    expect(await screen.findByRole('link', { name: 'Board' })).toHaveAttribute('href', '/board?project=snip-it')
     expect(screen.getByRole('link', { name: 'Design it with the spec agent' })).toHaveAttribute('href', '/chat?project=snip-it&design=1')
   })
 })
