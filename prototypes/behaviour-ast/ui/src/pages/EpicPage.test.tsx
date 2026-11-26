@@ -40,17 +40,33 @@ const alpha = {
   adjudication: { unreviewed: [] },
 }
 
-function renderAt(url: string) {
+// FEAT-DEEP sits three levels below FEAT-ROOT and is tagged into EPIC-DEEP; FEAT-BARE is tagged too, with no behaviours.
+const deep = {
+  app: 'alpha',
+  project: 'kit',
+  epics: [epic('EPIC-DEEP')],
+  features: [
+    feat('FEAT-ROOT'),
+    feat('FEAT-L1', { in: ['FEAT-ROOT'] }),
+    feat('FEAT-L2', { in: ['FEAT-L1'] }),
+    feat('FEAT-DEEP', { in: ['FEAT-L2'], epics: ['EPIC-DEEP'] }),
+    feat('FEAT-BARE', { epics: ['EPIC-DEEP'] }),
+  ],
+  behaviours: [beh('D-1', { in: ['FEAT-DEEP'] })],
+  adjudication: { unreviewed: [] },
+}
+
+function renderAt(url: string, project: typeof alpha = alpha) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (path: string) => {
       const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
       // The bell button reads the notes (BEH-BELL-1): none rung here.
-      const json = app.endsWith('/notes') ? { app: 'alpha', file: 'alpha.notes.md', notes: [] } : app ? alpha : { projects: [{ app: 'alpha', project: 'kit' }] }
+      const json = app.endsWith('/notes') ? { app: 'alpha', file: 'alpha.notes.md', notes: [] } : app ? project : { projects: [{ app: 'alpha', project: 'kit' }] }
       return { ok: true, status: 200, statusText: 'OK', json: async () => json }
     }),
   )
-  render(
+  return render(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/epics" element={<Epics />} />
@@ -94,6 +110,31 @@ describe('EpicPage (BEH-EPIC-8)', () => {
   it('is what a feature page epic tag opens (BEH-EPIC-8)', async () => {
     renderAt('/projects/alpha/features/FEAT-TOP')
     expect(await screen.findByRole('link', { name: 'title of EPIC-SHIP' })).toHaveAttribute('href', '/projects/alpha/epics/EPIC-SHIP')
+  })
+
+  it('links the feature tagged three levels down and the feature with no behaviours in its Features region (BEH-EPIC-8)', async () => {
+    renderAt('/projects/alpha/epics/EPIC-DEEP', deep)
+
+    const features = within(await screen.findByRole('region', { name: 'Features' }))
+    expect(features.getByRole('link', { name: 'title of FEAT-DEEP' })).toHaveAttribute('href', '/projects/alpha/features/FEAT-DEEP')
+    expect(features.getByRole('link', { name: 'title of FEAT-BARE' })).toHaveAttribute('href', '/projects/alpha/features/FEAT-BARE')
+    for (const parent of ['FEAT-ROOT', 'FEAT-L1', 'FEAT-L2']) {
+      expect(features.queryByRole('link', { name: `title of ${parent}` })).toBeNull()
+    }
+  })
+
+  it("lists the same feature ids on the epic page as on its board card (BEH-EPIC-8)", async () => {
+    const hrefsIn = (region: HTMLElement) => within(region).getAllByRole('link').map((a) => a.getAttribute('href'))
+
+    const page = renderAt('/projects/alpha/epics/EPIC-DEEP', deep)
+    const onPage = hrefsIn(await screen.findByRole('region', { name: 'Features' }))
+    page.unmount()
+
+    renderAt('/epics', deep)
+    const onCard = hrefsIn(await screen.findByRole('list', { name: 'Features in EPIC-DEEP' }))
+
+    expect(onPage).toEqual(['/projects/alpha/features/FEAT-DEEP', '/projects/alpha/features/FEAT-BARE'])
+    expect(onCard).toEqual(onPage)
   })
 })
 

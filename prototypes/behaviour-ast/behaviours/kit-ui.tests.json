@@ -324,13 +324,17 @@
   "BEH-EPIC-4": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows a card per epic in every real project, coloured by project (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows an epic its tagged features, linked, and their behaviours built out of total at any depth (BEH-EPIC-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "lists a feature tagged three levels down, and not the untagged parents above it (BEH-EPIC-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "lists a feature tagged into an epic with no behaviours, and reads 0 of 0 built (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic board and the ticket board, with one Board link current on both (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
   "BEH-EPIC-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows the epic its title, id and project, its behaviours built out of total, and its features linked (BEH-EPIC-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "names an epic the corpus does not have, instead of an empty page (BEH-EPIC-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what the epic board card title opens (BEH-EPIC-8)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what a feature page epic tag opens (BEH-EPIC-8)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what a feature page epic tag opens (BEH-EPIC-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "links the feature tagged three levels down and the feature with no behaviours in its Features region (BEH-EPIC-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "lists the same feature ids on the epic page as on its board card (BEH-EPIC-8)" }
   ],
   "BEH-COMMENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows EPIC-SHIP only its own comments, and a comment left there names it (BEH-COMMENT-1)" },
