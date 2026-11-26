@@ -3943,6 +3943,18 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_12_the_fix_task_may_mark_pending_a_card_its_branch_added_but_not_one_built_on_the_base()
+    {
+        // claude-code-bot#151: kit#832 added two unbuilt cards; the fix run was told never to mark a card pending, so
+        // it changed nothing and the ticket stopped at every restart's retry.
+        var task = FixStage.BuildTask("demo", ContextBundle.Parse(Specced("a")).Bundle!, "dev", HeadA);
+
+        Assert.Contains("a card the branch added but did not build (give it a `pending` line)", task);
+        Assert.Contains("repeats one already in the spec (delete it", task);
+        Assert.Contains("do not mark pending a card that is built on dev", task);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_19_a_lost_test_run_leaves_the_ticket_built_and_the_next_merge_look_tests_it_again()
     {
         // kit#768's test run was lost at the 2026-11-19 20:17Z restart, which blocked it as "tests failed".
