@@ -255,4 +255,23 @@ describe('BEH-SPACE-5: the main navigation keeps only the global places above pr
 
     expect(await screen.findByRole('link', { name: 'Inbox across every project' })).toHaveAttribute('href', '/inbox')
   })
+
+  async function expectTabBar(page: string, current: string) {
+    window.history.pushState({}, '', `/projects/snip-it/${page}`)
+    stubAll()
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'This project' })
+    for (const name of ['Overview', 'Inbox', 'Runs', 'Notes', 'Settings']) {
+      expect(within(nav).getByRole('link', { name })).toBeInTheDocument()
+    }
+    expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/projects/snip-it')
+    expect(within(nav).getByRole('link', { name: 'Runs' })).toHaveAttribute('href', '/projects/snip-it/runs')
+    expect(within(nav).getByRole('link', { name: current })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current')
+  }
+
+  it('BEH-SPACE-6 the project runs page carries the project tab bar, with that page current', () => expectTabBar('runs', 'Runs'))
+  it('BEH-SPACE-6 the project inbox page carries the project tab bar, with that page current', () => expectTabBar('inbox', 'Inbox'))
+  it('BEH-SPACE-6 the project settings page carries the project tab bar, with that page current', () => expectTabBar('settings', 'Settings'))
 })
