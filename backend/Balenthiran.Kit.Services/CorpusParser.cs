@@ -112,12 +112,29 @@ public sealed class CorpusParser : ICorpusParser
         // line-break-aware one. A lone `\r` is left on the end of the line and
         // removed by the trim below, which is why a CRLF corpus works.
         var lines = text.Split('\n');
-        var defaultLayer = FileLayer(lines, file);
+        // claude-code-bot#151: a project read from a feature tree is its .kit files joined, each after a
+        // `# kit:file <path>` line (FeatureTree.Compose). Every location then names the file and line the
+        // text came from, and a file-scoped directive (kit:layer) holds for its own file only. With no such
+        // line the whole text is one segment named `file`, exactly as before.
+        var (segOf, at0) = Segments(lines, file);
+        var segLayer = SegmentLayers(lines, segOf, at0);
 
         for (var i = 0; i < lines.Length; i++)
         {
             var line = Trim(lines[i]);
-            var at = $"{file}:{i + 1}";
+            var at = at0[i];
+            var defaultLayer = segLayer[segOf[i]];
+
+            // A new file starts outside every block: a line at the top of one file must never become a
+            // step of the last card in the file before it.
+            if (i > 0 && segOf[i] != segOf[i - 1])
+            {
+                cur = null;
+                feat = null;
+                epic = null;
+                dec = null;
+            }
+
             if (line.Length == 0 || line.StartsWith('#')) continue;
 
             var m = BehaviourLine.Match(line);
@@ -528,7 +545,7 @@ public sealed class CorpusParser : ICorpusParser
         }
 
         CheckTags(behaviours, features, epics);
-        return new ParsedCorpus { Behaviours = behaviours, Features = features, Epics = epics, Decisions = decisions, Project = FileProject(lines, file) };
+        return new ParsedCorpus { Behaviours = behaviours, Features = features, Epics = epics, Decisions = decisions, Project = FileProject(lines, at0) };
     }
 
     /// <summary>One line inside a <c>decision</c> block (BEH-ARCH-1); anything else is refused like an unknown feature line.</summary>
@@ -580,7 +597,7 @@ public sealed class CorpusParser : ICorpusParser
     /// directive, and refused on the same terms. The name has an app's shape, because a file
     /// with no directive is a project named by its file.
     /// </summary>
-    private static string? FileProject(string[] lines, string file)
+    private static string? FileProject(string[] lines, string[] at0)
     {
         string? project = null;
         string? setAt = null;
@@ -591,7 +608,7 @@ public sealed class CorpusParser : ICorpusParser
             var c = Trim(line[1..]);
             var kw = FirstToken(c);
             if (kw != "kit:project") continue;
-            var at = $"{file}:{i + 1}";
+            var at = at0[i];
             if (setAt is not null) throw new CorpusParseException($"{at}: kit:project is already set at {setAt}");
             var v = Trim(c[kw.Length..]);
             if (!ProjectName.IsMatch(v)) throw new CorpusParseException($"{at}: kit:project wants a name of lowercase letters, digits and hyphens, got: {v}");
@@ -683,16 +700,53 @@ public sealed class CorpusParser : ICorpusParser
     internal static bool IsoDate(string s) =>
         s.Length == 10 && DateOnly.TryParseExact(s, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _);
 
+    /// <summary>The line that starts a file's text in a composed feature tree (claude-code-bot#151).</summary>
+    public const string FileMarker = Database.FeatureTree.FileMarker;
+
+    /// <summary>
+    /// Which segment each line is in, and each line's location. A line that is exactly
+    /// <see cref="FileMarker"/> and a path starts a new segment named by that path, numbered from the line
+    /// after it. Lines before any marker are segment 0, named <paramref name="file"/>.
+    /// </summary>
+    private static (int[] SegOf, string[] At) Segments(string[] lines, string file)
+    {
+        var segOf = new int[lines.Length];
+        var at = new string[lines.Length];
+        var seg = 0;
+        var name = file;
+        var start = 0;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var raw = lines[i].TrimEnd('\r');
+            if (raw.StartsWith(FileMarker, StringComparison.Ordinal) && raw.Length > FileMarker.Length)
+            {
+                seg++;
+                name = raw[FileMarker.Length..];
+                start = i + 1;
+                segOf[i] = seg;
+                at[i] = $"{name}:0";
+                continue;
+            }
+
+            segOf[i] = seg;
+            at[i] = $"{name}:{i - start + 1}";
+        }
+
+        return (segOf, at);
+    }
+
     /// <summary>
     /// <c>fileLayer</c> in <c>kit.js</c>: a <c># kit:layer &lt;x&gt;</c> line sets
     /// the default for every behaviour in the file, wherever it sits. Tokenised
     /// with <see cref="Trim"/> and <see cref="FirstToken"/> rather than a regex,
     /// so JavaScript and .NET cannot disagree about <c>\b</c> or <c>.</c>.
+    /// In a composed feature tree each segment is a file, so each has its own layer.
     /// </summary>
-    private static string FileLayer(string[] lines, string file)
+    private static string[] SegmentLayers(string[] lines, int[] segOf, string[] at0)
     {
-        var layer = "ux";
-        string? setAt = null;
+        var count = lines.Length == 0 ? 1 : segOf[^1] + 1;
+        var layer = Enumerable.Repeat("ux", count).ToArray();
+        var setAt = new string?[count];
         for (var i = 0; i < lines.Length; i++)
         {
             var line = Trim(lines[i]);
@@ -700,12 +754,13 @@ public sealed class CorpusParser : ICorpusParser
             var c = Trim(line[1..]);
             var kw = FirstToken(c);
             if (kw != "kit:layer") continue;
-            var at = $"{file}:{i + 1}";
-            if (setAt is not null) throw new CorpusParseException($"{at}: kit:layer is already set at {setAt}");
+            var at = at0[i];
+            var s = segOf[i];
+            if (setAt[s] is not null) throw new CorpusParseException($"{at}: kit:layer is already set at {setAt[s]}");
             var v = Trim(c[kw.Length..]);
             if (!Layers.Contains(v)) throw new CorpusParseException($@"{at}: kit:layer wants ""ux""|""technical""|""ui"", got: {v}");
-            layer = v;
-            setAt = at;
+            layer[s] = v;
+            setAt[s] = at;
         }
 
         return layer;

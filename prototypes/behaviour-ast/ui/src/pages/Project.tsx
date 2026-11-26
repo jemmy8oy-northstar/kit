@@ -24,7 +24,7 @@ import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 import { useFlags } from '../components/flags'
-import { useSession } from '../components/session'
+import ProjectNav from '../components/ProjectNav'
 
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
 export default function Project() {
@@ -61,13 +61,11 @@ function Detail({ project }: { project: ProjectDetail }) {
   const [open, setOpen] = useState<number | null>(null)
   const flags = useFlags()
   const chat = flags.isOn('FEAT-CHAT')
-  const inbox = flags.isOn('FEAT-INBOX')
-  const session = useSession()
-  const board = flags.isOn('FEAT-BOARD')
 
   return (
     <>
       <h1>{project.app}</h1>
+      <ProjectNav app={project.app} />
       <p className="muted">{project.corpus}</p>
       <WorkingTowards files={[project]} />
       <div className="badges">
@@ -81,18 +79,13 @@ function Detail({ project }: { project: ProjectDetail }) {
 
       {/* BEH-SPACE-1: the project is a space of its own, with its own chat, board and notes. BEH-SPACE-5: and its
           own inbox, runs and settings; only Projects, Notifications and Settings stay in the main navigation. */}
-      <nav className="badges" aria-label="This project">
-        {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}`}>Its chat</Link>}
-        {inbox && <Link to={`/projects/${encodeURIComponent(project.app)}/inbox`}>Its inbox</Link>}
-        {/* BEH-SPACE-3: the project's own board, the global board filtered to it. */}
-        {board && <Link to={`/board?project=${encodeURIComponent(project.app)}`}>Its board</Link>}
-        {/* BEH-USERS-9: runs spend Kit's own credit, so only the operator is shown the link (the API refuses anyone else). */}
-        {!(session?.accounts && !session.operator) && <Link to={`/projects/${encodeURIComponent(project.app)}/runs`}>Its runs</Link>}
-        <Link to={`/projects/${encodeURIComponent(project.app)}?tab=notes`}>Its notes</Link>
-        <Link to={`/projects/${encodeURIComponent(project.app)}/settings`}>Its settings</Link>
-        {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
-        {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>}
-      </nav>
+      {/* BEH-SPACE-6: the tab bar (ProjectNav, at the top) carries the links to the project's other pages. */}
+      {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
+      {chat && (
+        <p>
+          <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>
+        </p>
+      )}
 
       {/* Above the tabs on purpose (kit#118, BEH-FEAT-7): a thought is caught before it is lost, not after picking a tab. */}
       <AskForBehaviour app={project.app} onAsked={() => (bump(), select('notes'))} />
@@ -421,6 +414,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   return (
     <>
       <h1>{name}</h1>
+      <ProjectNav app={name} />
       <WorkingTowards files={files} />
       <div className="badges">
         <Count n={sum((f) => f.behaviours.length)} one="behaviour" tone="primary" />
