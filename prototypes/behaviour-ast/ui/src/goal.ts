@@ -1,5 +1,5 @@
 import type { ProjectDetail } from './api/types'
-import { epicCards, type EpicCard } from './epics'
+import { epicCards, isOpenEpic, type EpicCard } from './epics'
 
 /** BEH-NARR-1: what a project is working towards. `goal` is null when every epic is built. */
 export interface Goal {
@@ -17,6 +17,5 @@ export function goalOf(files: ProjectDetail[]): Goal | null {
     epicCards(f.app, f.project, f.epics ?? [], f.features ?? [], f.behaviours),
   )
   if (cards.length === 0) return null
-  const open = (card: EpicCard) => card.built < card.total && !/out of scope/i.test(card.epic.title)
-  return { goal: cards.find(open) ?? null }
+  return { goal: cards.find(isOpenEpic) ?? null }
 }

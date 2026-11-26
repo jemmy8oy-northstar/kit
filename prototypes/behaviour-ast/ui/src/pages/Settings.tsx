@@ -7,6 +7,7 @@ import { FEATURE_PAGES, useFlags } from '../components/flags'
 import { githubNavigation } from '../components/githubNavigation'
 import { Button } from '@jemmy8oy-northstar/design-system'
 import { OpeningPageSetting } from '../components/OpeningPage'
+import ProjectNav from '../components/ProjectNav'
 import Tour from '../components/Tour'
 import ResourceView from '../components/Resource'
 import { useSession } from '../components/session'
@@ -197,6 +198,7 @@ export function ProjectSettings() {
   // Keyed on the project, so switching to another project's settings cannot keep this one's outcome line.
   return (
     <div key={app}>
+      <ProjectNav app={app} />
       <h1>Settings · {app}</h1>
       {operator ? (
         <>

@@ -308,6 +308,31 @@ public class RunnerPoolTests
     }
 
     [Fact]
+    public void BEH_ORCH_21_A_failed_report_may_say_it_met_the_usage_limit_and_when_that_resets()
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        Assert.Equal(200, rig.Routes.Finished(started.Token, Json(new { status = "failed", failure = "limit exit 1 resets 2026-11-25T13:00:00Z" })).Status);
+
+        Assert.Equal("limit exit 1 resets 2026-11-25T13:00:00Z", rig.Store.List().Single().Failure);
+    }
+
+    [Theory]
+    [InlineData("limit exit 1 resets 2026-11-25T13:00:00Z", "2026-11-25T13:00:00+00:00")]
+    [InlineData("limit exit 255 resets 2027-01-02T00:05:09Z", "2027-01-02T00:05:09+00:00")]
+    [InlineData("limit exit 1 resets 2026-02-30T13:00:00Z", null)]
+    [InlineData("limit exit 1 resets 2026-11-25T24:00:00Z", null)]
+    [InlineData("limit exit 1 resets 2026-11-25T13:00Z", null)]
+    [InlineData("limit exit 1", null)]
+    [InlineData("claude exit 1", null)]
+    [InlineData(" limit exit 1 resets 2026-11-25T13:00:00Z", null)]
+    [InlineData(null, null)]
+    public void BEH_ORCH_21_Only_a_real_reset_time_makes_a_failure_a_usage_limit(string? failure, string? reset) =>
+        Assert.Equal(reset is null ? null : DateTimeOffset.Parse(reset, System.Globalization.CultureInfo.InvariantCulture), UsageLimit.ResetOf(failure));
+
+    [Fact]
     public void A_report_with_no_failure_leaves_it_null()
     {
         var rig = new Rig();
@@ -327,6 +352,10 @@ public class RunnerPoolTests
     [InlineData("""{"status":"failed","failure":"fatal: https://x:tok@github.com exit 1"}""")]
     [InlineData("""{"status":"failed","failure":"clone exit 1\nmore"}""")]
     [InlineData("""{"status":"failed","failure":7}""")]
+    [InlineData("""{"status":"failed","failure":"limit exit 1 resets 2026-13-45T25:00:00Z"}""")]
+    [InlineData("""{"status":"failed","failure":"limit exit 1 resets tomorrow at 1pm"}""")]
+    [InlineData("""{"status":"failed","failure":"limit exit 1 resets 2026-11-25T13:00:00Z because of you"}""")]
+    [InlineData("""{"status":"finished","failure":"limit exit 1 resets 2026-11-25T13:00:00Z"}""")]
     public void A_bad_failure_is_400_and_the_run_is_left_running(string body)
     {
         var rig = new Rig();

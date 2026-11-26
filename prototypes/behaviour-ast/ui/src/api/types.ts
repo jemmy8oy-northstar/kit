@@ -746,6 +746,8 @@ export interface PipelineItem {
 export interface PipelineItemList {
   on: boolean
   items: PipelineItem[]
+  /** BEH-ORCH-21: "Paused: usage limit, resumes 13:00Z" while no run starts for the usage limit. */
+  paused?: string | null
 }
 
 /** One comment on a ticket (BEH-ORCH-16): a question, a block reason, or a reply. */

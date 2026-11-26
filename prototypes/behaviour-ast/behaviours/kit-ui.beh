@@ -405,6 +405,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   contract my assumption: the navbar is on every page, feature and behaviour pages included, not only the board and the project list (kit.notes.md#2026-10-11-1239: "a docker or navbar with two views")
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
+  contract to be deleted (BEH-TICKET-6): it draws the spec board, which goes with the ticket model (BEH-TICKET-6); BEH-BOARD-10 to 21 hang off its columns and stay untouched; not removed until the owner confirms the list
   in FEAT-BOARD
   source defined kit#237
   priority 5
@@ -970,6 +971,7 @@ feature FEAT-STAGES "Feature stages"
   stage development
 
 behaviour BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
+  contract to be deleted (BEH-TICKET-6): the feature board it draws goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 2
@@ -991,6 +993,7 @@ feature FEAT-STAGE-READING "The agent reads each feature's stage"
   stage ui
 
 behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only reads the stage board, and never drags a card"
+  contract to be deleted (BEH-TICKET-6): it is a rule of the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-0823
   source inferred kit.notes.md#2026-10-19-1616
@@ -1006,6 +1009,7 @@ behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only
   contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": each feature's column on the Stages page (problem, ux, logic, development, ui) is my judgement of how far along it is, written into the spec as its `stage` line. You never set or drag it; you read the board to see what is left. If a column looks wrong, leave a note on the feature and I move it
 
 behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
+  contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1018,6 +1022,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
 
 behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
+  contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1075,6 +1080,7 @@ behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
 # Was "only a feature with a stage line is on the board", my inference. His answer
 # on it (kit-ui.notes.md 2026-10-20 07:13Z) replaced it with a column.
 behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, so it can be found and staged"
+  contract to be deleted (BEH-TICKET-6): the Unstaged column is on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source inferred kit.notes.md#2026-10-19-0823
   source defined kit-ui.notes.md#2026-10-20-0713
@@ -1087,6 +1093,7 @@ behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, 
   contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is
 
 behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done column at the end of the feature board"
+  contract to be deleted (BEH-TICKET-6): the Done column is on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-31-1647
   review unreviewed
@@ -1102,6 +1109,7 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   contract built: the Done column after UI requirements, from the same columnOf the behaviour board uses
 
 behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one tap switches between them"
+  contract to be deleted (BEH-TICKET-6): the switch between feature and behaviour views goes with the feature and spec boards (BEH-TICKET-6); not removed until the owner confirms the list
   in FEAT-STAGES
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1619
@@ -1850,6 +1858,23 @@ behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
   contract my assumption: when a runner asks, it gets the oldest queued test run or merge (resolve) run whose project is free. Only when there is none does it get the oldest of the rest. One live run per project still holds. A test run is capped at 30 minutes, so a build waits at most that long per test
   contract my assumption: this is the half of his "reserve a slot for merge/triage" that holds however many runners there are. With one runner, a build already running is not stopped. Triage is not moved up, because nothing waits on it to merge
   contract built (RunnerPool.GoesFirst, RunnerPool.Take): two passes over the queue, stage "test" or "resolve" first
+
+behaviour BEH-ORCH-21 "A run that meets the usage limit pauses the pipeline until the limit resets, and costs its ticket nothing"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#151
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract measured 2026-11-25: twice in 24 hours the subscription's usage limit failed every run handed out. Each failure spent a ticket's retries (BEH-ORCH-19) and blocked it, and a blocked ticket came back only at a restart, so the pipeline stood still until the next release
+  contract my assumption: the runner reads claude's final message and stderr when claude fails. A usage-limit ending is reported as "limit exit <code> resets <YYYY-MM-DDTHH:MM:SSZ>", the time only and never the message. A limit with no readable time is given 30 minutes, or 6 hours for a weekly limit or credits
+  contract my assumption: the limit is the whole account's, so any run that meets it, of any ticket, pauses the whole pipeline until its reset: at least 1 minute, at most 8 days. No run starts while paused, from a note, a job's look or the merge job. A later reset extends the pause; an earlier one does not shorten it
+  contract my assumption: the run that met it spends no try. Its ticket waits to run the same stage again, a resolve or fix run is not counted, a test run leaves the ticket built, a train's riders keep their place, and a triage reads the same notes again
+  contract my assumption: a ticket gets at most 3 usage-limit endings in a row for free. The 4th counts as an ordinary failure, spending a try and pausing nothing, so a run whose own failure only reads like the limit cannot run for ever. Any other ending starts the count again
+  contract my assumption: when the pause ends, each ticket a run blocked (BEH-ORCH-19's retryable blocks) gets one more go, with a comment saying so, as at a restart. A restart during the pause keeps it, read back from the failed run's record
+  contract my assumption: Runs → Pipeline says "Paused: usage limit, resumes 13:00Z" (with the date when it is not today) while paused
+  contract built (UsageLimit, Pipeline.Pause, Pipeline.Holding, Pipeline.RearmRunBlocks, Pipeline.RestorePause, runner/entrypoint.sh limit_reset)
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -3712,6 +3737,23 @@ behaviour BEH-SPACE-5 "Each project has its own inbox, runs and settings, and on
   contract my assumption: "global Notifications" is the existing Notifications page (the agent's feed, BEH-NOTIFY-1), which the main navigation already links; the all-projects Inbox is reached from the Projects page as "Inbox across every project", not from the main navigation
   contract my assumption: the main navigation also keeps the global board, Ideas, Principles, Health, Activity, Chat and Agents, because BEH-NAV-1 requires the board in it and the global board stays (BEH-SPACE-3); only the Inbox and Runs left it
   contract built: a project's page links to its Inbox (/projects/x/inbox, the Inbox showing only that project's cards with no picker), its Runs (/projects/x/runs, only that project's runs and pipeline items) and its Settings (/projects/x/settings, its promotion, conflict choice and depth); the global Settings holds none of those, and the global Runs page stays at /runs with no link in the navigation
+
+behaviour BEH-SPACE-6 "A project's pages share one tab bar, as on GitHub, so its runs, inbox and settings are one tap from each other"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined claude-code-bot#151
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "I currently have no way to access it." (about a project's Runs page, claude-code-bot#151)
+  contract "Please take inspiration from GitHub and restructure this site to closer match this navigation wise, nav bar, project tabs etc" (claude-code-bot#151)
+  contract my assumption: one tab bar, headed by the project's name, sits at the top of a project's overview, runs, inbox and settings pages, so leaving the overview never strands him
+  contract my assumption: the tabs are Overview, Chat, Inbox, Board, Runs, Notes and Settings, each shown on the same conditions as the links they replace (Chat, Inbox and Board when their feature is on; Runs not for a signed-in account that is not the operator, BEH-USERS-9)
+  contract my assumption: the current tab is underlined and marked aria-current; the bar scrolls sideways on a phone rather than wrapping
+  contract my assumption: this slice does not restructure the global header; that is a later step of the same note
+  contract built (ProjectNav): a navigation "This project" of tabs at the top of the project, runs, inbox and settings pages
 
 behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
   in FEAT-PROJECT-SPACES

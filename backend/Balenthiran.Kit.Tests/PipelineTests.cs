@@ -3497,7 +3497,9 @@ public class PipelineTests
 
     private static readonly PullRequestMerge Conflicting = new() { Conflict = true, Reason = "it has a conflict with its base branch" };
 
-    private static Rig ResolveRig(StageTurnSettings? turns = null, params PipelineTicket[] seeded)
+    private static Rig ResolveRig(StageTurnSettings? turns = null, params PipelineTicket[] seeded) => ResolveRig(turns, null, seeded);
+
+    private static Rig ResolveRig(StageTurnSettings? turns, TimeProvider? clock, params PipelineTicket[] seeded)
     {
         var store = new MemoryTicketStore();
         foreach (var ticket in seeded)
@@ -3505,7 +3507,7 @@ public class PipelineTests
             store.Save(ticket);
         }
 
-        var rig = new Rig(PriorityCorpus(), mergeJob: true, tickets: store, turns: turns);
+        var rig = new Rig(PriorityCorpus(), mergeJob: true, tickets: store, turns: turns, clock: clock);
         rig.AddProject("other");
         rig.Pipeline!.Resume();
         return rig;
@@ -3979,6 +3981,162 @@ public class PipelineTests
         Assert.Equal((TicketState.Built, item.StoppedBecause), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().BlockedBecause));
         await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
         Assert.Null(rig.Claim());
+    }
+
+    // ---- BEH-ORCH-21: the pipeline waits out the subscription's usage limit ------------------------------------
+
+    // Two hours after a Ticking clock's start, as the runner reports a run that ended on the usage limit.
+    private const string Limited = "limit exit 1 resets 2026-11-07T14:00:00Z";
+
+    [Fact]
+    public void BEH_ORCH_21_a_build_run_that_meets_the_usage_limit_spends_no_try_and_nothing_starts_until_the_reset()
+    {
+        // claude-code-bot#151: twice in 24 hours a usage limit spent every ticket's retries and blocked them until a redeploy.
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = Specced(rig);
+
+        // No retries at all, so an ordinary failure would block the ticket here.
+        EndRunFailed(rig, build, Limited);
+
+        var item = ItemOf(rig, "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued, null), (item.Stage, item.Status, item.StoppedBecause));
+        Assert.Null(Ticket(rig).BlockedBecause);
+        Assert.Equal("Paused: usage limit, resumes 14:00Z", rig.Pipeline!.PausedNote());
+        Assert.Equal("Paused: usage limit, resumes 14:00Z", Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Paused);
+        Assert.Null(rig.Claim());
+
+        clock.Advance(TimeSpan.FromMinutes(119));
+        Assert.Null(rig.Claim());
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var again = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.NotEqual(build.Id, again.Id);
+        Assert.Contains("You are the build stage", again.Task);
+        Assert.Null(rig.Pipeline.PausedNote());
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_a_ticket_that_meets_the_limit_more_than_three_times_in_a_row_spends_a_try_and_does_not_pause()
+    {
+        // A run whose own failure only reads like the limit must not run for ever, free, every half hour.
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = Specced(rig);
+        string LimitIn1h() => $"limit exit 1 resets {clock.GetUtcNow().AddHours(1).UtcDateTime:yyyy-MM-dd'T'HH:mm:ss'Z'}";
+
+        for (var ended = 1; ended <= Pipeline.MaxLimitEnds; ended++)
+        {
+            EndRunFailed(rig, build, LimitIn1h());
+            Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "list-sorting").Status);
+            clock.Advance(TimeSpan.FromHours(1));
+            build = Assert.IsType<PoolClaim>(rig.Claim());
+        }
+
+        var last = LimitIn1h();
+        EndRunFailed(rig, build, last);
+
+        // No retries in this rig, so the ordinary path blocks it at once.
+        Assert.Equal((WorkItemStatus.Stopped, $"the build run failed ({last})"), (ItemOf(rig, "list-sorting").Status, ItemOf(rig, "list-sorting").StoppedBecause));
+        Assert.Null(rig.Pipeline!.PausedNote());
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_a_triage_that_meets_the_usage_limit_reads_the_same_notes_after_the_reset()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("Sort the list by date");
+
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Limited);
+        rig.Note("And by name");
+        Assert.Null(rig.Claim());
+
+        clock.Advance(TimeSpan.FromHours(2));
+        var again = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("Sort the list by date", again.Task);
+        Assert.Contains("And by name", again.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_21_a_fix_run_that_meets_the_usage_limit_is_not_counted_and_the_look_after_the_reset_starts_it_again()
+    {
+        var clock = new Ticking();
+        using var rig = ResolveRig(null, clock, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRunFailed(rig, Assert.IsType<PoolClaim>(rig.Claim()), Red);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var fix = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("fix", fix.Stage);
+
+        EndRunFailed(rig, fix, Limited);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, null), (item.Stage, item.Status, item.StoppedBecause));
+        var asked = rig.Merges.Asked.Count;
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Equal(asked, rig.Merges.Asked.Count);
+        Assert.Null(rig.Claim());
+
+        // Still at HeadA, but the fix did nothing because it could not run: another fix run, not "a fix run changed nothing".
+        clock.Advance(TimeSpan.FromHours(2));
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Equal("fix", Assert.IsType<PoolClaim>(rig.Claim()).Stage);
+        Assert.Null(ItemOf(rig, "a").StoppedBecause);
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_at_the_reset_a_ticket_a_run_blocked_gets_one_more_go()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        EndRunFailed(rig, Specced(rig), "claude exit 1");
+        Assert.Equal("the build run failed (claude exit 1)", Ticket(rig).BlockedBecause);
+
+        // Any run meeting the limit pauses the pipeline, even one it did not start: the limit is the whole account's.
+        rig.Pipeline!.RunEnded("not-the-pipelines", false, failure: Limited);
+        Assert.Null(rig.Claim());
+
+        clock.Advance(TimeSpan.FromHours(2));
+
+        Assert.Contains("You are the build stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+        Assert.Null(Ticket(rig).BlockedBecause);
+        Assert.Equal("Trying again now the usage limit has reset: the block was a run's, not a decision (the build run failed (claude exit 1))", rig.Tickets.Comments("demo", "list-sorting").Last().Body);
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_a_restart_during_the_pause_keeps_it_from_the_failed_runs_record()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        foreach (var failure in new[] { "limit exit 1 resets 2026-11-07T11:00:00Z", Limited, "claude exit 1" })
+        {
+            var run = rig.Store.Create(ISessionStore.Operator, "demo", "claude-haiku-5-5", "hash", clock.GetUtcNow().AddHours(-1), null, "build");
+            rig.Store.SetStatus(run.Id, AgentRunStatus.Failed, clock.GetUtcNow(), failure);
+        }
+
+        rig.Pipeline!.Resume();
+
+        Assert.Equal("Paused: usage limit, resumes 14:00Z", rig.Pipeline.PausedNote());
+        rig.Note("Sort the list by date");
+        Assert.Null(rig.Claim());
+
+        clock.Advance(TimeSpan.FromHours(2));
+        Assert.Equal("triage", Assert.IsType<PoolClaim>(rig.Claim()).Stage);
+    }
+
+    [Fact]
+    public void BEH_ORCH_21_a_reset_already_past_still_pauses_a_minute_and_a_day_far_off_at_most_eight()
+    {
+        var clock = new Ticking();
+        using var past = new Rig(clock: clock);
+        past.Pipeline!.RunEnded("x", false, failure: "limit exit 1 resets 2026-11-07T11:00:00Z");
+        Assert.Equal("Paused: usage limit, resumes 12:01Z", past.Pipeline.PausedNote());
+
+        using var far = new Rig(clock: clock);
+        far.Pipeline!.RunEnded("x", false, failure: "limit exit 1 resets 2027-11-07T11:00:00Z");
+        Assert.Equal("Paused: usage limit, resumes 2026-11-15 12:00Z", far.Pipeline.PausedNote());
     }
 
     [Fact]
@@ -4540,6 +4698,80 @@ public class PipelineTests
         Assert.Contains("Delete no card", task);
         Assert.Contains("contract my assumption: delete this card, because <reason>", task);
         Assert.Contains("Delete no card: when a note says one should go, add to it", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_note_that_asks_for_two_separate_changes_gives_two_tickets_one_per_change_each_on_its_own_feature_branch()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date and also export as csv");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") }, new { slug = "list-export", text = BundleText("list-export") });
+
+        var tickets = rig.Tickets.Read("demo");
+        Assert.Equal(["list-export", "list-sorting"], tickets.Select(t => t.Slug).OrderBy(s => s, StringComparer.Ordinal));
+        Assert.Equal(["kit/work/list-export", "kit/work/list-sorting"], tickets.Select(t => TriageStage.Branch(t.Slug)).OrderBy(s => s, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_the_triage_task_asks_for_one_work_item_for_each_separate_change_a_note_asks_for()
+    {
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", "the list should sort by date and also export as csv")], []).Text;
+
+        Assert.Contains("A note that asks for two separate changes gets one work item for each change", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_note_that_asks_for_one_change_gives_one_ticket_not_a_split()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"));
+        Assert.Equal(("list-sorting", "kit/work/list-sorting"), (ticket.Slug, TriageStage.Branch(ticket.Slug)));
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_second_note_waits_while_triage_runs_for_the_first_and_its_triage_starts_only_after_the_first_notes_tickets_are_written()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        var first = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.Note("the list should export as csv");
+
+        Assert.Null(rig.Claim());
+        Assert.Empty(rig.Tickets.Read("demo"));
+
+        rig.FinishWith(first, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Single(rig.Tickets.Read("demo"));
+        var second = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the triage stage", second.Task);
+        Assert.Contains("the list should export as csv", second.Task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_second_note_is_triaged_against_the_tickets_the_first_note_made_so_it_adds_no_duplicate_ticket()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        // The first note's ticket is made; its spec run is claimed next, and the second note waits behind it.
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.Note("the list should sort by date, newest first");
+        Assert.Null(rig.Claim());
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        var second = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the triage stage", second.Task);
+        Assert.Contains("list-sorting", second.Task);
+        Assert.Contains("do NOT open a second work item for it", second.Task);
+        rig.FinishWith(second, new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
+        Assert.Equal(["list-sorting"], rig.Tickets.Read("demo").Select(t => t.Slug));
     }
 
     [Fact]
