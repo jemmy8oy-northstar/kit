@@ -104,15 +104,15 @@ export default function Tickets({ app }: { app: string }) {
                         ))}
                       </p>
                     )}
+                    {/* BEH-TICKET-1: the behaviours the ticket changes, as the ticket's own list. */}
                     {t.cards.length > 0 && (
-                            <p>
-                              {t.cards.map((id, i) => (
-                                <span key={id}>
-                                  {i > 0 && ', '}
+                            <ul aria-label="Specs touched" className="ticket-specs">
+                              {t.cards.map((id) => (
+                                <li key={id}>
                                   <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
-                                </span>
+                                </li>
                               ))}
-                            </p>
+                            </ul>
                           )}
                           {t.pullRequest?.startsWith('https://') && (
                             <p>
