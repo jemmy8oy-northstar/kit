@@ -429,6 +429,7 @@ behaviour BEH-SCHED-1 "Each pipeline stage runs on its own schedule, independent
   then reports wake:Independent
   contract my assumption: each pipeline stage has its own wake schedule and runs when that schedule fires, not when another stage runs
   contract my assumption: an idle or slow stage does not delay or skip the other stages
+  contract my assumption: triage is the exception to independent stages: it runs in serial, one note at a time, and starts the next note only after the previous note's tickets are written
   contract built: the wake of each stage is its own start. A note starts triage, and each job of BEH-ORCH-11 starts its stage on its own tick, so a build waits as a planned ticket until its tick (switch KIT_PIPELINE_JOB_BUILD on; off by default, so production still chains triage to spec and build)
   review requested conflict between this card's second assumption and BEH-ORCH-3 and BEH-ORCH-14 in kit-ui.beh: those keep one live run per project, so a triage waits while a build on its project runs. Built the one-run-per-project reading, which is what runs live; the slow-stage clause is not built and not tested. Approve to keep that; deny to say this card is right and I will rebuild triage to start beside a running build
 
@@ -456,6 +457,7 @@ behaviour BEH-TICKET-1 "A ticket is not a spec: tickets appear on the board, and
   when opens page:KitBoard
   then sees region:KitMain
   contract my assumption: a ticket represents one change to the spec and carries its status and its open questions; the spec itself lives on the feature branch of that change, not on the board
+  contract my assumption: the board nests tickets under the board (board -> tickets), not under behaviours (board -> behaviours); a ticket is a direct child of the board and names the behaviours it changes, and a behaviour is never the parent of a ticket
   contract my assumption: the ticket board is the only board for work, and the features and specs of a ticket are read from the ticket, not from a feature or spec board
 
 behaviour BEH-TICKET-2 "A loose item (a note, a chat message, a comment, an approval or a rejection) goes to triage, which turns it into a spec change and a ticket in the new state"
@@ -467,6 +469,8 @@ behaviour BEH-TICKET-2 "A loose item (a note, a chat message, a comment, an appr
   then sees region:KitMain
   contract my assumption: triage may create spec, update existing tickets, ask questions, and remove spec that no longer fits the new behaviour
   contract my assumption: triage makes every change on a new feature branch, and a card it removes is marked as to be deleted, with the reason written beside it
+  contract my assumption: one note may produce several tickets; triage makes one ticket for each separate change the note asks for, so a note that asks for two things gives two tickets
+  contract my assumption: triage runs in serial, one note at a time, so a later note is triaged against the tickets an earlier note has already made, and no two triage runs add a duplicate or an overlapping change in parallel
   contract my question: approving or rejecting a card does not reach triage today, because an approval only writes the card's review and starts no run. Are these to reach triage as a note? Default until you answer: no; a note or a comment on the card is how he reaches triage
 
 behaviour BEH-TICKET-3 "A ticket with a question for him is blocked, and triage discusses it with him until no question is left, then moves it to ready"

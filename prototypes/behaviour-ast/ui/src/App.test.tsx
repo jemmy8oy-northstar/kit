@@ -195,6 +195,14 @@ describe('BEH-TICKET-6: the navbar and the boards show only the epic board and t
     )
   })
 
+  it('a spec a ticket names still has its page, opened by its id (BEH-TICKET-6)', async () => {
+    const spec = snipIt.behaviours[0]
+    window.history.pushState({}, '', `/projects/snip-it/behaviours/${spec.id}`)
+    stubKitServer()
+    render(<App />)
+    expect(await screen.findByRole('heading', { level: 1, name: spec.title })).toBeInTheDocument()
+  })
+
   it("a ticket's feature page still opens from its feature branch (BEH-TICKET-6)", async () => {
     window.history.pushState({}, '', '/projects/snip-it/features/FEAT-APP')
     stubKitServer({ ...snipIt, features: [{ id: 'FEAT-APP', title: 'The app feature', in: [], at: 'snip-it.beh:1' }] })

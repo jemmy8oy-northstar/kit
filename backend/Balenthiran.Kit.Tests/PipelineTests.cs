@@ -4701,6 +4701,80 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_TICKET_2_a_note_that_asks_for_two_separate_changes_gives_two_tickets_one_per_change_each_on_its_own_feature_branch()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date and also export as csv");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") }, new { slug = "list-export", text = BundleText("list-export") });
+
+        var tickets = rig.Tickets.Read("demo");
+        Assert.Equal(["list-export", "list-sorting"], tickets.Select(t => t.Slug).OrderBy(s => s, StringComparer.Ordinal));
+        Assert.Equal(["kit/work/list-export", "kit/work/list-sorting"], tickets.Select(t => TriageStage.Branch(t.Slug)).OrderBy(s => s, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_the_triage_task_asks_for_one_work_item_for_each_separate_change_a_note_asks_for()
+    {
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", "the list should sort by date and also export as csv")], []).Text;
+
+        Assert.Contains("A note that asks for two separate changes gets one work item for each change", task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_note_that_asks_for_one_change_gives_one_ticket_not_a_split()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"));
+        Assert.Equal(("list-sorting", "kit/work/list-sorting"), (ticket.Slug, TriageStage.Branch(ticket.Slug)));
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_second_note_waits_while_triage_runs_for_the_first_and_its_triage_starts_only_after_the_first_notes_tickets_are_written()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        var first = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.Note("the list should export as csv");
+
+        Assert.Null(rig.Claim());
+        Assert.Empty(rig.Tickets.Read("demo"));
+
+        rig.FinishWith(first, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Single(rig.Tickets.Read("demo"));
+        var second = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the triage stage", second.Task);
+        Assert.Contains("the list should export as csv", second.Task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_2_a_second_note_is_triaged_against_the_tickets_the_first_note_made_so_it_adds_no_duplicate_ticket()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        // The first note's ticket is made; its spec run is claimed next, and the second note waits behind it.
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.Note("the list should sort by date, newest first");
+        Assert.Null(rig.Claim());
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        var second = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the triage stage", second.Task);
+        Assert.Contains("list-sorting", second.Task);
+        Assert.Contains("do NOT open a second work item for it", second.Task);
+        rig.FinishWith(second, new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
+        Assert.Equal(["list-sorting"], rig.Tickets.Read("demo").Select(t => t.Slug));
+    }
+
+    [Fact]
     public void BEH_TICKET_3_a_ticket_with_an_open_question_for_him_is_blocked_and_stays_the_same_ticket()
     {
         using var rig = new Rig();

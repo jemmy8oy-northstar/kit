@@ -1182,6 +1182,7 @@ behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
   contract "or even just another abstraction level in the boards for epic. I feel like this makes the most sense": a third option on the BEH-STAGE-8 switch
   contract each epic shows its tagged items' progress, built out of total, as a feature in development does (BEH-STAGE-3)
   contract my assumption: the switch reads Epics, Features, Behaviours, top level first; an epic's card lists the features tagged into it, and its count is their behaviours at any depth, each counted once
+  contract my assumption: the epic view shows the features under each epic, not only its behaviours, as the 2026-11-24 22:43Z note asks ("epic view should show features under it - the features that relate to the epic"); features tag an epic through BEH-EPIC-2, so no new tag is needed
 
 behaviour BEH-EPIC-5 "A new epic's children start pending"
   in FEAT-EPICS
@@ -1249,6 +1250,7 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
   contract my assumption: an epic id with no epic block shows a page that names the missing epic, not an empty page
+  contract my assumption: the features listed under the epic are those tagged into it at any depth, as the 2026-11-24 22:43Z note asks ("epic view should show features under it - the features that relate to the epic"); a feature that tags an epic is listed here whether or not it has behaviours
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
