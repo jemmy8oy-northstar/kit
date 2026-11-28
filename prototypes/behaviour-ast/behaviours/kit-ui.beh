@@ -1184,6 +1184,7 @@ behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
   contract each epic shows its tagged items' progress, built out of total, as a feature in development does (BEH-STAGE-3)
   contract my assumption: the switch reads Epics, Features, Behaviours, top level first; an epic's card lists the features tagged into it, and its count is their behaviours at any depth, each counted once
   contract my assumption: the epic view shows the features under each epic, not only its behaviours, as the 2026-11-24 22:43Z note asks ("epic view should show features under it - the features that relate to the epic"); features tag an epic through BEH-EPIC-2, so no new tag is needed
+  contract my assumption: each epic card on the board also shows its work left (BEH-EPIC-10) beside its progress (kit.notes.md#2026-11-28-0948Z)
 
 behaviour BEH-EPIC-5 "A new epic's children start pending"
   in FEAT-EPICS
@@ -1252,6 +1253,34 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
   contract my assumption: an epic id with no epic block shows a page that names the missing epic, not an empty page
   contract my assumption: the features listed under the epic are those tagged into it at any depth, as the 2026-11-24 22:43Z note asks ("epic view should show features under it - the features that relate to the epic"); a feature that tags an epic is listed here whether or not it has behaviours
+  contract my assumption: the epic's page also lists its work left (BEH-EPIC-10), so the next step toward done is one screen away
+
+behaviour BEH-EPIC-10 "An epic shows the work left on it, so it is clear what has to happen before its goal is done"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-11-28-0948Z
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the note's list (kit.notes.md#2026-11-28-0948Z): plan the features not yet planted, review assumed behaviour or spec, define the definition of done, plan the user experience, and define requirements for a new feature
+  contract my assumption: each step is one open item, a feature to plan, a spec to review, a definition of done to write, a user experience to plan or requirements to define; the epic's count is its open steps, and a step closes when its item is built or decided
+  contract my assumption: an epic with no definition of done lists "define the definition of done" as work left, so Kit can tell when an epic has none
+
+behaviour BEH-EPIC-11 "When an epic's definition of done is set, features that fall outside it move to a new epic that Kit proposes"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-11-28-0950Z
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the note (kit.notes.md#2026-11-28-0950Z): "if some features seem out of scope of the epic kit can create a new epic to move these backlog items to"
+  contract my assumption: Kit proposes and never moves a feature on its own; the proposal is a review request on the epic, naming each feature it would move and the new epic it would go to
+  contract my assumption: approving creates the new epic as its own block with its project as parent, and points each moved feature's in line at it; the features keep their ids and their other parents
+  contract my assumption: a feature is out of scope when its own text does not serve the epic's definition of done, the agent's judgement, as BEH-EPIC-9 judges broad behaviours
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
