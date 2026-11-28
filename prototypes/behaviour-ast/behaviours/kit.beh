@@ -617,7 +617,8 @@ behaviour BEH-NAV-4 "The site follows GitHub's layout: a global top bar, and a r
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
-  contract my assumption: the top bar holds only global links (the epic board, the ticket board, the projects list and Settings), as GitHub's top bar holds only global places
+  contract my assumption: the top bar holds only the Inbox and a menu button, as GitHub's top bar holds few links; the menu lists every global page (the epic board, the ticket board, Projects, Settings and the rest), so the row of separate buttons goes (kit.notes.md#2026-11-28-0938Z)
+  contract my assumption: the title sits on the same line as the top bar's buttons, so the bar is one line tall (kit.notes.md#2026-11-28-0938Z)
   contract my assumption: opening a project shows its views as a tab row beneath the top bar, as GitHub shows a repository's tabs, and the active tab is marked
   contract my assumption: the tab row appears on every page under that project, so the project's views are reached without going back to the board
   contract my assumption: this changes the layout only; no page's content or card changes, and BEH-NAV-1 to BEH-NAV-3 in kit-ui.beh are to be reconciled with this card by a builder after the owner confirms
