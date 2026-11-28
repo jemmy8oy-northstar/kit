@@ -222,7 +222,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         // The repo was checked as owner/name when the run was started.
         if (pool.RepoOf(run.Id) is not { } repo)
         {
-            return Error(403, "repo-unknown", "Kit does not know which repo this run is for (it was not handed out by this Kit process)");
+            return Error(403, "repo-unknown", "Kit does not know which repo this run is for (it was not handed out by the runner pool)");
         }
 
         if (github is null)
