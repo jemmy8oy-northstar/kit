@@ -1176,3 +1176,9 @@ In the same way that GitHub shows files and then the readme.
 <!-- from: note-button -->
 
 I left a note before about features in the overview, can we take inspo from GitHub again and show some of them and then show a view all features button
+
+## 2026-11-28 09:48Z
+
+<!-- from: note-button -->
+
+An epic should show work left. This can be plan x features if they haven’t been planted yet. This can be reviewing assumed behaviour or spec. This can be defining definition of done, this will help it figure out what is left to do. This can be planning user experience. Or for new features this can be defining requirements. You get the idea
