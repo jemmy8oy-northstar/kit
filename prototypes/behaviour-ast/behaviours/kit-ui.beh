@@ -1264,7 +1264,7 @@ behaviour BEH-EPIC-10 "An epic shows the work left on it, so it is clear what ha
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract the note's list (kit.notes.md#2026-11-28-0948Z): plan the features not yet planted, review assumed behaviour or spec, define the definition of done, plan the user experience, and define requirements for a new feature
+  contract my assumption: the note's list (kit.notes.md#2026-11-28-0948Z): plan the features not yet planted, review assumed behaviour or spec, define the definition of done, plan the user experience, and define requirements for a new feature
   contract my assumption: each step is one open item, a feature to plan, a spec to review, a definition of done to write, a user experience to plan or requirements to define; the epic's count is its open steps, and a step closes when its item is built or decided
   contract my assumption: an epic with no definition of done lists "define the definition of done" as work left, so Kit can tell when an epic has none
 
@@ -1277,7 +1277,7 @@ behaviour BEH-EPIC-11 "When an epic's definition of done is set, features that f
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract the note (kit.notes.md#2026-11-28-0950Z): "if some features seem out of scope of the epic kit can create a new epic to move these backlog items to"
+  contract my assumption: the note (kit.notes.md#2026-11-28-0950Z): "if some features seem out of scope of the epic kit can create a new epic to move these backlog items to"
   contract my assumption: Kit proposes and never moves a feature on its own; the proposal is a review request on the epic, naming each feature it would move and the new epic it would go to
   contract my assumption: approving creates the new epic as its own block with its project as parent, and points each moved feature's in line at it; the features keep their ids and their other parents
   contract my assumption: a feature is out of scope when its own text does not serve the epic's definition of done, the agent's judgement, as BEH-EPIC-9 judges broad behaviours
