@@ -1150,3 +1150,9 @@ Kit tab when u scroll but the movement is not exactly horizontal the items move 
 
 Kit the top level buttons can be inline with the kit title atm they take up quite a lot of space. We can take inspiration from
 GitHub again and reduce the buttons available to just the inbox and a menu button which shows all the options or maybe a burger and hide the board and settings in there
+
+## 2026-11-28 09:40Z
+
+<!-- from: note-button -->
+
+Do we need principles visible in the ui? I am not sure it’s adding anything.
