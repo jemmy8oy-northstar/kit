@@ -979,11 +979,13 @@ behaviour BEH-STAGE-1 "A separate board takes every feature through five stages:
   source defined kit.notes.md#2026-10-19-0823
   priority 2
   review approved
+  review requested six stages, not five: BEH-ARCH-2 (built 2026-11-01) put architecture between logic and development, so the page now has six stage columns. Proposed wording for the title: "A separate board takes every feature through six stages: problem, UX, logic, architecture, development, UI", and for the stages contract: "the stages, in order: problem statement, UX requirements, business logic, architecture (when a feature needs one), development, UI requirements". BEH-STAGE-7 and BEH-STAGE-9 also say five and would follow this wording if approved; neither is edited here
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract the stages, in order: problem statement, UX requirements, business logic, development, UI requirements
   contract separate from the behaviour board (FEAT-BOARD) for now; unifying the two is a later call, before a public release
+  contract my assumption: the feature board is the higher-level view and the behaviour board the more granular one (his 2026-10-19 16:19Z note); the two are switched between (BEH-STAGE-8), not merged, and whether to unify them later stays his call
   contract a column per stage, a card per feature, coloured by project as the behaviour board's are
 
 # Was BEH-STAGE-2, "The agent puts each feature at a rough stage, read from how much
@@ -1023,6 +1025,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract my assumption: a feature with every behaviour built is at ui, since UI is the stage that stays open after development (BEH-STAGE-4); one with some built is at development
   contract my assumption: engine features with no screen (kit.beh's parser, writer, server) still go to ui when built, so the board reads "nothing left but polish"
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
+  contract my assumption: a feature with every behaviour built keeps its written stage at ui, and BEH-STAGE-12 shows it in Done instead; the two are held, not resolved, until BEH-STAGE-12's review request is answered
 
 behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
   contract to be deleted (BEH-TICKET-6): it places features on the feature board, which goes with the ticket model (BEH-TICKET-6); not removed until the owner confirms the list
@@ -1037,6 +1040,7 @@ behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest st
   contract built by the agent's reading, so no test can say a placement is right; BEH-STAGE-9's test holds only that one is written
   contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": BEH-STAGE-10 places anything with code (development, or ui once all built). This card covers features with no code yet, where I go by the writing: a one-line idea sits at problem, one that says who does what step by step sits at ux, and one whose rules are written down sits at logic
   contract his question (kit-ui.notes.md#2026-10-28-2353), "Do you mean spec wise? It's placed on the board by what stage it's at": yes, spec-wise. The title said "how much of it is written", and it now says what it means: the stage is the furthest of ux, behaviour, ui and implementation that the feature has, and with no code that is the furthest its spec has reached
+  contract my assumption: architecture (BEH-ARCH-2) is a stage the spec can reach, so a feature that needs a new part or platform choice, with no code yet, sits at architecture; one that fits the existing design sits at logic or earlier
 
 behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
   in FEAT-STAGES
@@ -1100,6 +1104,7 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-31-1647
   review unreviewed
+  review requested BEH-STAGE-10 (approved) puts a feature with every behaviour built at ui, "so the board reads nothing left but polish", and leaves it there; this card shows that same feature in Done and leaves its ui stage line alone. Both can hold, since the stage line is the written word and Done is the column it shows in, but the ui column no longer shows fully built features. Please say which the board should show; no winner is picked here
   priority 2
   actor engineer
   when opens page:KitStages
@@ -1124,6 +1129,7 @@ behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one
   contract "could be good to be able to easily switch between the two board views": a switch on both pages, and one Board link in the header for both
   contract "we aren't really integrating them I don't think we should be. They are different ways of viewing it": the two stay separate pages
   contract a project board was his idea too, backlogged in the same note; an epic level comes from FEAT-EPICS instead
+  contract my assumption: the Epics option on the switch is BEH-EPIC-4's (his 2026-10-19 16:44Z note supersedes the 16:19Z backlog on the epic level), so this card covers the Features and Behaviours options and the one Board link
 
 # ═══ Epics (kit.notes.md 2026-10-19 16:44Z) ══════════════════════════════════
 # "On second thought I think we actually need to support epics." Features group
@@ -2727,6 +2733,7 @@ behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is buil
   contract "Maybe kit needs another layer to its ux ui business logic spec state"
   contract my assumption: architecture is a stage between logic and development, used only when a feature needs a new part or a new platform choice; a feature that fits the existing design skips it
   contract built 2026-11-01: the stage word is architecture, between logic and development; a feature that fits the existing design skips it
+  contract my assumption: the Stages page shows architecture as its own column, after logic and before development (BEH-STAGE-12 puts Done after UI); a feature at architecture sits there, and a feature that skips it is not moved by this card. BEH-STAGE-1, -7 and -9 still say five stages and do not name it until the review request on BEH-STAGE-1 is answered
 
 behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the rest for them"
   in FEAT-ARCH

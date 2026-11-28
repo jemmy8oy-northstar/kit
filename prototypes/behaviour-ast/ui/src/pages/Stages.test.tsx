@@ -62,13 +62,12 @@ const summaries = [
 ]
 
 function mockApi() {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (path: string) => {
-      const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
-      return { ok: true, status: 200, statusText: 'OK', json: async () => (app ? { app, ...details[app] } : { projects: summaries }) }
-    }),
-  )
+  const fetchMock = vi.fn(async (path: string) => {
+    const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
+    return { ok: true, status: 200, statusText: 'OK', json: async () => (app ? { app, ...details[app] } : { projects: summaries }) }
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
 }
 
 async function stage(name: string) {
@@ -76,12 +75,13 @@ async function stage(name: string) {
 }
 
 function renderStages() {
-  mockApi()
+  const fetchMock = mockApi()
   render(
     <MemoryRouter initialEntries={['/stages']}>
       <Stages />
     </MemoryRouter>,
   )
+  return fetchMock
 }
 
 describe('Stages', () => {
@@ -147,6 +147,22 @@ describe('Stages', () => {
     expect((await stage('Problem statement')).queryByText(/behaviours built/)).not.toBeInTheDocument()
   })
 
+  it('offers Features and Behaviours on the board switch, with Features current and one tap to the behaviour board (BEH-STAGE-8)', async () => {
+    renderStages()
+    const views = await screen.findByRole('navigation', { name: 'Board view' })
+    expect(within(views).getByRole('link', { name: 'Features' })).toHaveAttribute('aria-current', 'page')
+    expect(within(views).getByRole('link', { name: 'Behaviours' })).toHaveAttribute('href', '/board')
+  })
+
+  it('only reads each stage line: no card can be dragged and the page sends no write (BEH-STAGE-9)', async () => {
+    const fetchMock = renderStages()
+    await stage('Development')
+    expect(document.querySelectorAll('[draggable]')).toHaveLength(0)
+    const calls = fetchMock.mock.calls as unknown as [string, RequestInit?][]
+    const writes = calls.filter(([, init]) => (init?.method ?? 'GET').toUpperCase() !== 'GET')
+    expect(writes).toEqual([])
+  })
+
   it('leaves a feature at its written stage when UI requirements are written early (BEH-STAGE-4)', async () => {
     renderStages()
     // FEAT-PROBLEM already has a ui-layer behaviour: the stage line alone places it.
@@ -202,6 +218,52 @@ describe('stage rules', () => {
     expect(heads[at - 1]).toBe('Business logic')
     expect(heads[at + 1]).toBe('Development')
     expect((await stage('Architecture')).getByText('FEAT-NEWPART')).toBeInTheDocument()
+  })
+
+  it('BEH-STAGE-10: a feature with some behaviour built sits in development, as its stage line says, not in Done', () => {
+    const features = [feat('FEAT-A', { stage: 'development' })]
+    const behaviours = [beh('A1', { in: ['FEAT-A'] }), beh('A2', { in: ['FEAT-A'], pending: true })]
+    const [card] = stageCards('app', 'app', features, behaviours)
+    expect([card.built, card.total]).toEqual([1, 2])
+    expect(columnFor(card)).toBe('development')
+  })
+
+  it('BEH-STAGE-11: a feature with nothing built sits in the column its stage line names, whatever its spec says', () => {
+    const features = [feat('FEAT-P', { stage: 'problem' }), feat('FEAT-U', { stage: 'ux' }), feat('FEAT-L', { stage: 'logic' })]
+    // Each one's pending behaviour is in a layer that would suggest a later stage: the page must not read it.
+    const behaviours = [
+      beh('P1', { in: ['FEAT-P'], layer: 'ui', pending: true }),
+      beh('U1', { in: ['FEAT-U'], layer: 'logic', pending: true }),
+      beh('L1', { in: ['FEAT-L'], layer: 'ui', pending: true }),
+    ]
+    expect(stageCards('app', 'app', features, behaviours).map((c) => [c.feature.id, columnFor(c)])).toEqual([
+      ['FEAT-P', 'problem'],
+      ['FEAT-U', 'ux'],
+      ['FEAT-L', 'logic'],
+    ])
+  })
+
+  it('BEH-STAGE-11: a feature with nothing built sits in architecture when its stage line says so, whatever its pending spec says', () => {
+    const features = [feat('FEAT-N', { stage: 'architecture' })]
+    // A pending ui-layer behaviour would suggest a later stage: the page must read the stage line only.
+    const behaviours = [beh('N1', { in: ['FEAT-N'], layer: 'ui', pending: true })]
+    expect(stageCards('app', 'app', features, behaviours).map((c) => [c.feature.id, c.built, columnFor(c)])).toEqual([['FEAT-N', 0, 'architecture']])
+  })
+
+  it('BEH-STAGE-12: a proposed or in-review behaviour keeps its feature in its stage, and Done leaves the stage line unchanged', () => {
+    const features = [feat('FEAT-P', { stage: 'ui' }), feat('FEAT-R', { stage: 'ui' }), feat('FEAT-D', { stage: 'ui' })]
+    const behaviours = [
+      beh('P1', { in: ['FEAT-P'], source: { origin: 'inferred', ref: null }, review: { state: 'unreviewed', note: null } }),
+      beh('R1', { in: ['FEAT-R'], review: { state: 'requested', note: null } }),
+      beh('D1', { in: ['FEAT-D'] }),
+    ]
+    const cards = stageCards('app', 'app', features, behaviours)
+    expect(cards.map((c) => [c.feature.id, c.done, columnFor(c)])).toEqual([
+      ['FEAT-P', false, 'ui'],
+      ['FEAT-R', false, 'ui'],
+      ['FEAT-D', true, 'done'],
+    ])
+    expect(cards[2].feature.stage).toBe('ui')
   })
 
   it('BEH-ARCH-2: a feature may skip architecture, going from logic to development', () => {
