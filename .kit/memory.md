@@ -56,6 +56,8 @@
 - **Mapped test titles must not contain an apostrophe:** `check` reads the title as written in source (`run\'s` never matches `run's`). Write "run state", not "run's state", in any test a `.tests.json` line maps.
 - **Only CommittedArtefactTests.cs may read `RepoLayout.Behaviours`** (ConformanceTests.Only_the_committed_artefact_checks_read_the_live_corpora). A corpus check in any other test file fails the suite.
 
+## Pipeline routing (BEH-ROUTE-*)
+- A flag's level is read by `FlagLevels.Of`: low and medium go to the review-low model (sonnet by default), high or unreadable goes to opus. Medium's model is an assumption until the owner confirms it.
 ## Per-project views (BEH-SPACE-5, bundle per-project-views-and-settings)
 - The project's Inbox, Runs and Settings are the global pages given a project: `<Inbox only>`, `<Runs only>`, `<ProjectSettings>` at `/projects/:app/{inbox,runs,settings}`. The Inbox filter comes from the `only` prop, not the `?project=` url, so a project's page cannot inherit another project's filter. `Queue` is keyed on the project so switching project remounts it.
 - Per-project promotion, conflict and depth moved off the global Settings page; their rows are filtered by `ofProject` in `Settings.tsx`.

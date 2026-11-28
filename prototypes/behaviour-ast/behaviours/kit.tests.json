@@ -1410,6 +1410,15 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_5_triage_rewrites_a_malformed_bundle_so_that_it_parses_keeps_its_cards_and_notes_and_puts_each_item_on_its_own_line" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_5_after_triage_rewrites_a_malformed_bundle_the_fix_is_recorded_beside_the_ticket" }
   ],
+  "BEH-ROUTE-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ROUTE_2_a_card_marked_ready_to_schedule_in_the_corpus_wakes_the_pipeline_at_spec" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ROUTE_2_a_ready_to_schedule_said_only_in_a_note_does_not_wake_the_pipeline" }
+  ],
+  "BEH-ROUTE-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ROUTE_3_a_flag_at_level_low_reports_model_by_level_on_sonnet_and_never_opus" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ROUTE_3_a_flag_at_level_high_reports_opus" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ROUTE_3_a_flag_at_level_medium_reports_sonnet" }
+  ],
   "BEH-TICKET-6": [
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the global top bar links to the epic board and the ticket board, and neither the feature board nor the spec board is linked from it (BEH-TICKET-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/App.test.tsx", "title": "the board switch offers the epic board and the ticket board and no feature or spec view (BEH-TICKET-6)" },
