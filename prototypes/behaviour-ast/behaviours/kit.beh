@@ -587,6 +587,7 @@ behaviour BEH-TICKET-6 "Kit has two boards, the epic board and the ticket board,
   contract my assumption: BEH-BOARD-10 to BEH-BOARD-21 are left untouched, because they rank and badge the spec board's columns; their fate is decided after the owner confirms the list above
   contract my assumption: BEH-EPIC-4 (kit-ui.beh) is the epic board's own page, not a third option on the BEH-STAGE-8 switch, because BEH-STAGE-8 is to be deleted
   contract my assumption: the global top bar links to the epic board and the ticket board only, the feature and spec boards are not in it, and the layout is as BEH-NAV-4 says
+  contract my assumption: his 2026-11-28 09:52Z note confirms that behaviour boards are retired; the deletion list above still waits for his confirmation, and moving the projects across is BEH-TICKET-9
 
 behaviour BEH-TICKET-7 "A ticket names the epics it progresses toward, and may touch many features and specs"
   source defined kit.notes.md#2026-11-23-2255
@@ -609,6 +610,19 @@ behaviour BEH-TICKET-8 "Each open epic shows its status toward the goal, counted
   contract my assumption: an epic's status is counted from the tickets that name it, in the states new, ready, planned, built, blocked and done
   contract my assumption: the project's goal is its first open epic, as BEH-NARR-1 already says, and the epic board shows that goal first
   contract my assumption: a blocked ticket is counted once, in the state it is in; the blocked count is shown beside the states and is not added to them, and a stopped ticket is counted in no state
+
+behaviour BEH-TICKET-9 "Every kit project moves onto the ticket boards, and its open behaviour-board work is written as tickets"
+  source defined kit.notes.md#2026-11-28-0952Z
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract the note (kit.notes.md#2026-11-28-0952Z): "All kit projects need to be migrated to ticket boards and behaviour boards need to be retired. This includes writing tickets that will represent the status of all the remaining open tickets"
+  contract my assumption: every project Kit holds is migrated, not only kit; each one's open behaviour work becomes tickets, one per open item, carrying the state it is in on the behaviour board
+  contract my assumption: "open" means a behaviour or feature not yet built and not stopped; built work is not written as a ticket, and nothing is deleted from the corpus
+  contract my assumption: once a project's tickets are written, its behaviour board is no longer reachable from its page; the page and the spec remain
 
 behaviour BEH-NAV-4 "The site follows GitHub's layout: a global top bar, and a row of tabs under each project for its own views"
   source defined kit.notes.md#2026-11-25-1916
