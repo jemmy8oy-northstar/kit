@@ -1,9 +1,13 @@
 namespace Balenthiran.Kit.Services;
 
-/// <summary>How hard a review a flag needs (BEH-ORCH-2): low is reviewed on a cheaper model, high on the strongest.</summary>
+/// <summary>
+/// How hard a review a flag needs (BEH-ORCH-2, BEH-ROUTE-3): low and medium are reviewed on the cheaper model, high on
+/// the strongest. Medium's model is the owner's assumption (bundle pipeline-routing-by-cost), not yet confirmed.
+/// </summary>
 public enum FlagLevel
 {
     Low,
+    Medium,
     High,
 }
 
@@ -24,7 +28,10 @@ public static class FlagLevels
         var inner = text[(open + 1)..^1].Trim();
         var colon = inner.IndexOf(':');
         if (colon < 0 || !inner[..colon].Trim().Equals("level", StringComparison.OrdinalIgnoreCase)) return FlagLevel.High;
-        return inner[(colon + 1)..].Trim().Equals("low", StringComparison.OrdinalIgnoreCase) ? FlagLevel.Low : FlagLevel.High;
+        var word = inner[(colon + 1)..].Trim();
+        if (word.Equals("low", StringComparison.OrdinalIgnoreCase)) return FlagLevel.Low;
+        if (word.Equals("medium", StringComparison.OrdinalIgnoreCase)) return FlagLevel.Medium;
+        return FlagLevel.High;
     }
 
     /// <summary>The sentence every stage's flag instruction ends with, saying what each level means.</summary>

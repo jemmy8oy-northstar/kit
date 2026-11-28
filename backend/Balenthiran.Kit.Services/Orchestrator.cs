@@ -116,11 +116,14 @@ public static class Orchestrator
             ? item with { Status = WorkItemStatus.Running }
             : throw new InvalidOperationException($"only a queued item can start, not one that is {item.Status}");
 
-    /// <summary>The model <paramref name="stage"/> runs on; a review of a low-level <paramref name="flag"/> runs on the cheaper review model (BEH-ORCH-2).</summary>
+    /// <summary>
+    /// The model <paramref name="stage"/> runs on. A review of a low or medium <paramref name="flag"/> runs on the cheaper
+    /// review model, and a high one (or none) on the strongest (BEH-ORCH-2, BEH-ROUTE-3).
+    /// </summary>
     public static string ModelFor(PipelineStage stage, StageModelSettings models, string? flag = null) => stage switch
     {
         PipelineStage.Triage => models.Triage,
-        PipelineStage.Review => FlagLevels.Of(flag) == FlagLevel.Low ? models.ReviewLow ?? StageModels.DefaultReviewLow : models.Review,
+        PipelineStage.Review => FlagLevels.Of(flag) is FlagLevel.Low or FlagLevel.Medium ? models.ReviewLow ?? StageModels.DefaultReviewLow : models.Review,
         PipelineStage.Context => models.Context ?? StageModels.DefaultContext,
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
