@@ -619,7 +619,7 @@ behaviour BEH-TICKET-9 "Every kit project moves onto the ticket boards, and its 
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
-  contract the note (kit.notes.md#2026-11-28-0952Z): "All kit projects need to be migrated to ticket boards and behaviour boards need to be retired. This includes writing tickets that will represent the status of all the remaining open tickets"
+  contract my assumption: the note (kit.notes.md#2026-11-28-0952Z): "All kit projects need to be migrated to ticket boards and behaviour boards need to be retired. This includes writing tickets that will represent the status of all the remaining open tickets"
   contract my assumption: every project Kit holds is migrated, not only kit; each one's open behaviour work becomes tickets, one per open item, carrying the state it is in on the behaviour board
   contract my assumption: "open" means a behaviour or feature not yet built and not stopped; built work is not written as a ticket, and nothing is deleted from the corpus
   contract my assumption: once a project's tickets are written, its behaviour board is no longer reachable from its page; the page and the spec remain
