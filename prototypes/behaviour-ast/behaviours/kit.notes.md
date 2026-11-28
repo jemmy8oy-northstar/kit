@@ -1162,3 +1162,11 @@ Do we need principles visible in the ui? I am not sure it’s adding anything.
 <!-- from: note-button -->
 
 Can we fold the features, questions, notes etc tabs into the same tab bar as overview, chat, inbox, board etc
+
+## 2026-11-28 09:42Z
+
+<!-- from: note-button -->
+
+Can we think about the content which is shown in overview. I feel like top level features is actually good and then maybe an overview of what the project actually is.
+
+In the same way that GitHub shows files and then the readme.
