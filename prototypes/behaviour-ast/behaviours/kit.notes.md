@@ -1188,3 +1188,9 @@ An epic should show work left. This can be plan x features if they haven’t bee
 <!-- from: note-button -->
 
 When definition of done is defined if some features seem out of scope of the epic kit can create a new epic to move these backlog items to
+
+## 2026-11-28 09:52Z
+
+<!-- from: note-button -->
+
+All kit projects need to be migrated to ticket boards and behaviour boards need to be retired. This includes writing tickets that will represent the status of all the remaining open tickets
