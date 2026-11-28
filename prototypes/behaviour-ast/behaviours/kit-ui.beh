@@ -536,6 +536,7 @@ behaviour BEH-FEAT-1 "A project shows its top-level features, then its untagged 
   contract top level is every feature and every behaviour with no `in` line
   contract a feature card names its title and how many behaviours sit anywhere beneath it, each counted once
   contract a project with no features shows its behaviours as it always has
+  contract my assumption: the Overview tab shows six top-level features at most, then a View all features button that opens the Features tab (kit.notes.md#2026-11-28-0945Z); the whole top level stays on the Features tab
 
 behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and every parent as a tag"
   in FEAT-FEATURE
@@ -597,6 +598,7 @@ behaviour BEH-FEAT-6 "A project's features and questions are two tabs, features 
   contract features is the selected tab unless the url says ?tab=questions, so a link can open on the questions
   contract the questions tab carries the count of conflicts and questions waiting, so nothing waits unseen behind it
   contract the ask box sits above the tabs; the notes are a tab of their own (BEH-FEAT-7)
+  contract my assumption: the two tabs now sit in the project tab bar (BEH-SPACE-6, kit.notes.md#2026-11-28-0941Z), so each is a page of its own; ?tab=questions still opens the questions
 
 # ═══ His Kit notes, 2026-10-16 07:13–07:30Z ════════════════════════════════════
 # "Let's leverage the tab view more", "Are ui/ux/logic implementation even treated
@@ -620,6 +622,20 @@ behaviour BEH-FEAT-7 "The describe box sits above the tabs, and notes are a tab 
   contract the Notes tab holds the notes needing an answer, the open notes and the edits waiting to land; its label counts the open notes
   contract the schedule is a tab, and so are principles when the project has any
   contract asking for a behaviour opens the Notes tab, so the note just left is in view
+  contract my assumption: the Notes tab moves into the project tab bar with the others (BEH-SPACE-6, kit.notes.md#2026-11-28-0941Z); the describe box stays on the page under that bar
+
+behaviour BEH-FEAT-8 "A project's overview says what the project is, under its top-level features, as GitHub's readme sits under its files"
+  in FEAT-PROJECT
+  source defined kit.notes.md#2026-11-28-0942Z
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract the features come first and the description after them, as the 2026-11-28 09:42Z note asks ("top level features is actually good and then maybe an overview of what the project actually is")
+  contract my assumption: the description is the README.md at the root of the project's repo, shown as read and never parsed as a spec line, so it cannot refuse a corpus
+  contract my assumption: a project with no README shows no description, and its overview is its features alone
 
 behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
   in FEAT-NOTES
@@ -3764,7 +3780,7 @@ behaviour BEH-SPACE-6 "A project's pages share one tab bar, as on GitHub, so its
   contract "I currently have no way to access it." (about a project's Runs page, claude-code-bot#151)
   contract "Please take inspiration from GitHub and restructure this site to closer match this navigation wise, nav bar, project tabs etc" (claude-code-bot#151)
   contract my assumption: one tab bar, headed by the project's name, sits at the top of a project's overview, runs, inbox and settings pages, so leaving the overview never strands him
-  contract my assumption: the tabs are Overview, Chat, Inbox, Board, Runs, Notes and Settings, each shown on the same conditions as the links they replace (Chat, Inbox and Board when their feature is on; Runs not for a signed-in account that is not the operator, BEH-USERS-9)
+  contract my assumption: the tabs are Overview, Features, Questions, Chat, Inbox, Board, Runs, Notes, Schedule, Principles and Settings, each shown on the same conditions as the links they replace (Chat, Inbox and Board when their feature is on; Runs not for a signed-in account that is not the operator, BEH-USERS-9); Features, Questions, Notes, Schedule and Principles move up from the project page's own tabs, and Principles shows only when the project has any (kit.notes.md#2026-11-28-0941Z)
   contract my assumption: the current tab is underlined and marked aria-current; the bar scrolls sideways on a phone rather than wrapping
   contract my assumption: this slice does not restructure the global header; that is a later step of the same note
   contract built (ProjectNav): a navigation "This project" of tabs at the top of the project, runs, inbox and settings pages
