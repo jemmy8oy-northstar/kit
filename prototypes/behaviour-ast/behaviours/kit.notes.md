@@ -1182,3 +1182,9 @@ I left a note before about features in the overview, can we take inspo from GitH
 <!-- from: note-button -->
 
 An epic should show work left. This can be plan x features if they haven’t been planted yet. This can be reviewing assumed behaviour or spec. This can be defining definition of done, this will help it figure out what is left to do. This can be planning user experience. Or for new features this can be defining requirements. You get the idea
+
+## 2026-11-28 09:50Z
+
+<!-- from: note-button -->
+
+When definition of done is defined if some features seem out of scope of the epic kit can create a new epic to move these backlog items to
