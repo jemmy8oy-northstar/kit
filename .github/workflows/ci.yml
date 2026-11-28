@@ -94,22 +94,26 @@ jobs:
       # ⚠️ What a pass means: someone LINKED each behaviour to a test. It does
       # not prove the test asserts the behaviour. That limit is option C's and
       # is not fixable by parsing — `docs/design/tagging.md`.
+      #
+      # Two layouts (claude-code-bot#151, docs/design/feature-tree.md). Once
+      # `.kit/features/` holds a .kit file, kit's spec is ONE project read from
+      # that tree, so one check covers it. Until then, the flat kit.beh and
+      # kit-ui.beh are two corpora with a check each, as before. The check reads
+      # test titles from the files, so it needs no npm install, only the build.
       - name: Stage-0 gate — every kit behaviour is named by a test
-        run: >
-          dotnet run --project backend/Balenthiran.Kit.Cli
-          --no-build
-          --configuration Release
-          -- check kit --repo . --dir prototypes/behaviour-ast/behaviours
-
-      # The same gate on Kit's own UI spec (kit-ui.beh, mapped in kit-ui.tests.json
-      # to the vitest suite). It reads test titles from the files, so it needs no
-      # npm install — only the build above.
-      - name: Stage-0 gate — every kit-ui behaviour is named by a test
-        run: >
-          dotnet run --project backend/Balenthiran.Kit.Cli
-          --no-build
-          --configuration Release
-          -- check kit-ui --repo . --dir prototypes/behaviour-ast/behaviours
+        run: |
+          kit_check() {
+            dotnet run --project backend/Balenthiran.Kit.Cli \
+              --no-build --configuration Release -- check "$@"
+          }
+          # No pipe: Actions runs bash with pipefail, and `find | grep -q` can
+          # fail on SIGPIPE even when a file is found.
+          if [ -n "$(find .kit/features -name '*.kit' -print -quit 2>/dev/null)" ]; then
+            kit_check kit --repo . --dir .kit
+          else
+            kit_check kit --repo . --dir prototypes/behaviour-ast/behaviours
+            kit_check kit-ui --repo . --dir prototypes/behaviour-ast/behaviours
+          fi
 
   # The UI (#19) arrived with 20 passing tests and nothing that ran them. A
   # suite quoted in a PR body but executed by no gating job is a claim, not a
