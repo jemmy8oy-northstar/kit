@@ -13,6 +13,7 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
     private readonly object gate = new();
     private readonly List<AgentRun> runs = [];
     private readonly Dictionary<string, string> hashes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> repos = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
     public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null, string? stage = null)
@@ -87,7 +88,7 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
     }
 
     /// <inheritdoc />
-    public bool StartIfQueued(string id)
+    public bool StartIfQueued(string id, string? repo = null)
     {
         lock (gate)
         {
@@ -98,7 +99,21 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
             }
 
             runs[at] = With(runs[at], AgentRunStatus.Running, null, default, 0m);
+            if (repo is not null)
+            {
+                repos[id] = repo;
+            }
+
             return true;
+        }
+    }
+
+    /// <inheritdoc />
+    public string? RepoOf(string id)
+    {
+        lock (gate)
+        {
+            return repos.GetValueOrDefault(id);
         }
     }
 
