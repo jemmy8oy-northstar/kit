@@ -1170,3 +1170,9 @@ Can we fold the features, questions, notes etc tabs into the same tab bar as ove
 Can we think about the content which is shown in overview. I feel like top level features is actually good and then maybe an overview of what the project actually is.
 
 In the same way that GitHub shows files and then the readme.
+
+## 2026-11-28 09:45Z
+
+<!-- from: note-button -->
+
+I left a note before about features in the overview, can we take inspo from GitHub again and show some of them and then show a view all features button
