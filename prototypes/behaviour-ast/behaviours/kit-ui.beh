@@ -633,7 +633,7 @@ behaviour BEH-FEAT-8 "A project's overview says what the project is, under its t
   actor engineer
   when opens page:KitProject
   then sees region:KitProjectFeatures
-  contract the features come first and the description after them, as the 2026-11-28 09:42Z note asks ("top level features is actually good and then maybe an overview of what the project actually is")
+  contract my assumption: the features come first and the description after them, as the 2026-11-28 09:42Z note asks ("top level features is actually good and then maybe an overview of what the project actually is")
   contract my assumption: the description is the README.md at the root of the project's repo, shown as read and never parsed as a spec line, so it cannot refuse a corpus
   contract my assumption: a project with no README shows no description, and its overview is its features alone
 
