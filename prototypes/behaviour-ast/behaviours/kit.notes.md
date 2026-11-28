@@ -1137,3 +1137,9 @@ I have a vision when kit is organised by project where it can show a visual on t
 <!-- from: note-button -->
 
 Please take inspiration from GitHub and restructure this site to closer match this navigation wise, nav bar, project tabs etc
+
+## 2026-11-28 09:36Z
+
+<!-- from: note-button -->
+
+Kit tab when u scroll but the movement is not exactly horizontal the items move out of the tab area. They should be locked vertically
