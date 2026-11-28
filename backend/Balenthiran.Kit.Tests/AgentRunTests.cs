@@ -1275,7 +1275,9 @@ public class AgentRunTests
 
         public void SetStatus(string id, string status, DateTimeOffset? ended = null, string? failure = null) => inner.SetStatus(id, status, ended, failure);
 
-        public bool StartIfQueued(string id) => inner.StartIfQueued(id);
+        public bool StartIfQueued(string id, string? repo = null) => inner.StartIfQueued(id, repo);
+
+        public string? RepoOf(string id) => inner.RepoOf(id);
     }
 
     private sealed class RecordingLauncher : IAgentRunLauncher

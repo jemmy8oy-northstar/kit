@@ -22,8 +22,12 @@ public class RunGitHubTokenTests
 
     private sealed class Rig
     {
+        private readonly GitHubAppTokenSource? app;
+        private readonly TimeProvider? clock;
+
         public Rig(FakeGitHub gh, bool withApp = true, TimeProvider? clock = null)
         {
+            this.clock = clock;
             Github = gh;
             Store = new MemoryAgentRunStore();
             Pool = new RunnerPool(Store);
@@ -40,7 +44,7 @@ public class RunGitHubTokenTests
                 runStore: Store,
                 runLauncher: Pool,
                 runnerPool: Pool);
-            var app = withApp ? new GitHubAppTokenSource(new HttpClient(gh), "123456", "7890", Key.ExportRSAPrivateKeyPem()) : null;
+            app = withApp ? new GitHubAppTokenSource(new HttpClient(gh), "123456", "7890", Key.ExportRSAPrivateKeyPem()) : null;
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, clock, app);
             var signIn = Router.Route("POST", "/api/session", body: Json(new { password = Operator }));
             Cookie = signIn.SetCookie!.Split(';')[0];
@@ -50,11 +54,11 @@ public class RunGitHubTokenTests
 
         public MemoryAgentRunStore Store { get; }
 
-        public RunnerPool Pool { get; }
+        public RunnerPool Pool { get; private set; }
 
         public KitRouter Router { get; }
 
-        public RunnerPoolRoutes Routes { get; }
+        public RunnerPoolRoutes Routes { get; private set; }
 
         public string Cookie { get; }
 
@@ -69,6 +73,13 @@ public class RunGitHubTokenTests
             var started = Start(project, repo);
             Assert.Equal(200, Routes.ClaimAsync(PoolToken).GetAwaiter().GetResult().Status);
             return started;
+        }
+
+        /// <summary>What a Kit restart does to the pool: a new one, with nothing in memory, over the same store.</summary>
+        public void Restart()
+        {
+            Pool = new RunnerPool(Store);
+            Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, clock, app);
         }
 
         public KitResponse Ask(string? runToken) => Routes.GitHubTokenAsync(runToken).GetAwaiter().GetResult();
@@ -236,6 +247,50 @@ public class RunGitHubTokenTests
     }
 
     [Fact]
+    public void BEH_ORCH_8_a_run_handed_out_before_a_restart_still_gets_a_token_for_its_one_repo()
+    {
+        var gh = new FakeGitHub(Grant());
+        var rig = new Rig(gh);
+        var started = rig.StartAndClaim("kit", "octo/cat");
+
+        rig.Restart();
+        var r = rig.Ask(started.Token);
+
+        Assert.Equal(200, r.Status);
+        Assert.Equal(Minted, Assert.IsType<GitHubTokenGrant>(r.Body).Token);
+        var sent = Assert.Single(gh.Sent);
+        Assert.Contains("\"repositories\":[\"cat\"]", sent.Body);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_after_a_restart_a_run_that_is_over_reaches_no_repo()
+    {
+        var rig = new Rig(new FakeGitHub(Grant()));
+        var started = rig.StartAndClaim("kit", "octo/cat");
+        Assert.Equal(200, rig.Routes.Finished(started.Token, Json(new { status = "finished" })).Status);
+
+        rig.Restart();
+
+        Assert.Null(rig.Pool.RepoOf(started.Run.Id));
+        Assert.Equal("run-not-running", Assert.IsType<ApiError>(rig.Ask(started.Token).Body).Error);
+        Assert.Empty(rig.Github.Sent);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_a_run_keeps_the_repo_it_started_with_and_a_second_start_cannot_change_it()
+    {
+        var store = new MemoryAgentRunStore();
+        var run = store.Create("o", "kit", "m", "hash", DateTimeOffset.UtcNow);
+        Assert.Null(store.RepoOf(run.Id));
+
+        Assert.True(store.StartIfQueued(run.Id, "octo/cat"));
+        Assert.False(store.StartIfQueued(run.Id, "octo/other"));
+
+        Assert.Equal("octo/cat", store.RepoOf(run.Id));
+        Assert.Null(store.RepoOf("no-such-run"));
+    }
+
+    [Fact]
     public void Neither_the_listing_nor_the_store_ever_holds_a_minted_token()
     {
         var rig = new Rig(new FakeGitHub(Grant()));
@@ -243,6 +298,7 @@ public class RunGitHubTokenTests
         Assert.Equal(200, rig.Ask(started.Token).Status);
 
         var listed = JsonSerializer.Serialize(rig.Router.Route("GET", "/api/runs", rig.Cookie).Body, typeof(AgentRunList), new JsonSerializerOptions());
+        // The store keeps the run's repo (BEH-ORCH-8), but apart from the run, so what it lists never shows it.
         var stored = JsonSerializer.Serialize(rig.Store.List(), new JsonSerializerOptions());
         foreach (var text in new[] { listed, stored })
         {
