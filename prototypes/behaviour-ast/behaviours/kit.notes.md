@@ -1156,3 +1156,9 @@ GitHub again and reduce the buttons available to just the inbox and a menu butto
 <!-- from: note-button -->
 
 Do we need principles visible in the ui? I am not sure it’s adding anything.
+
+## 2026-11-28 09:41Z
+
+<!-- from: note-button -->
+
+Can we fold the features, questions, notes etc tabs into the same tab bar as overview, chat, inbox, board etc
