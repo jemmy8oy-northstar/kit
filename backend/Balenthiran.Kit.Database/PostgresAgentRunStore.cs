@@ -30,7 +30,8 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
         );
         ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS failure text;
         ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS work_item text;
-        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS stage text
+        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS stage text;
+        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS repo text
         """;
 
     private const string Columns = "id, owner, project, model, status, started, ended, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost_usd, failure, work_item, stage";
@@ -85,12 +86,19 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
     }
 
     /// <inheritdoc />
-    public bool StartIfQueued(string id)
+    public bool StartIfQueued(string id, string? repo = null)
     {
         using var cmd = Command(
-            "UPDATE agent_runs SET status = $2 WHERE id = $1 AND status = 'queued'",
-            id, AgentRunStatus.Running);
+            "UPDATE agent_runs SET status = $2, repo = $3 WHERE id = $1 AND status = 'queued'",
+            id, AgentRunStatus.Running, repo is null ? DBNull.Value : repo);
         return cmd.ExecuteNonQuery() > 0;
+    }
+
+    /// <inheritdoc />
+    public string? RepoOf(string id)
+    {
+        using var cmd = Command("SELECT repo FROM agent_runs WHERE id = $1", id);
+        return cmd.ExecuteScalar() is string repo ? repo : null;
     }
 
     /// <inheritdoc />
