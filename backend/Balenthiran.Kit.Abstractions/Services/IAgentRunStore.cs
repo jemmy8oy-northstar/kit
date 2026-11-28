@@ -28,7 +28,14 @@ public interface IAgentRunStore
 
     /// <summary>
     /// Moves the run from queued to running, atomically, and only if it is still queued, so a run that became
-    /// finished, failed or refused meanwhile is never brought back. True when it moved.
+    /// finished, failed or refused meanwhile is never brought back. True when it moved. <paramref name="repo"/>
+    /// (owner/name) is the one repo the run was handed out for, kept with it so a restart still knows it (BEH-ORCH-8).
     /// </summary>
-    bool StartIfQueued(string id);
+    bool StartIfQueued(string id, string? repo = null);
+
+    /// <summary>
+    /// BEH-ORCH-8: the repo <see cref="StartIfQueued"/> recorded for the run, null when none was. Not part of the run
+    /// itself, so the listing never shows it.
+    /// </summary>
+    string? RepoOf(string id);
 }

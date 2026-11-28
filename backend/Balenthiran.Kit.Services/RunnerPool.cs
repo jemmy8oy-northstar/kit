@@ -41,7 +41,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     private readonly List<Item> queue = [];
     private readonly Dictionary<string, string> handedOut = new(StringComparer.Ordinal);
     // Run id -> repo for runs handed out and not yet over, so Kit knows which ONE repo a run's GitHub token may
-    // reach. Memory only, like the queue: a restart forgets it and the run's next token request is refused.
+    // reach. The store keeps it too (BEH-ORCH-8), so after a restart RepoOf answers from there.
     private readonly Dictionary<string, string> repoByRun = new(StringComparer.Ordinal);
     // Run id -> when it was handed out, for the lease (BEH-ORCH-14). Memory only, like repoByRun, and cleared with it.
     private readonly Dictionary<string, DateTimeOffset> handedOutAt = new(StringComparer.Ordinal);
@@ -173,7 +173,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
             }
 
             queue.RemoveAt(i--);
-            if (!store.StartIfQueued(run.Id))
+            if (!store.StartIfQueued(run.Id, item.Repo))
             {
                 continue;
             }
@@ -191,14 +191,17 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     /// <summary>BEH-ORCH-20: the stages a runner takes before any other: a test run, and a merge run resolving a conflict.</summary>
     public static bool GoesFirst(string? stage) => stage is "test" or "resolve" or "fix";
 
-    /// <summary>The repo of a run this pool handed out that is not over, else null (never handed out, over, or forgotten at a restart).</summary>
+    /// <summary>
+    /// The repo of a handed-out run that is not over, else null (never handed out, or over). BEH-ORCH-8: a run handed out
+    /// before a restart is answered from the store, which kept its repo when it started, so its push still works.
+    /// </summary>
     public string? RepoOf(string runId)
     {
         lock (gate)
         {
             if (!repoByRun.TryGetValue(runId, out var repo))
             {
-                return null;
+                return Find(runId) is { Status: AgentRunStatus.Running } ? store.RepoOf(runId) : null;
             }
 
             if (OverOrGone(runId))
